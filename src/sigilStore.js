@@ -39,6 +39,10 @@ class SigilStore {
     fs.writeFileSync(DATA_PATH, JSON.stringify(this.data, null, 2));
   }
 
+  save() {
+    this.persist();
+  }
+
   ensureGuild(guildId) {
     if (!this.data.guilds[guildId]) {
       this.data.guilds[guildId] = { users: {} };
@@ -59,6 +63,10 @@ class SigilStore {
     }
 
     return guild.users[userId];
+  }
+
+  getGuildUsers(guildId) {
+    return this.ensureGuild(guildId).users;
   }
 
   recalculateUser(user) {
@@ -127,6 +135,10 @@ class SigilStore {
       actorId,
       type: amount > 0 ? "award" : "removal"
     }).user;
+  }
+
+  awardSigils(guildId, userId, amount, reason, actorId = "system") {
+    return this.award(guildId, userId, amount, reason, actorId);
   }
 
   redeem(guildId, userId, entryCount, raffleId, raffleName) {
