@@ -1,27 +1,44 @@
-# WoA Raffle Bot
+# WoA Event Bot
 
 <p align="center">
   <img src="https://img.shields.io/badge/Discord-Bot-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Bot">
-  <img src="https://img.shields.io/badge/JavaScript-100%25-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
+  <img src="https://img.shields.io/badge/TypeScript-First-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" alt="Status">
 </p>
 
 <p align="center">
-  <b>Ritual Raffles • Sigil Economy • Weighted Entries • Admin Ledger</b>
+  <b>Arcane Events • Ritual Raffles • Sigil Economy • Admin Ledger</b>
 </p>
 
 ---
 
 ## Overview
 
-WoA Raffle Bot is a Discord bot for managing guild raffles, sigil rewards, and moderator-led ledger actions.
-It combines a persistent sigil economy with raffle entry redemption, admin review tools, and automated raffle end handling.
+WoA Event Bot is a Discord bot for managing guild events, ritual raffles, sigil rewards, and moderator-led ledger actions.
+It now uses a TypeScript-first `src/` → `dist/` architecture for the main runtime and deploy flow while preserving the existing raffle systems where possible.
 
-The bot is designed around three command groups:
+The bot is currently designed around four command groups:
 
+- **Event commands** for Sesh-like scheduling and RSVP flows
 - **User commands** for everyday members
 - **Admin commands** for staff and moderators
 - **Raffle commands** for creating, tracking, and ending rituals/raffles
+
+## Migration Notes
+
+- Main runtime entry is now `src/index.ts`, compiled to `dist/index.js`
+- Slash command deployment entry is now `src/deploy-commands.ts`, compiled to `dist/deploy-commands.js`
+- Legacy raffle and sigil modules remain in place and are compiled through the TypeScript build so existing features keep working
+- New event modules live under:
+  - `src/config/`
+  - `src/commands/event/`
+  - `src/events/`
+  - `src/interactions/buttons/`
+  - `src/services/`
+  - `src/storage/`
+  - `src/ui/`
+  - `src/utils/`
+- Event times are stored in UTC and rendered with Discord timestamp tags (`<t:UNIX:F>` and `<t:UNIX:R>`), so every viewer sees the event in their local timezone automatically
 
 ---
 
@@ -43,6 +60,14 @@ The bot is designed around three command groups:
 - End raffles manually or automatically
 - Weighted sigil redemption into raffle entries
 - Winner announcement flow
+
+### Event System
+
+- `/event create` slash command with date, time, and optional timezone input
+- UTC-backed event persistence in `data/events.json`
+- Arcane-themed event embeds with local-time Discord timestamps
+- RSVP buttons for Going / Maybe / No
+- Modular interaction handlers for future scheduling features
 
 ### Admin Tools
 
@@ -67,6 +92,27 @@ The bot is designed around three command groups:
 ## User Commands
 
 These commands are available to regular users inside a server.
+
+## Event Commands
+
+### `/event create title date time [timezone] [notes]`
+Create a new event embed with timezone-safe display.
+
+**Options**
+- `title` — event name
+- `date` — `YYYY-MM-DD`
+- `time` — `19:30` or `7:30 PM`
+- `timezone` — optional IANA timezone such as `America/New_York` (defaults to `UTC`)
+- `notes` — optional preparation details
+
+**Behavior**
+- Parses the supplied date/time in the requested timezone
+- Converts the start time to UTC for storage
+- Renders local-time display using Discord timestamps
+- Posts an arcane event embed with Going / Maybe / No RSVP buttons
+- Persists the event state to the local JSON storage layer
+
+## User Commands
 
 ### `/my-sigils`
 View your current sigil balance and recent ledger activity.
@@ -197,7 +243,7 @@ When the bot starts, it:
 2. loads command files recursively from `src/commands/`
 3. registers them in memory
 4. starts the raffle auto-end loop
-5. starts any additional background routines
+5. optionally starts additional background routines
 6. listens for interactions from Discord
 
 ### Interaction Routing
@@ -261,13 +307,20 @@ SIGILS_PER_RAFFLE_ENTRY=100
 Deploy the slash commands:
 
 ```bash
-node src/deploy-commands.js
+npm run build
+npm run deploy
 ```
 
 Start the bot:
 
 ```bash
-node src/index.js
+npm run start
+```
+
+For local development with auto-reload:
+
+```bash
+npm run dev
 ```
 
 ---
@@ -278,14 +331,20 @@ node src/index.js
 |---|---|---:|---|
 | `TOKEN` | Yes | — | Discord bot token |
 | `CLIENT_ID` | Yes | — | Discord application client ID |
+| `GUILD_IDS` | Yes (for deploy) | — | Comma-separated guild IDs for slash command deployment |
+| `DEFAULT_EVENT_TIMEZONE` | No | `UTC` | Default timezone used when `/event create` omits a timezone |
 | `SIGILS_PER_RAFFLE_ENTRY` | No | `100` | Sigil cost per raffle entry |
+| `ASTRAL_CHANNEL_ID` | No | — | Channel ID for the optional astral selection routine |
 
 ### Example `.env`
 
 ```env
 TOKEN=your_discord_bot_token_here
 CLIENT_ID=123456789012345678
+GUILD_IDS=1498579289166188604,1428105944373526610
+DEFAULT_EVENT_TIMEZONE=UTC
 SIGILS_PER_RAFFLE_ENTRY=100
+ASTRAL_CHANNEL_ID=
 ```
 
 ---
@@ -316,6 +375,19 @@ Raffle state includes:
 - end time
 - entries
 - ended state
+
+### Event Data
+
+Event state includes:
+
+- event ID
+- guild ID
+- channel ID
+- message ID
+- host and creator IDs
+- `startAtIso` in UTC
+- `startAtUnix` for Discord timestamp rendering
+- RSVP state per user
 
 ---
 

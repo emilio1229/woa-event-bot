@@ -1,0 +1,35 @@
+export type RsvpState = "going" | "maybe" | "no";
+
+export interface EventRecord {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string | null;
+  title: string;
+  notes: string | null;
+  hostId: string;
+  creatorId: string;
+  timezone: string;
+  startAtIso: string;
+  startAtUnix: number;
+  createdAtIso: string;
+  rsvps: Record<string, RsvpState>;
+}
+
+export interface CreateEventInput {
+  guildId: string;
+  channelId: string;
+  title: string;
+  notes?: string | null;
+  hostId: string;
+  creatorId: string;
+  timezone: string;
+  startAtIso: string;
+  startAtUnix: number;
+}
+
+export interface EventRsvpSummary {
+  going: number;
+  maybe: number;
+  no: number;
+}

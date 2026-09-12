@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 
 const configuredSigilRate = Number.parseInt(process.env.SIGILS_PER_RAFFLE_ENTRY ?? "", 10);
 export const SIGILS_PER_RAFFLE_ENTRY = Number.isInteger(configuredSigilRate) && configuredSigilRate > 0
@@ -39,6 +40,10 @@ class SigilStore {
     fs.writeFileSync(DATA_PATH, JSON.stringify(this.data, null, 2));
   }
 
+  save() {
+    this.persist();
+  }
+
   ensureGuild(guildId) {
     if (!this.data.guilds[guildId]) {
       this.data.guilds[guildId] = { users: {} };
@@ -59,6 +64,10 @@ class SigilStore {
     }
 
     return guild.users[userId];
+  }
+
+  getGuildUsers(guildId) {
+    return this.ensureGuild(guildId).users;
   }
 
   recalculateUser(user) {
@@ -93,7 +102,7 @@ class SigilStore {
     }
 
     const transaction = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      id: randomUUID(),
       timestamp: new Date().toISOString(),
       amount,
       reason,
@@ -127,6 +136,10 @@ class SigilStore {
       actorId,
       type: amount > 0 ? "award" : "removal"
     }).user;
+  }
+
+  awardSigils(guildId, userId, amount, reason, actorId = "system") {
+    return this.award(guildId, userId, amount, reason, actorId);
   }
 
   redeem(guildId, userId, entryCount, raffleId, raffleName) {
