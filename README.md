@@ -331,7 +331,7 @@ npm run dev
 |---|---|---:|---|
 | `TOKEN` | Yes | — | Discord bot token |
 | `CLIENT_ID` | Yes | — | Discord application client ID |
-| `GUILD_IDS` | No | existing WoA guild IDs | Comma-separated guild IDs for slash command deployment |
+| `GUILD_IDS` | Yes (for deploy) | — | Comma-separated guild IDs for slash command deployment |
 | `DEFAULT_EVENT_TIMEZONE` | No | `UTC` | Default timezone used when `/event create` omits a timezone |
 | `SIGILS_PER_RAFFLE_ENTRY` | No | `100` | Sigil cost per raffle entry |
 | `ASTRAL_CHANNEL_ID` | No | — | Channel ID for the optional astral selection routine |

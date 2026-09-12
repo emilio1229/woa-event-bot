@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 
 const configuredSigilRate = Number.parseInt(process.env.SIGILS_PER_RAFFLE_ENTRY ?? "", 10);
 export const SIGILS_PER_RAFFLE_ENTRY = Number.isInteger(configuredSigilRate) && configuredSigilRate > 0
@@ -101,7 +102,7 @@ class SigilStore {
     }
 
     const transaction = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      id: randomUUID(),
       timestamp: new Date().toISOString(),
       amount,
       reason,

@@ -22,6 +22,10 @@ export interface ParsedEventStart {
   startAtUnix: number;
 }
 
+function normalizeTimeForComparison(timeInput: string): string {
+  return timeInput.trim().toUpperCase().replace(/\s+/g, " ");
+}
+
 export function normalizeTimezone(input?: string | null): string | null {
   const rawValue = input?.trim();
   const candidate = rawValue ? TIMEZONE_ALIASES[rawValue.toUpperCase()] ?? rawValue : env.defaultEventTimezone;
@@ -41,7 +45,7 @@ export function parseEventStart(
   }
 
   const normalizedDate = dateInput.trim();
-  const normalizedTime = timeInput.trim().toUpperCase();
+  const normalizedTime = normalizeTimeForComparison(timeInput);
 
   for (const timeFormat of TIME_FORMATS) {
     const parsed = DateTime.fromFormat(
@@ -51,6 +55,10 @@ export function parseEventStart(
     );
 
     if (!parsed.isValid) {
+      continue;
+    }
+
+    if (parsed.toFormat(timeFormat).toUpperCase() !== normalizedTime) {
       continue;
     }
 

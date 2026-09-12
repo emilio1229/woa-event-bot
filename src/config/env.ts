@@ -10,11 +10,7 @@ function readGuildIds(): string[] {
     .map(value => value.trim())
     .filter(Boolean);
 
-  if (configuredGuilds && configuredGuilds.length > 0) {
-    return configuredGuilds;
-  }
-
-  return ["1498579289166188604", "1428105944373526610"];
+  return configuredGuilds ?? [];
 }
 
 export const env = {
@@ -32,5 +28,13 @@ export function assertDiscordEnv() {
 
   if (!env.clientId) {
     throw new Error("Missing required environment variable: CLIENT_ID");
+  }
+}
+
+export function assertDeployEnv() {
+  assertDiscordEnv();
+
+  if (env.guildIds.length === 0) {
+    throw new Error("Missing required environment variable: GUILD_IDS");
   }
 }

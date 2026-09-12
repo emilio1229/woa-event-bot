@@ -21,6 +21,10 @@ export function updateEventRsvp(
   return eventStore.updateRsvp(eventId, userId, state);
 }
 
+export function deleteEvent(eventId: string): boolean {
+  return eventStore.delete(eventId);
+}
+
 export function getEventRsvpSummary(event: EventRecord): EventRsvpSummary {
   return Object.values(event.rsvps).reduce<EventRsvpSummary>(
     (summary, state) => {

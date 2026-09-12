@@ -1,13 +1,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { REST, Routes } from "discord.js";
-import { assertDiscordEnv, env } from "./config/env.js";
+import { assertDeployEnv, env } from "./config/env.js";
 import { loadCommandModules } from "./utils/commandLoader.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const commandsPath = path.join(__dirname, "commands");
-assertDiscordEnv();
+assertDeployEnv();
 const commandModules = await loadCommandModules(commandsPath);
 const commands = commandModules.map(command => command.data.toJSON());
 

@@ -1,5 +1,5 @@
 import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { createEvent, attachEventMessageId } from "../../services/eventService.js";
+import { createEvent, attachEventMessageId, deleteEvent } from "../../services/eventService.js";
 import { buildEventRsvpButtons } from "../../interactions/buttons/index.js";
 import { buildEventEmbed } from "../../ui/eventEmbed.js";
 import { isFutureUnixTimestamp, parseEventStart } from "../../utils/time.js";
@@ -91,17 +91,26 @@ const command: CommandModule = {
       startAtUnix: parsedStart.startAtUnix
     });
 
-    const eventMessage = await interaction.channel.send({
-      embeds: [buildEventEmbed(event)],
-      components: [buildEventRsvpButtons(event.id)]
-    });
+    try {
+      const eventMessage = await interaction.channel.send({
+        embeds: [buildEventEmbed(event)],
+        components: [buildEventRsvpButtons(event.id)]
+      });
 
-    attachEventMessageId(event.id, eventMessage.id);
+      attachEventMessageId(event.id, eventMessage.id);
 
-    await interaction.reply({
-      content: `✨ Event created: ${title}\nStarts ${`<t:${event.startAtUnix}:F>`} (${`<t:${event.startAtUnix}:R>`}).`,
-      flags: MessageFlags.Ephemeral
-    });
+      await interaction.reply({
+        content: `✨ Event created: ${title}\nStarts ${`<t:${event.startAtUnix}:F>`} (${`<t:${event.startAtUnix}:R>`}).`,
+        flags: MessageFlags.Ephemeral
+      });
+    } catch (error) {
+      deleteEvent(event.id);
+
+      await interaction.reply({
+        content: "❌ The event could not be posted to this channel, so the summoning was rolled back.",
+        flags: MessageFlags.Ephemeral
+      });
+    }
   }
 };
 

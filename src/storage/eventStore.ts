@@ -97,6 +97,18 @@ class EventStore {
     return event;
   }
 
+  delete(eventId: string): boolean {
+    const nextEvents = this.state.events.filter(event => event.id !== eventId);
+
+    if (nextEvents.length === this.state.events.length) {
+      return false;
+    }
+
+    this.state.events = nextEvents;
+    this.persist();
+    return true;
+  }
+
   updateRsvp(eventId: string, userId: string, state: RsvpState): EventRecord | undefined {
     const event = this.getById(eventId);
 
