@@ -1,4 +1,4 @@
-import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
@@ -20,6 +20,11 @@ const command: CommandModule = {
       option.setName("time")
         .setDescription("When the event starts (e.g., 'friday 5pm', 'tomorrow 7pm')")
         .setRequired(true)
+    )
+    .addRoleOption(option =>
+      option.setName("tagrole")
+        .setDescription("Optional role to notify about this event")
+        .setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -33,6 +38,15 @@ const command: CommandModule = {
 
     const title = interaction.options.getString("title", true);
     const timeInput = interaction.options.getString("time", true);
+    const tagRole = interaction.options.getRole("tagrole");
+
+    if (tagRole && !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+      await interaction.reply({
+        content: "❌ You need Manage Server permission to notify a role.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
 
     // ------------------------------------------------------------
     // TIMEZONE DETECTION (locale only — Discord.js v14 safe)
@@ -65,8 +79,10 @@ const command: CommandModule = {
     });
 
     await interaction.reply({
+      content: tagRole ? `<@&${tagRole.id}>` : undefined,
       embeds: [buildEventEmbed(event)],
-      components: [buildEventRsvpButtons(event.id)]
+      components: [buildEventRsvpButtons(event.id)],
+      allowedMentions: tagRole ? { roles: [tagRole.id] } : { parse: [] }
     });
 
     const message = await interaction.fetchReply();

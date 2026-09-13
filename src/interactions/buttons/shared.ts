@@ -16,15 +16,7 @@ export function buildEventRsvpButtons(eventId: string) {
     new ButtonBuilder()
       .setCustomId(`${RSVP_BUTTON_PREFIX}:going:${eventId}`)
       .setLabel("🜂 Going")
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId(`${RSVP_BUTTON_PREFIX}:maybe:${eventId}`)
-      .setLabel("🜁 Maybe")
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
-      .setCustomId(`${RSVP_BUTTON_PREFIX}:no:${eventId}`)
-      .setLabel("🜄 No")
-      .setStyle(ButtonStyle.Secondary)
+      .setStyle(ButtonStyle.Success)
   );
 }
 
