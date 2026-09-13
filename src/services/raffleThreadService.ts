@@ -1,23 +1,25 @@
-import { ChannelType, type Client, type GuildTextBasedChannel, type ThreadChannel } from "discord.js";
+import { ChannelType, type Client, type Message, type ThreadChannel } from "discord.js";
 import { env } from "../config/env.js";
 import type { Raffle } from "../types/legacy.js";
 import { logError } from "../utils/logger.js";
 
 /**
- * Creates a standalone public thread (not anchored to a message) so the raffle's
- * entry message lives only inside the thread, while the thread itself stays
- * visible in the channel's thread list to everyone without requiring a reply.
+ * Starts a thread anchored to the given announcement message so Discord reliably shows
+ * a visible thread indicator under the parent channel (standalone threads with no anchor
+ * message do not consistently surface in the channel UI without someone posting first).
+ * The raffle's actual entry embed and buttons are sent inside the returned thread, not the
+ * parent channel.
  */
-export async function createStandaloneRaffleThread(
-  channel: GuildTextBasedChannel,
+export async function createRaffleThreadFromMessage(
+  anchorMessage: Message,
   raffle: Raffle
 ): Promise<ThreadChannel | undefined> {
-  if (!env.raffleThreadsEnabled || !("threads" in channel)) {
+  if (!env.raffleThreadsEnabled) {
     return undefined;
   }
 
   try {
-    return await channel.threads.create({
+    return await anchorMessage.startThread({
       name: raffle.name.slice(0, 100),
       autoArchiveDuration: env.raffleThreadAutoArchiveMinutes,
       reason: "Raffle entry thread"

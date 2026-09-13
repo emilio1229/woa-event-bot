@@ -12,7 +12,7 @@ import {
 
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
-import { createStandaloneRaffleThread } from "../../services/raffleThreadService.js";
+import { createRaffleThreadFromMessage } from "../../services/raffleThreadService.js";
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
 
@@ -162,13 +162,6 @@ const command: CommandModule = {
         boundUsers: []
       });
 
-      const thread = await createStandaloneRaffleThread(channel, raffle);
-      const destination = thread ?? channel;
-
-      if (thread) {
-        await raffleStore.setThreadId(raffle.id, thread.id);
-      }
-
       const announcementEmbed = new EmbedBuilder()
         .setTitle("🔮 THE RITUAL BEGINS")
         .setDescription(
@@ -183,10 +176,17 @@ const command: CommandModule = {
         )
         .setColor(0x4B0082);
 
-        await destination.send({
-          embeds: [announcementEmbed],
-          allowedMentions: { roles: [tagRole] }
-        });
+      const announcementMessage = await channel.send({
+        embeds: [announcementEmbed],
+        allowedMentions: { roles: [tagRole] }
+      });
+
+      const thread = await createRaffleThreadFromMessage(announcementMessage, raffle);
+      const destination = thread ?? channel;
+
+      if (thread) {
+        await raffleStore.setThreadId(raffle.id, thread.id);
+      }
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
