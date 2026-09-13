@@ -78,9 +78,20 @@ const NATURAL_LANGUAGE_MULTIPLIERS: Record<NaturalLanguageUnit, number> = {
   months: 2592000000
 };
 
+const WEEKDAY_MAP: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
+};
+
 export function parseTime(input: string): number | null {
   input = input.trim().toLowerCase();
 
+  // "in 3h", "in 2 days", etc
   const durationMatch = input.match(
     /^(\d+)\s*(s|sec|secs|seconds|m|min|mins|minutes|h|hr|hrs|hours|d|day|days|w|wk|wks|week|weeks|mo|month|months)$/
   );
@@ -99,6 +110,7 @@ export function parseTime(input: string): number | null {
     return Date.now() + value * NATURAL_LANGUAGE_MULTIPLIERS[unit];
   }
 
+  // "tomorrow at 7pm"
   if (input.startsWith("tomorrow")) {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -126,6 +138,143 @@ export function parseTime(input: string): number | null {
     return tomorrow.getTime();
   }
 
+  // "tonight at 11pm"
+  if (input.startsWith("tonight")) {
+    const now = new Date();
+    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+
+    if (timeMatch) {
+      let hour = Number.parseInt(timeMatch[1], 10);
+      const minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      const ampm = timeMatch[3];
+
+      if (ampm === "pm" && hour < 12) {
+        hour += 12;
+      }
+
+      if (ampm === "am" && hour === 12) {
+        hour = 0;
+      }
+
+      now.setHours(hour, minute, 0, 0);
+    } else {
+      now.setHours(21, 0, 0, 0); // default 9pm
+    }
+
+    return now.getTime();
+  }
+
+  // "this weekend at noon" (Saturday)
+  if (input.startsWith("this weekend")) {
+    const now = new Date();
+    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+
+    let hour = 12;
+    let minute = 0;
+
+    if (timeMatch) {
+      hour = Number.parseInt(timeMatch[1], 10);
+      minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      const ampm = timeMatch[3];
+
+      if (ampm === "pm" && hour < 12) {
+        hour += 12;
+      }
+
+      if (ampm === "am" && hour === 12) {
+        hour = 0;
+      }
+    }
+
+    const day = now.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+    const weekend = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + daysUntilSaturday,
+      hour,
+      minute,
+      0,
+      0
+    );
+
+    return weekend.getTime();
+  }
+
+  // "next month 5pm"
+  if (input.startsWith("next month")) {
+    const now = new Date();
+    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+
+    let hour = 17;
+    let minute = 0;
+
+    if (timeMatch) {
+      hour = Number.parseInt(timeMatch[1], 10);
+      minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      const ampm = timeMatch[3];
+
+      if (ampm === "pm" && hour < 12) {
+        hour += 12;
+      }
+
+      if (ampm === "am" && hour === 12) {
+        hour = 0;
+      }
+    }
+
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, hour, minute, 0, 0);
+    return nextMonth.getTime();
+  }
+
+  // "next friday 6pm" / "friday 6pm"
+  const weekdayMatch = input.match(/^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/);
+
+  if (weekdayMatch) {
+    const isNext = !!weekdayMatch[1];
+    const weekdayName = weekdayMatch[2].toLowerCase();
+    const hourStr = weekdayMatch[3];
+    const minuteStr = weekdayMatch[4];
+    const ampm = weekdayMatch[5];
+
+    const now = new Date();
+    const targetDay = WEEKDAY_MAP[weekdayName];
+    const currentDay = now.getDay();
+
+    let daysAhead = (targetDay - currentDay + 7) % 7;
+    if (daysAhead === 0 && isNext) {
+      daysAhead = 7;
+    } else if (isNext) {
+      daysAhead += 7;
+    }
+
+    let hour = hourStr ? Number.parseInt(hourStr, 10) : 18;
+    const minute = minuteStr ? Number.parseInt(minuteStr, 10) : 0;
+
+    if (ampm) {
+      if (ampm === "pm" && hour < 12) {
+        hour += 12;
+      }
+
+      if (ampm === "am" && hour === 12) {
+        hour = 0;
+      }
+    }
+
+    const target = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + daysAhead,
+      hour,
+      minute,
+      0,
+      0
+    );
+
+    return target.getTime();
+  }
+
+  // MM/DD/YYYY or MM/DD/YY with optional time
   const dateMatch = input.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/
   );
