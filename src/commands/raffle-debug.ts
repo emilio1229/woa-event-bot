@@ -22,8 +22,8 @@ const command: CommandModule = {
     }
 
     const guildId = interaction.guildId;
-    const active = raffleStore.getActive(guildId);
-    const all = raffleStore.all();
+    const active = await raffleStore.getActive(guildId);
+    const all = await raffleStore.all();
 
     let activeText = "• None";
 

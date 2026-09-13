@@ -44,7 +44,7 @@ const command: CommandModule = {
     }
 
     const guild = interaction.guild;
-    const allRaffles = raffleStore.all().filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt);
+    const allRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt);
 
     if (allRaffles.length === 0) {
       await interaction.reply({ content: "❌ There are no active rituals to end.", flags: MessageFlags.Ephemeral });
@@ -85,7 +85,7 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     const randomIndex = Math.floor(Math.random() * raffle.entries.length);
     winnerId = raffle.entries[randomIndex];
     raffle.winnerId = winnerId;
-    raffleStore.save(raffle);
+    await raffleStore.save(raffle);
   }
 
   const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
@@ -159,7 +159,7 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     return;
   }
 
-  raffleStore.end(raffle.id);
+  await raffleStore.end(raffle.id);
 
   await interaction.reply({
     content: "🔮 The ritual has been ended.",

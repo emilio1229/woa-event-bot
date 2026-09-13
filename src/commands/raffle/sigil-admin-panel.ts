@@ -21,9 +21,8 @@ const command: CommandModule = {
       return;
     }
 
-    const stats = sigilStore.getGuildStats(guild.id);
-    const activeRaffles = raffleStore
-      .all()
+    const stats = await sigilStore.getGuildStats(guild.id);
+    const activeRaffles = (await raffleStore.all())
       .filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt && !raffle.ended);
 
     await interaction.reply({ embeds: [buildAdminPanelEmbed(stats, activeRaffles)] });

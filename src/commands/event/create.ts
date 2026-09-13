@@ -67,7 +67,7 @@ const command: CommandModule = {
       return;
     }
 
-    const event = createEvent({
+    const event = await createEvent({
       guildId: interaction.guild.id,
       channelId: interaction.channelId,
       title,
@@ -86,7 +86,7 @@ const command: CommandModule = {
     });
 
     const message = await interaction.fetchReply();
-    attachEventMessageId(event.id, message.id);
+    await attachEventMessageId(event.id, message.id);
   }
 };
 

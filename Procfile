@@ -1,1 +1,1 @@
-worker: npm start
+web: npm run db:push && npm start

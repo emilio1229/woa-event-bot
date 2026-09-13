@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DiscordMember {
+  guildId       String
+  discordUserId String
+  username      String
+  displayName   String
+  avatarUrl     String?
+  roleIds       String[]  @default([])
+  joinedAt      DateTime?
+  isBot         Boolean
+  lastSyncedAt  DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@id([guildId, discordUserId])
+  @@index([discordUserId])
+  @@index([guildId, displayName, username])
+}
+
+model DiscordRole {
+  guildId       String
+  discordRoleId String
+  name          String
+  position      Int
+  color         Int?
+  lastSyncedAt  DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@id([guildId, discordRoleId])
+  @@index([discordRoleId])
+  @@index([guildId, position])
+  @@index([guildId, name])
+}
+
+model DiscordSyncState {
+  guildId             String   @id
+  lastSuccessfulSync  DateTime?
+  lastSyncStartedAt   DateTime?
+  lastSyncCompletedAt DateTime?
+  status              String
+  memberCount         Int      @default(0)
+  roleCount           Int      @default(0)
+  lastError           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Event {
+  id           String   @id
+  guildId      String
+  channelId    String
+  messageId    String?
+  title        String
+  notes        String?
+  hostId       String
+  creatorId    String
+  timezone     String
+  startAtIso   String
+  startAtUnix  Int
+  createdAtIso String
+  rsvps        Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([guildId, startAtUnix])
+  @@index([guildId, messageId])
+}
+
+model Raffle {
+  id             String   @id
+  guildId        String
+  channelId      String
+  messageId      String?
+  name           String
+  prize          String
+  endsAt         BigInt
+  tagRole        String?
+  invocationText String?
+  ritualType     String?
+  winnerId       String?
+  ended          Boolean  @default(false)
+  entries        String[] @default([])
+  boundUsers     String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([guildId, endsAt, ended])
+  @@index([guildId, messageId])
+}
+
+model SigilAccount {
+  guildId       String
+  discordUserId String
+  balance       Int      @default(0)
+  lastDaily     BigInt?
+  transactions  Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@id([guildId, discordUserId])
+  @@index([guildId, balance])
+}

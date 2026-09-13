@@ -23,7 +23,7 @@ function isMessageCapableChannel(channel: unknown): channel is MessageCapableCha
 export function startAutoEndLoop(client: BotClient): void {
   setInterval(async () => {
     try {
-      const raffles = raffleStore.all();
+      const raffles = await raffleStore.all();
 
       for (const raffle of raffles) {
         if (Date.now() < raffle.endsAt) {
@@ -45,7 +45,7 @@ export function startAutoEndLoop(client: BotClient): void {
         if (!winnerId && entries.length > 0) {
           winnerId = entries[Math.floor(Math.random() * entries.length)];
           raffle.winnerId = winnerId;
-          raffleStore.save(raffle);
+          await raffleStore.save(raffle);
           console.log(`[autoEndManager] Chosen winner: ${winnerId}`);
         } else if (!winnerId) {
           console.log(`[autoEndManager] No entries for raffle ${raffle.id}`);
@@ -131,7 +131,7 @@ export function startAutoEndLoop(client: BotClient): void {
 
         if (announcementSent) {
           try {
-            raffleStore.end(raffle.id);
+            await raffleStore.end(raffle.id);
             console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
           } catch (err) {
             console.error("[autoEndManager] failed to remove raffle from store:", err);

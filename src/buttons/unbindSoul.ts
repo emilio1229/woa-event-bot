@@ -24,7 +24,7 @@ function countEntriesForUser(entries: string[], userId: string): number {
 
 export async function handleUnbindSoul(interaction: ButtonInteraction, raffleId: string): Promise<void> {
   await withRaffleEntryLock(raffleId, async () => {
-    const raffle = raffleStore.getById(raffleId);
+    const raffle = await raffleStore.getById(raffleId);
 
     if (!raffle) {
       await interaction.reply({
@@ -76,7 +76,7 @@ export async function handleUnbindSoul(interaction: ButtonInteraction, raffleId:
       return;
     }
 
-    raffleStore.save(raffle);
+    await raffleStore.save(raffle);
 
     const glow = ["⚫🌑", "⚫🕯️", "⚫🌫️", "⚫🜂"];
     const glowSymbol = glow[Math.floor(Math.random() * glow.length)];

@@ -15,7 +15,7 @@ const command: CommandModule = {
       return;
     }
 
-    const userRecord = sigilStore.getUser(interaction.guild.id, interaction.user.id);
+    const userRecord = await sigilStore.getUser(interaction.guild.id, interaction.user.id);
 
     await interaction.reply({
       embeds: [

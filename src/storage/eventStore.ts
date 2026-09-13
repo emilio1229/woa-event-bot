@@ -1,52 +1,31 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../database/prisma.js";
 import type { CreateEventInput, EventRecord, RsvpState } from "../services/eventTypes.js";
-import { logError } from "../utils/logger.js";
-import { writeJsonAtomic } from "../utils/atomicJson.js";
 
-interface EventStoreState {
-  events: EventRecord[];
+function toEventRecord(event: {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string | null;
+  title: string;
+  notes: string | null;
+  hostId: string;
+  creatorId: string;
+  timezone: string;
+  startAtIso: string;
+  startAtUnix: number;
+  createdAtIso: string;
+  rsvps: Prisma.JsonValue;
+}): EventRecord {
+  return {
+    ...event,
+    rsvps: (event.rsvps ?? {}) as Record<string, RsvpState>
+  };
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, "..", "..", "data");
-const DATA_PATH = path.join(DATA_DIR, "events.json");
-
 class EventStore {
-  private state: EventStoreState;
-
-  constructor() {
-    this.state = this.load();
-  }
-
-  private load(): EventStoreState {
-    try {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-
-      if (!fs.existsSync(DATA_PATH)) {
-        return { events: [] };
-      }
-
-      const raw = fs.readFileSync(DATA_PATH, "utf8");
-      const parsed = JSON.parse(raw) as Partial<EventStoreState>;
-
-      return {
-        events: Array.isArray(parsed.events) ? parsed.events : []
-      };
-    } catch (error) {
-      logError("Failed to load event store.", error);
-      return { events: [] };
-    }
-  }
-
-  private persist() {
-    writeJsonAtomic(DATA_PATH, this.state);
-  }
-
-  create(input: CreateEventInput): EventRecord {
+  async create(input: CreateEventInput): Promise<EventRecord> {
     const event: EventRecord = {
       id: randomUUID(),
       guildId: input.guildId,
@@ -63,62 +42,66 @@ class EventStore {
       rsvps: {}
     };
 
-    this.state.events.push(event);
-    this.persist();
+    await prisma.event.create({
+      data: {
+        ...event,
+        rsvps: event.rsvps as Prisma.InputJsonValue
+      }
+    });
+
     return event;
   }
 
-  getById(eventId: string): EventRecord | undefined {
-    return this.state.events.find(event => event.id === eventId);
+  async getById(eventId: string): Promise<EventRecord | undefined> {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId }
+    });
+
+    return event ? toEventRecord(event) : undefined;
   }
 
-  updateMessageId(eventId: string, messageId: string): EventRecord | undefined {
-    const event = this.getById(eventId);
+  async updateMessageId(eventId: string, messageId: string): Promise<EventRecord | undefined> {
+    const event = await prisma.event.update({
+      where: { id: eventId },
+      data: { messageId }
+    }).catch(() => null);
 
-    if (!event) {
-      return undefined;
-    }
+    return event ? toEventRecord(event) : undefined;
+  }
 
-    event.messageId = messageId;
-    this.persist();
+  async save(event: EventRecord): Promise<EventRecord> {
+    await prisma.event.upsert({
+      where: { id: event.id },
+      create: {
+        ...event,
+        rsvps: event.rsvps as Prisma.InputJsonValue
+      },
+      update: {
+        ...event,
+        rsvps: event.rsvps as Prisma.InputJsonValue
+      }
+    });
+
     return event;
   }
 
-  save(event: EventRecord): EventRecord {
-    const eventIndex = this.state.events.findIndex(current => current.id === event.id);
+  async delete(eventId: string): Promise<boolean> {
+    const result = await prisma.event.deleteMany({
+      where: { id: eventId }
+    });
 
-    if (eventIndex === -1) {
-      this.state.events.push(event);
-    } else {
-      this.state.events[eventIndex] = event;
-    }
-
-    this.persist();
-    return event;
+    return result.count > 0;
   }
 
-  delete(eventId: string): boolean {
-    const nextEvents = this.state.events.filter(event => event.id !== eventId);
-
-    if (nextEvents.length === this.state.events.length) {
-      return false;
-    }
-
-    this.state.events = nextEvents;
-    this.persist();
-    return true;
-  }
-
-  updateRsvp(eventId: string, userId: string, state: RsvpState): EventRecord | undefined {
-    const event = this.getById(eventId);
+  async updateRsvp(eventId: string, userId: string, state: RsvpState): Promise<EventRecord | undefined> {
+    const event = await this.getById(eventId);
 
     if (!event) {
       return undefined;
     }
 
     event.rsvps[userId] = state;
-    this.persist();
-    return event;
+    return this.save(event);
   }
 }
 

@@ -1,8 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
-import { writeJsonAtomic } from "./utils/atomicJson.js";
+import { Prisma } from "@prisma/client";
+import { prisma } from "./database/prisma.js";
 import type {
   SigilGuildRecord,
   SigilGuildStats,
@@ -18,70 +16,51 @@ export const SIGILS_PER_RAFFLE_ENTRY = Number.isInteger(configuredSigilRate) && 
   ? configuredSigilRate
   : 100;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, "..", "data");
-const DATA_PATH = path.join(DATA_DIR, "sigils.json");
+function buildDefaultSigilUserRecord(discordUserId: string): SigilUserRecord {
+  return {
+    userId: discordUserId,
+    balance: 0,
+    transactions: []
+  };
+}
+
+function parseSigilTransactions(value: Prisma.JsonValue): SigilTransaction[] {
+  return Array.isArray(value) ? (value as unknown as SigilTransaction[]) : [];
+}
+
+function toSigilUserRecord(account: {
+  guildId: string;
+  discordUserId: string;
+  balance: number;
+  lastDaily: bigint | null;
+  transactions: Prisma.JsonValue;
+}): SigilUserRecord {
+  return {
+    userId: account.discordUserId,
+    balance: account.balance,
+    transactions: parseSigilTransactions(account.transactions),
+    lastDaily: account.lastDaily === null ? undefined : Number(account.lastDaily)
+  };
+}
+
+function toSigilStoreData(accounts: Array<{
+  guildId: string;
+  discordUserId: string;
+  balance: number;
+  lastDaily: bigint | null;
+  transactions: Prisma.JsonValue;
+}>): SigilStoreData {
+  return {
+    guilds: accounts.reduce<SigilStoreData["guilds"]>((guilds, account) => {
+      guilds[account.guildId] ??= { users: {} };
+      guilds[account.guildId].users[account.discordUserId] = toSigilUserRecord(account);
+      return guilds;
+    }, {})
+  };
+}
 
 class SigilStore {
-  private data: SigilStoreData;
-
-  constructor() {
-    this.data = this.load();
-  }
-
-  load(): SigilStoreData {
-    try {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-
-      if (!fs.existsSync(DATA_PATH)) {
-        return { guilds: {} };
-      }
-
-      const raw = fs.readFileSync(DATA_PATH, "utf8");
-      const parsed = JSON.parse(raw) as SigilStoreData;
-      return parsed && typeof parsed === "object" ? parsed : { guilds: {} };
-    } catch (err) {
-      console.error("Failed to load sigil store:", err);
-      return { guilds: {} };
-    }
-  }
-
-  persist() {
-    writeJsonAtomic(DATA_PATH, this.data);
-  }
-
-  save() {
-    this.persist();
-  }
-
-  ensureGuild(guildId: string): SigilGuildRecord {
-    if (!this.data.guilds[guildId]) {
-      this.data.guilds[guildId] = { users: {} };
-    }
-
-    return this.data.guilds[guildId];
-  }
-
-  ensureUser(guildId: string, userId: string): SigilUserRecord {
-    const guild = this.ensureGuild(guildId);
-
-    if (!guild.users[userId]) {
-      guild.users[userId] = {
-        userId,
-        balance: 0,
-        transactions: []
-      };
-    }
-
-    return guild.users[userId];
-  }
-
-  getGuildUsers(guildId: string): Record<string, SigilUserRecord> {
-    return this.ensureGuild(guildId).users;
-  }
-
-  recalculateUser(user: SigilUserRecord) {
+  private recalculateUser(user: SigilUserRecord) {
     let runningBalance = 0;
 
     for (let index = user.transactions.length - 1; index >= 0; index -= 1) {
@@ -92,26 +71,90 @@ class SigilStore {
     user.balance = runningBalance;
   }
 
-  getUser(guildId: string, userId: string): SigilUserRecord {
-    return this.ensureUser(guildId, userId);
+  private async getAccount(guildId: string, userId: string) {
+    return prisma.sigilAccount.findUnique({
+      where: {
+        guildId_discordUserId: {
+          guildId,
+          discordUserId: userId
+        }
+      }
+    });
   }
 
-  getBalance(guildId: string, userId: string): number {
-    return this.getUser(guildId, userId).balance;
+  private async writeUser(guildId: string, user: SigilUserRecord): Promise<void> {
+    await prisma.sigilAccount.upsert({
+      where: {
+        guildId_discordUserId: {
+          guildId,
+          discordUserId: user.userId
+        }
+      },
+      create: {
+        guildId,
+        discordUserId: user.userId,
+        balance: user.balance,
+        transactions: user.transactions as unknown as Prisma.InputJsonValue,
+        lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily)
+      },
+      update: {
+        balance: user.balance,
+        transactions: user.transactions as unknown as Prisma.InputJsonValue,
+        lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily)
+      }
+    });
   }
 
-  addTransaction(
+  async load(): Promise<SigilStoreData> {
+    const accounts = await prisma.sigilAccount.findMany();
+    return toSigilStoreData(accounts);
+  }
+
+  async persist(): Promise<void> {}
+
+  async save(): Promise<void> {}
+
+  async ensureGuild(guildId: string): Promise<SigilGuildRecord> {
+    return {
+      users: await this.getGuildUsers(guildId)
+    };
+  }
+
+  async ensureUser(guildId: string, userId: string): Promise<SigilUserRecord> {
+    return this.getUser(guildId, userId);
+  }
+
+  async getGuildUsers(guildId: string): Promise<Record<string, SigilUserRecord>> {
+    const accounts = await prisma.sigilAccount.findMany({
+      where: { guildId }
+    });
+    return accounts.reduce<Record<string, SigilUserRecord>>((users, account) => {
+      users[account.discordUserId] = toSigilUserRecord(account);
+      return users;
+    }, {});
+  }
+
+  async getUser(guildId: string, userId: string): Promise<SigilUserRecord> {
+    const account = await this.getAccount(guildId, userId);
+    return account ? toSigilUserRecord(account) : buildDefaultSigilUserRecord(userId);
+  }
+
+  async getBalance(guildId: string, userId: string): Promise<number> {
+    return (await this.getUser(guildId, userId)).balance;
+  }
+
+  async addTransaction(
     guildId: string,
     userId: string,
     amount: number,
     reason: string,
     metadata: SigilTransactionMetadata = {}
-  ): { user: SigilUserRecord; transaction: SigilTransaction } {
+  ): Promise<{ user: SigilUserRecord; transaction: SigilTransaction }> {
     if (!Number.isInteger(amount) || amount === 0) {
       throw new Error("Sigil amount must be a non-zero integer.");
     }
 
-    const user = this.ensureUser(guildId, userId);
+    const user = await this.getUser(guildId, userId);
     const nextBalance = user.balance + amount;
 
     if (nextBalance < 0) {
@@ -130,12 +173,12 @@ class SigilStore {
     user.balance = nextBalance;
     user.transactions.unshift(transaction);
 
-    this.persist();
+    await this.writeUser(guildId, user);
     return { user, transaction };
   }
 
-  rollbackTransaction(guildId: string, userId: string, transactionId: string): boolean {
-    const user = this.ensureUser(guildId, userId);
+  async rollbackTransaction(guildId: string, userId: string, transactionId: string): Promise<boolean> {
+    const user = await this.getUser(guildId, userId);
     const index = user.transactions.findIndex(transaction => transaction.id === transactionId);
 
     if (index === -1) {
@@ -144,40 +187,40 @@ class SigilStore {
 
     user.transactions.splice(index, 1);
     this.recalculateUser(user);
-    this.persist();
+    await this.writeUser(guildId, user);
     return true;
   }
 
-  award(guildId: string, userId: string, amount: number, reason: string, actorId?: string): SigilUserRecord {
-    return this.addTransaction(guildId, userId, amount, reason, {
+  async award(guildId: string, userId: string, amount: number, reason: string, actorId?: string): Promise<SigilUserRecord> {
+    return (await this.addTransaction(guildId, userId, amount, reason, {
       actorId,
       type: amount > 0 ? "award" : "removal"
-    }).user;
+    })).user;
   }
 
-  awardSigils(
+  async awardSigils(
     guildId: string,
     userId: string,
     amount: number,
     reason: string,
     actorId = "system"
-  ): SigilUserRecord {
+  ): Promise<SigilUserRecord> {
     return this.award(guildId, userId, amount, reason, actorId);
   }
 
-  redeem(
+  async redeem(
     guildId: string,
     userId: string,
     entryCount: number,
     raffleId: string,
     raffleName: string
-  ): SigilRedemptionResult {
+  ): Promise<SigilRedemptionResult> {
     if (!Number.isInteger(entryCount) || entryCount <= 0) {
       throw new Error("Entry count must be a positive integer.");
     }
 
     const sigilCost = entryCount * SIGILS_PER_RAFFLE_ENTRY;
-    const result = this.addTransaction(
+    const result = await this.addTransaction(
       guildId,
       userId,
       -sigilCost,
@@ -198,20 +241,31 @@ class SigilStore {
     };
   }
 
-  getTransactions(guildId: string, userId: string, limit = 10): SigilTransaction[] {
-    return this.getUser(guildId, userId).transactions.slice(0, limit);
+  async setLastDaily(guildId: string, userId: string, lastDaily: number): Promise<void> {
+    const user = await this.getUser(guildId, userId);
+    user.lastDaily = lastDaily;
+    await this.writeUser(guildId, user);
   }
 
-  getLeaderboard(guildId: string, limit = 10): SigilUserRecord[] {
-    const guild = this.ensureGuild(guildId);
-
-    return Object.values(guild.users)
-      .sort((a, b) => b.balance - a.balance || b.transactions.length - a.transactions.length)
-      .slice(0, limit);
+  async getTransactions(guildId: string, userId: string, limit = 10): Promise<SigilTransaction[]> {
+    return (await this.getUser(guildId, userId)).transactions.slice(0, limit);
   }
 
-  getGuildStats(guildId: string): SigilGuildStats {
-    const guild = this.ensureGuild(guildId);
+  async getLeaderboard(guildId: string, limit = 10): Promise<SigilUserRecord[]> {
+    const accounts = await prisma.sigilAccount.findMany({
+      where: { guildId },
+      orderBy: [
+        { balance: "desc" },
+        { updatedAt: "desc" }
+      ],
+      take: limit
+    });
+
+    return accounts.map(toSigilUserRecord);
+  }
+
+  async getGuildStats(guildId: string): Promise<SigilGuildStats> {
+    const guild = await this.ensureGuild(guildId);
     const users = Object.values(guild.users);
 
     let totalAwarded = 0;

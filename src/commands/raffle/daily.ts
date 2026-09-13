@@ -17,7 +17,7 @@ const command: CommandModule = {
 
     const guildId = interaction.guild.id;
     const userId = interaction.user.id;
-    const userData = sigilStore.getUser(guildId, userId);
+    const userData = await sigilStore.getUser(guildId, userId);
     userData.lastDaily ??= 0;
 
     const now = Date.now();
@@ -38,9 +38,8 @@ const command: CommandModule = {
       return;
     }
 
-    sigilStore.award(guildId, userId, 1, "Daily reward");
-    userData.lastDaily = now;
-    sigilStore.persist();
+    await sigilStore.award(guildId, userId, 1, "Daily reward");
+    await sigilStore.setLastDaily(guildId, userId, now);
 
     const successEmbed = new EmbedBuilder()
       .setColor("#55ff55")

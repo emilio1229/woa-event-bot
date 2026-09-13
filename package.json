@@ -4,20 +4,24 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "test": "npm run build && node --test test/timeParser.test.mjs",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "deploy": "npm run build && node dist/deploy-commands.js"
+    "deploy": "npm run build && node dist/deploy-commands.js",
+    "db:push": "prisma db push"
   },
   "dependencies": {
+    "@prisma/client": "^6.15.0",
     "discord.js": "^14.27.0",
     "dotenv": "^16.4.5",
+    "fastify": "^5.6.0",
     "luxon": "^3.7.2"
   },
   "devDependencies": {
     "@types/luxon": "^3.7.5",
     "@types/node": "^22.20.2",
+    "prisma": "^6.15.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }

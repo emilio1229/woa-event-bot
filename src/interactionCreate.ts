@@ -35,7 +35,7 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "An unexpected error occurred.";
 }
 
-function getRaffleIdFromButton(interaction: ButtonInteraction): string | null {
+async function getRaffleIdFromButton(interaction: ButtonInteraction): Promise<string | null> {
   if (interaction.customId === "bindSoul" || interaction.customId === "unbindSoul") {
     return raffleStore.getIdByMessage(interaction.message?.id);
   }
@@ -57,7 +57,7 @@ async function handleStatusSelection(interaction: StringSelectMenuInteraction): 
   } catch {}
 
   const selectedId = interaction.values[0];
-  const raffle = raffleStore.getById(selectedId);
+  const raffle = await raffleStore.getById(selectedId);
 
   if (!raffle) {
     try {
@@ -95,7 +95,7 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
   } catch {}
 
   const selectedId = interaction.values[0];
-  const raffle = raffleStore.getById(selectedId);
+  const raffle = await raffleStore.getById(selectedId);
 
   if (!raffle) {
     try {
@@ -109,7 +109,7 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
   }
 
   try {
-    raffleStore.markEnded(raffle.id);
+    await raffleStore.markEnded(raffle.id);
     raffle.ended = true;
     const entries = raffle.entries ?? [];
     let winnerId: string | null = null;
@@ -223,8 +223,8 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
         return;
       }
 
-      const raffleId = getRaffleIdFromButton(interaction);
-      const raffle = raffleId ? raffleStore.getById(raffleId) : null;
+      const raffleId = await getRaffleIdFromButton(interaction);
+      const raffle = raffleId ? await raffleStore.getById(raffleId) : null;
 
       if ((interaction.customId === "bindSoul" || interaction.customId.startsWith("bindSoul_")) && raffleId && raffle) {
         await handleBindSoul(interaction, raffleId);
@@ -261,7 +261,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const raffleId = interaction.fields.getTextInputValue("sigil_raffle_id").trim();
       const entryCountRaw = interaction.fields.getTextInputValue("sigil_entry_count").trim();
       const entryCount = Number.parseInt(entryCountRaw, 10);
-      const raffle = raffleStore.getById(raffleId);
+      const raffle = await raffleStore.getById(raffleId);
 
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) {
         await interaction.editReply({ content: "❌ That raffle is not active right now." });
@@ -276,7 +276,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       try {
         await withRaffleEntryLock(raffle.id, async () => {
           const originalEntries = [...(raffle.entries ?? [])];
-          const redemption = sigilStore.redeem(
+          const redemption = await sigilStore.redeem(
             guild.id,
             interaction.user.id,
             entryCount,
@@ -305,11 +305,11 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
             });
           } catch {
             raffle.entries = originalEntries;
-            sigilStore.rollbackTransaction(guild.id, interaction.user.id, redemption.transaction.id);
+            await sigilStore.rollbackTransaction(guild.id, interaction.user.id, redemption.transaction.id);
             throw new Error("The ritual display could not be updated. Your sigils were not spent.");
           }
 
-          raffleStore.save(raffle);
+          await raffleStore.save(raffle);
 
           await interaction.editReply({
             embeds: [buildRedeemSuccessEmbed(raffle, entryCount, redemption.sigilCost, redemption.user.balance)]
