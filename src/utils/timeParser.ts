@@ -1,16 +1,9 @@
-// FINAL NATURAL-LANGUAGE TIME PARSER (timezone-aware, build-safe)
-
 export function parseTime(input: string, timezone: string): number | null {
   input = input.trim().toLowerCase();
 
-  // ------------------------------------------------------------
-  // Helper: convert local date/time to correct timezone
-  // ------------------------------------------------------------
   function toTZ(date: Date): number {
-    // Convert JS local date → UTC → target timezone offset
     const utc = date.getTime() + date.getTimezoneOffset() * 60000;
 
-    // Timezone offset map (static offsets, DST handled by Discord)
     const offsets: Record<string, number> = {
       "America/Phoenix": -7,
       "America/Los_Angeles": -8,
@@ -27,9 +20,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return utc + hours * 3600000;
   }
 
-  // ------------------------------------------------------------
-  // DURATIONS: "in 3 hours", "in 2 days"
-  // ------------------------------------------------------------
   const durationMatch = input.match(/^in\s+(\d+)\s*(seconds?|minutes?|hours?|days?)$/);
   if (durationMatch) {
     const value = parseInt(durationMatch[1], 10);
@@ -49,9 +39,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return Date.now() + value * multipliers[unit];
   }
 
-  // ------------------------------------------------------------
-  // TOMORROW
-  // ------------------------------------------------------------
   if (input.startsWith("tomorrow")) {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -74,9 +61,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return toTZ(tomorrow);
   }
 
-  // ------------------------------------------------------------
-  // TONIGHT
-  // ------------------------------------------------------------
   if (input.startsWith("tonight")) {
     const now = new Date();
     const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
@@ -97,9 +81,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return toTZ(now);
   }
 
-  // ------------------------------------------------------------
-  // THIS WEEKEND (Saturday)
-  // ------------------------------------------------------------
   if (input.startsWith("this weekend")) {
     const now = new Date();
     const day = now.getDay();
@@ -129,9 +110,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return toTZ(weekend);
   }
 
-  // ------------------------------------------------------------
-  // NEXT MONTH
-  // ------------------------------------------------------------
   if (input.startsWith("next month")) {
     const now = new Date();
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -154,9 +132,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return toTZ(nextMonth);
   }
 
-  // ------------------------------------------------------------
-  // WEEKDAYS: "friday 5pm", "next friday 6pm"
-  // ------------------------------------------------------------
   const weekdayMatch = input.match(
     /^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/
   );
@@ -207,9 +182,6 @@ export function parseTime(input: string, timezone: string): number | null {
     return toTZ(target);
   }
 
-  // ------------------------------------------------------------
-  // MM/DD/YYYY or MM/DD/YY with optional time
-  // ------------------------------------------------------------
   const dateMatch = input.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/
   );
