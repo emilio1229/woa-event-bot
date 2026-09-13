@@ -73,6 +73,7 @@ The bot is currently designed around four command groups:
 - `PORT` — Railway-provided HTTP port; takes precedence over `API_PORT` when present
 - `API_HOST` — Fastify bind host, default `0.0.0.0`
 - `API_PORT` — Fastify bind port, default `3000`
+- `API_KEY` — required secret; callers must send it as the `x-api-key` header on all `/api/*` routes
 - `COUNCIL_ROLE_IDS` — optional comma-separated Discord role IDs for the council endpoint
 
 ## Railway Setup
