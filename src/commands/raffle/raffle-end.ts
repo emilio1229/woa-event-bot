@@ -89,6 +89,8 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     await raffleStore.save(raffle);
   }
 
+  await closeRaffleThread(interaction.client, raffle);
+
   const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
   const embed = new EmbedBuilder()
     .setTitle(`${glow[Math.floor(Math.random() * glow.length)]} Ritual Concluded`)
@@ -165,8 +167,6 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
   }
 
   await raffleStore.end(raffle.id);
-
-  await closeRaffleThread(interaction.client, raffle);
 
   await interaction.reply({
     content: "🔮 The ritual has been ended.",

@@ -52,6 +52,8 @@ export function startAutoEndLoop(client: BotClient): void {
           console.log(`[autoEndManager] No entries for raffle ${raffle.id}`);
         }
 
+        await closeRaffleThread(client, raffle);
+
         try {
           if (raffle.channelId && raffle.messageId) {
             const channel = await client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(error => {
@@ -132,7 +134,6 @@ export function startAutoEndLoop(client: BotClient): void {
 
         if (announcementSent) {
           try {
-            await closeRaffleThread(client, raffle);
             await raffleStore.end(raffle.id);
             console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
           } catch (err) {
