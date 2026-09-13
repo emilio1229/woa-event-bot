@@ -62,6 +62,7 @@ async function reconcileGuild(guild: Guild) {
     await discordSyncStateRepository.markSyncSuccess(guild.id, members.length, roles.length);
     logInfo("Discord reconciliation sync completed.", {
       guildId: guild.id,
+      guildName: guild.name,
       memberCount: members.length,
       roleCount: roles.length
     });
