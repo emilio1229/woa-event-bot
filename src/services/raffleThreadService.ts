@@ -35,7 +35,7 @@ export function getRaffleMessageChannelId(raffle: Raffle): string {
   return raffle.threadId ?? raffle.channelId;
 }
 
-/** Locks and archives the raffle's linked thread once the raffle has ended. No-op if there is no thread. */
+/** Deletes the raffle's linked thread once the raffle has ended. No-op if there is no thread. */
 export async function closeRaffleThread(client: Client, raffle: Raffle): Promise<void> {
   if (!raffle.threadId) {
     return;
@@ -48,9 +48,8 @@ export async function closeRaffleThread(client: Client, raffle: Raffle): Promise
       return;
     }
 
-    await channel.setLocked(true, "Raffle ended").catch(() => {});
-    await channel.setArchived(true, "Raffle ended").catch(() => {});
+    await channel.delete("Raffle ended").catch(() => {});
   } catch (error) {
-    logError("Failed to close raffle thread.", error, { raffleId: raffle.id, threadId: raffle.threadId });
+    logError("Failed to delete raffle thread.", error, { raffleId: raffle.id, threadId: raffle.threadId });
   }
 }
