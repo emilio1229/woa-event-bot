@@ -35,7 +35,7 @@ const LOCALE_TIMEZONE_MAP: Record<string, string> = {
   "pl-PL": "Europe/Warsaw",
 
   // Russia
-  "ru-RU": "Europe/Moscow",
+  "ru-RU": "Europe/Moscow"
 };
 
 export function getTimezoneForLocale(locale?: string | null): string {
