@@ -31,6 +31,23 @@ export function normalizeTimezone(input?: string | null): string | null {
 }
 
 // ------------------------------------------------------------
+// TIME PARSER (12-hour)
+// ------------------------------------------------------------
+function parseTimeOnly(timeStr: string): { hour: number; minute: number; second: number; millisecond: number } | null {
+  const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
+  if (!match) return null;
+
+  let hour = parseInt(match[1]);
+  const minute = match[2] ? parseInt(match[2]) : 0;
+  const ampm = match[3].toUpperCase();
+
+  if (ampm === "PM" && hour !== 12) hour += 12;
+  if (ampm === "AM" && hour === 12) hour = 0;
+
+  return { hour, minute, second: 0, millisecond: 0 };
+}
+
+// ------------------------------------------------------------
 // NATURAL LANGUAGE: "in 3 hours", "in 2 days"
 // ------------------------------------------------------------
 function parseInDuration(dateStr: string, zone: string): DateTime | null {
@@ -51,7 +68,7 @@ function parseTomorrow(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return now.plus({ days: 1 }).set(time);
+  return now.plus({ days: 1 }).set({ ...time });
 }
 
 // ------------------------------------------------------------
@@ -62,7 +79,7 @@ function parseTonight(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return now.set(time);
+  return now.set({ ...time });
 }
 
 // ------------------------------------------------------------
@@ -79,7 +96,7 @@ function parseThisWeekend(timeStr: string, zone: string): DateTime | null {
     weekend = weekend.plus({ days: 1 });
   }
 
-  return weekend.set(time);
+  return weekend.set({ ...time });
 }
 
 // ------------------------------------------------------------
@@ -92,7 +109,7 @@ function parseNextMonth(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return nextMonth.set(time);
+  return nextMonth.set({ ...time });
 }
 
 // ------------------------------------------------------------
@@ -122,7 +139,7 @@ function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime 
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return eventDate.set(time);
+  return eventDate.set({ ...time });
 }
 
 // ------------------------------------------------------------
@@ -141,23 +158,6 @@ function parseStandard(dateStr: string, timeStr: string, zone: string): DateTime
   if (!time) return null;
 
   return DateTime.fromObject({ year, month, day, ...time }, { zone });
-}
-
-// ------------------------------------------------------------
-// TIME PARSER (12-hour)
-// ------------------------------------------------------------
-function parseTimeOnly(timeStr: string): { hour: number; minute: number; second: number; millisecond: number } | null {
-  const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!match) return null;
-
-  let hour = parseInt(match[1]);
-  const minute = match[2] ? parseInt(match[2]) : 0;
-  const ampm = match[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  return { hour, minute, second: 0, millisecond: 0 };
 }
 
 // ------------------------------------------------------------
@@ -200,4 +200,11 @@ export function parseEventStart(
 // ------------------------------------------------------------
 export function formatDiscordTimestamp(unixSeconds: number, style: "F" | "R" = "F"): string {
   return `<t:${unixSeconds}:${style}>`;
+}
+
+// ------------------------------------------------------------
+// REQUIRED BY YOUR EVENT COMMAND
+// ------------------------------------------------------------
+export function isFutureUnixTimestamp(unixSeconds: number): boolean {
+  return unixSeconds > Math.floor(Date.now() / 1000);
 }
