@@ -2,6 +2,7 @@ import { EmbedBuilder, MessageFlags, type ButtonInteraction, type Message } from
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { withRaffleEntryLock } from "../raffleEntryLock.js";
 import { raffleStore } from "../raffleStore.js";
+import { getRaffleMessageChannelId } from "../services/raffleThreadService.js";
 
 function isMessageCapableChannel(channel: unknown): channel is {
   send: (payload: unknown) => Promise<unknown>;
@@ -53,7 +54,7 @@ export async function handleUnbindSoul(interaction: ButtonInteraction, raffleId:
     removeSingleEntry(raffle.entries, userId);
 
     try {
-      const channel = await interaction.client.channels.fetch(raffle.channelId);
+      const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
 
       if (!isMessageCapableChannel(channel) || !raffle.messageId) {
         throw new Error("The ritual could not be updated.");

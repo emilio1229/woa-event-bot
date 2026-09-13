@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { AttachmentBuilder, EmbedBuilder, type Message } from "discord.js";
 import type { BotClient } from "./index.js";
 import { raffleStore } from "./raffleStore.js";
-import { closeRaffleThread } from "./services/raffleThreadService.js";
+import { closeRaffleThread, getRaffleMessageChannelId } from "./services/raffleThreadService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,7 +54,7 @@ export function startAutoEndLoop(client: BotClient): void {
 
         try {
           if (raffle.channelId && raffle.messageId) {
-            const channel = await client.channels.fetch(raffle.channelId).catch(error => {
+            const channel = await client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(error => {
               console.error(`[autoEndManager] failed to fetch channel ${raffle.channelId}:`, error);
               return null;
             });

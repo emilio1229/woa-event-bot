@@ -10,7 +10,7 @@ import {
   type Message
 } from "discord.js";
 import { raffleStore } from "../../raffleStore.js";
-import { closeRaffleThread } from "../../services/raffleThreadService.js";
+import { closeRaffleThread, getRaffleMessageChannelId } from "../../services/raffleThreadService.js";
 import type { Raffle } from "../../types/legacy.js";
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -105,17 +105,21 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     .setColor(0x4B0082);
 
   try {
-    const channel = await interaction.client.channels.fetch(raffle.channelId);
+    const announcementChannel = await interaction.client.channels.fetch(raffle.channelId);
 
-    if (!isMessageCapableChannel(channel)) {
+    if (!isMessageCapableChannel(announcementChannel)) {
       throw new Error("The raffle channel is no longer available.");
     }
 
     if (raffle.messageId) {
-      const message = await channel.messages.fetch(raffle.messageId).catch(() => null);
+      const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null);
 
-      if (message) {
-        await message.edit({ components: [] });
+      if (isMessageCapableChannel(messageChannel)) {
+        const message = await messageChannel.messages.fetch(raffle.messageId).catch(() => null);
+
+        if (message) {
+          await message.edit({ components: [] });
+        }
       }
 
       if (winnerId) {
@@ -135,7 +139,7 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
 
         const attachment = new AttachmentBuilder("./assets/woa_winner_bg.png", { name: "woa_winner_bg.png" });
 
-        await channel.send({
+        await announcementChannel.send({
           embeds: [grandEmbed],
           files: [attachment],
           allowedMentions: {
@@ -144,12 +148,12 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
           }
         });
       } else {
-        await channel.send({ embeds: [embed] });
+        await announcementChannel.send({ embeds: [embed] });
       }
     } else if (winnerId) {
       throw new Error("The raffle message is missing, so the winner cannot be announced safely.");
     } else {
-      await channel.send({ embeds: [embed] });
+      await announcementChannel.send({ embeds: [embed] });
     }
   } catch (error) {
     console.error("Manual end failed:", error);

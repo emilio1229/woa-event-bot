@@ -2,6 +2,7 @@ import { EmbedBuilder, MessageFlags, type ButtonInteraction, type Message } from
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { withRaffleEntryLock } from "../raffleEntryLock.js";
 import { raffleStore } from "../raffleStore.js";
+import { getRaffleMessageChannelId } from "../services/raffleThreadService.js";
 
 function isDiscordErrorWithCode(error: unknown, code: number): error is { code: number } {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === code;
@@ -85,7 +86,7 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
     raffle.entries.push(userId);
 
     try {
-      const channel = await interaction.client.channels.fetch(raffle.channelId);
+      const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
 
       if (!isMessageCapableChannel(channel) || !raffle.messageId) {
         throw new Error("The ritual display could not be updated. You were not joined.");

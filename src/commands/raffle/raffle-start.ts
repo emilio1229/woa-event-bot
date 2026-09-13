@@ -12,7 +12,7 @@ import {
 
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
-import { createRaffleThread } from "../../services/raffleThreadService.js";
+import { createStandaloneRaffleThread } from "../../services/raffleThreadService.js";
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
 
@@ -162,6 +162,13 @@ const command: CommandModule = {
         boundUsers: []
       });
 
+      const thread = await createStandaloneRaffleThread(channel, raffle);
+      const destination = thread ?? channel;
+
+      if (thread) {
+        await raffleStore.setThreadId(raffle.id, thread.id);
+      }
+
       const announcementEmbed = new EmbedBuilder()
         .setTitle("🔮 THE RITUAL BEGINS")
         .setDescription(
@@ -176,7 +183,7 @@ const command: CommandModule = {
         )
         .setColor(0x4B0082);
 
-        await channel.send({
+        await destination.send({
           embeds: [announcementEmbed],
           allowedMentions: { roles: [tagRole] }
         });
@@ -192,7 +199,7 @@ const command: CommandModule = {
           .setStyle(ButtonStyle.Secondary)
       );
 
-      const raffleMessage = await channel.send({
+      const raffleMessage = await destination.send({
         embeds: [buildActiveRaffleEmbed(raffle)],
         components: [buttonRow],
         files: ["./assets/woa_ritual_bg.png"]
@@ -200,14 +207,8 @@ const command: CommandModule = {
 
   await raffleStore.setMessageId(raffle.id, raffleMessage.id);
 
-      const threadId = await createRaffleThread(raffleMessage, raffle);
-
-      if (threadId) {
-        await raffleStore.setThreadId(raffle.id, threadId);
-      }
-
       await menuMessage.edit({
-        content: "The ritual has begun.",
+        content: thread ? `The ritual has begun in <#${thread.id}>!` : "The ritual has begun.",
         components: []
       });
     });

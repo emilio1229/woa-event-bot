@@ -17,7 +17,7 @@ import { handleUnbindSoul } from "./buttons/unbindSoul.js";
 import { buildActiveRaffleEmbed } from "./embedBuilder.js";
 import { raffleStore } from "./raffleStore.js";
 import { withRaffleEntryLock } from "./raffleEntryLock.js";
-import { closeRaffleThread } from "./services/raffleThreadService.js";
+import { closeRaffleThread, getRaffleMessageChannelId } from "./services/raffleThreadService.js";
 import { sigilStore } from "./sigilStore.js";
 import { buildRedeemSuccessEmbed } from "./sigilUtils.js";
 
@@ -122,7 +122,7 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
     await closeRaffleThread(interaction.client, raffle);
 
     try {
-      const channel = await interaction.client.channels.fetch(raffle.channelId);
+      const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
 
       if (isMessageCapableChannel(channel) && raffle.messageId) {
         const message = await channel.messages.fetch(raffle.messageId);
@@ -294,7 +294,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
           }
 
           try {
-            const channel = await interaction.client.channels.fetch(raffle.channelId);
+            const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
 
             if (!isMessageCapableChannel(channel) || !raffle.messageId) {
               throw new Error("The ritual display could not be updated. Your sigils were not spent.");
