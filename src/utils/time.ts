@@ -1,6 +1,9 @@
 import { DateTime, IANAZone } from "luxon";
 import { env } from "../config/env.js";
 
+// ------------------------------------------------------------
+// TIMEZONE ALIASES
+// ------------------------------------------------------------
 const TIMEZONE_ALIASES: Record<string, string> = {
   UTC: "UTC",
   GMT: "UTC",
@@ -20,25 +23,33 @@ export interface ParsedEventStart {
   startAtUnix: number;
 }
 
+// ------------------------------------------------------------
+// NORMALIZATION HELPERS
+// ------------------------------------------------------------
 function normalizeTime(time: string): string {
   return time.trim().toUpperCase().replace(/\s+/g, " ");
 }
 
 export function normalizeTimezone(input?: string | null): string | null {
   const raw = input?.trim();
-  const candidate = raw ? TIMEZONE_ALIASES[raw.toUpperCase()] ?? raw : env.defaultEventTimezone;
+  const candidate = raw
+    ? TIMEZONE_ALIASES[raw.toUpperCase()] ?? raw
+    : env.defaultEventTimezone;
+
   return IANAZone.isValidZone(candidate) ? candidate : null;
 }
 
 // ------------------------------------------------------------
 // TIME PARSER (12-hour)
 // ------------------------------------------------------------
-function parseTimeOnly(timeStr: string): { hour: number; minute: number; second: number; millisecond: number } | null {
+function parseTimeOnly(
+  timeStr: string
+): { hour: number; minute: number; second: number; millisecond: number } | null {
   const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
   if (!match) return null;
 
-  let hour = parseInt(match[1]);
-  const minute = match[2] ? parseInt(match[2]) : 0;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
   const ampm = match[3].toUpperCase();
 
   if (ampm === "PM" && hour !== 12) hour += 12;
@@ -54,7 +65,7 @@ function parseInDuration(dateStr: string, zone: string): DateTime | null {
   const match = dateStr.match(/^in\s+(\d+)\s*(seconds?|minutes?|hours?|days?|weeks?|months?)$/i);
   if (!match) return null;
 
-  const value = parseInt(match[1]);
+  const value = parseInt(match[1], 10);
   const unit = match[2].toLowerCase();
 
   return DateTime.now().setZone(zone).plus({ [unit]: value });
@@ -68,7 +79,7 @@ function parseTomorrow(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return now.plus({ days: 1 }).set({ ...time });
+  return now.plus({ days: 1 }).set(time);
 }
 
 // ------------------------------------------------------------
@@ -79,7 +90,7 @@ function parseTonight(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return now.set({ ...time });
+  return now.set(time);
 }
 
 // ------------------------------------------------------------
@@ -96,7 +107,7 @@ function parseThisWeekend(timeStr: string, zone: string): DateTime | null {
     weekend = weekend.plus({ days: 1 });
   }
 
-  return weekend.set({ ...time });
+  return weekend.set(time);
 }
 
 // ------------------------------------------------------------
@@ -109,13 +120,22 @@ function parseNextMonth(timeStr: string, zone: string): DateTime | null {
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return nextMonth.set({ ...time });
+  return nextMonth.set(time);
 }
 
 // ------------------------------------------------------------
 // NATURAL LANGUAGE: "next Friday 6pm" / "Friday 6pm"
+// Luxon weekday: Monday=1 ... Sunday=7
 // ------------------------------------------------------------
-const WEEKDAYS = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+const WEEKDAY_MAP: Record<string, number> = {
+  SUNDAY: 7,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6
+};
 
 function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime | null {
   const match = dateStr.match(/^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/i);
@@ -123,12 +143,12 @@ function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime 
 
   const isNext = !!match[1];
   const weekdayName = match[2].toUpperCase();
-  const targetIndex = WEEKDAYS.indexOf(weekdayName);
+  const targetWeekday = WEEKDAY_MAP[weekdayName];
 
   const now = DateTime.now().setZone(zone);
   let eventDate = now;
 
-  while (eventDate.weekday % 7 !== targetIndex) {
+  while (eventDate.weekday !== targetWeekday) {
     eventDate = eventDate.plus({ days: 1 });
   }
 
@@ -139,7 +159,7 @@ function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime 
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
 
-  return eventDate.set({ ...time });
+  return eventDate.set(time);
 }
 
 // ------------------------------------------------------------
@@ -150,9 +170,9 @@ function parseStandard(dateStr: string, timeStr: string, zone: string): DateTime
   if (!match) return null;
 
   let [_, month, day, year] = match;
-  month = parseInt(month);
-  day = parseInt(day);
-  year = year.length === 2 ? 2000 + parseInt(year) : parseInt(year);
+  month = parseInt(month, 10);
+  day = parseInt(day, 10);
+  year = year.length === 2 ? 2000 + parseInt(year, 10) : parseInt(year, 10);
 
   const time = parseTimeOnly(timeStr);
   if (!time) return null;
