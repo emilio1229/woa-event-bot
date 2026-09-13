@@ -14,7 +14,7 @@ const command: CommandModule = {
     }
 
     const guild = interaction.guild;
-    const allRaffles = raffleStore.all().filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt);
+    const allRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt);
 
     if (allRaffles.length === 0) {
       await interaction.reply({ content: "❌ There are no active rituals at the moment.", flags: MessageFlags.Ephemeral });

@@ -148,7 +148,7 @@ const command: CommandModule = {
       const chosenRolePhrase = ARCANE_ROLE_PHRASES[Math.floor(Math.random() * ARCANE_ROLE_PHRASES.length)];
       const invocationText = "Ancient sigils awaken, humming softly in the astral dark.";
 
-      const raffle = raffleStore.create({
+      const raffle = await raffleStore.create({
         guildId: guild.id,
         channelId: interaction.channelId,
         name,
@@ -197,7 +197,7 @@ const command: CommandModule = {
         files: ["./assets/woa_ritual_bg.png"]
       });
 
-      raffleStore.setMessageId(raffle.id, raffleMessage.id);
+  await raffleStore.setMessageId(raffle.id, raffleMessage.id);
 
       await menuMessage.edit({
         content: "The ritual has begun.",

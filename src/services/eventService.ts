@@ -1,27 +1,27 @@
 import { eventStore } from "../storage/eventStore.js";
 import type { CreateEventInput, EventRecord, EventRsvpSummary, RsvpState } from "./eventTypes.js";
 
-export function createEvent(input: CreateEventInput): EventRecord {
+export async function createEvent(input: CreateEventInput): Promise<EventRecord> {
   return eventStore.create(input);
 }
 
-export function attachEventMessageId(eventId: string, messageId: string): EventRecord | undefined {
+export async function attachEventMessageId(eventId: string, messageId: string): Promise<EventRecord | undefined> {
   return eventStore.updateMessageId(eventId, messageId);
 }
 
-export function getEventById(eventId: string): EventRecord | undefined {
+export async function getEventById(eventId: string): Promise<EventRecord | undefined> {
   return eventStore.getById(eventId);
 }
 
-export function updateEventRsvp(
+export async function updateEventRsvp(
   eventId: string,
   userId: string,
   state: RsvpState
-): EventRecord | undefined {
+): Promise<EventRecord | undefined> {
   return eventStore.updateRsvp(eventId, userId, state);
 }
 
-export function deleteEvent(eventId: string): boolean {
+export async function deleteEvent(eventId: string): Promise<boolean> {
   return eventStore.delete(eventId);
 }
 

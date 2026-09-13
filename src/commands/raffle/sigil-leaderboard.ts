@@ -20,7 +20,7 @@ const command: CommandModule = {
       return;
     }
 
-    const leaderboard = sigilStore.getLeaderboard(guild.id, 10);
+    const leaderboard = await sigilStore.getLeaderboard(guild.id, 10);
     const lines = await Promise.all(
       leaderboard.map(async (entry, index) => {
         const member = await guild.members.fetch(entry.userId).catch(() => null);

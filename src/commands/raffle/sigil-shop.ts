@@ -17,10 +17,9 @@ const command: CommandModule = {
     }
 
     const guild = interaction.guild;
-    const activeRaffles = raffleStore
-      .all()
+    const activeRaffles = (await raffleStore.all())
       .filter(raffle => raffle.guildId === guild.id && Date.now() < raffle.endsAt && !raffle.ended);
-    const balance = sigilStore.getBalance(guild.id, interaction.user.id);
+    const balance = await sigilStore.getBalance(guild.id, interaction.user.id);
 
     await interaction.reply({
       embeds: [buildShopEmbed(activeRaffles, balance)],

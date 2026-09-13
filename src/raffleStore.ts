@@ -1,52 +1,45 @@
-import fs from "node:fs";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
+import { prisma } from "./database/prisma.js";
 import type { CreateRaffleInput, Raffle } from "./types/legacy.js";
-import { writeJsonAtomic } from "./utils/atomicJson.js";
 
-interface RaffleStoreState {
-  raffles: Raffle[];
+function toRaffleRecord(raffle: {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string | null;
+  name: string;
+  prize: string;
+  endsAt: bigint;
+  tagRole: string | null;
+  invocationText: string | null;
+  ritualType: string | null;
+  winnerId: string | null;
+  ended: boolean;
+  entries: string[];
+  boundUsers: string[];
+}): Raffle {
+  return {
+    ...raffle,
+    endsAt: Number(raffle.endsAt),
+    tagRole: raffle.tagRole ?? undefined,
+    invocationText: raffle.invocationText ?? undefined,
+    ritualType: raffle.ritualType ?? undefined,
+    winnerId: raffle.winnerId ?? undefined,
+    messageId: raffle.messageId ?? undefined,
+    boundUsers: raffle.boundUsers.length > 0 ? raffle.boundUsers : []
+  };
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_PATH = path.join(__dirname, "..", "data", "raffles.json");
-
 class RaffleStore {
-  private raffles: Raffle[];
-
-  constructor() {
-    this.raffles = this.load();
-  }
-
-  private load(): Raffle[] {
-    try {
-      if (!fs.existsSync(DATA_PATH)) return [];
-
-      const parsed = JSON.parse(fs.readFileSync(DATA_PATH, "utf8")) as Partial<RaffleStoreState>;
-      return Array.isArray(parsed.raffles) ? parsed.raffles : [];
-    } catch (error) {
-      console.error("Failed to load raffle store:", error);
-      return [];
-    }
-  }
-
-  private persist(): void {
-    writeJsonAtomic(DATA_PATH, { raffles: this.raffles });
-  }
-
   /** Removes raffles that were fully announced and explicitly completed. */
-  cleanup(): void {
-    const activeRaffles = this.raffles.filter(raffle => !raffle.ended);
-    if (activeRaffles.length !== this.raffles.length) {
-      this.raffles = activeRaffles;
-      this.persist();
-    }
+  async cleanup(): Promise<void> {
+    await prisma.raffle.deleteMany({
+      where: { ended: true }
+    });
   }
 
-  create(data: CreateRaffleInput): Raffle {
-    this.cleanup();
+  async create(data: CreateRaffleInput): Promise<Raffle> {
+    await this.cleanup();
 
     const raffle: Raffle = {
       ...data,
@@ -55,65 +48,128 @@ class RaffleStore {
       entries: data.entries ?? []
     };
 
-    this.raffles.push(raffle);
-    this.persist();
+    await prisma.raffle.create({
+      data: {
+        ...raffle,
+        endsAt: BigInt(raffle.endsAt),
+        messageId: raffle.messageId ?? null,
+        tagRole: raffle.tagRole ?? null,
+        invocationText: raffle.invocationText ?? null,
+        ritualType: raffle.ritualType ?? null,
+        winnerId: raffle.winnerId ?? null,
+        boundUsers: raffle.boundUsers ?? []
+      }
+    });
+
     return raffle;
   }
 
-  save(updated: Raffle): void {
-    const index = this.raffles.findIndex(raffle => raffle.id === updated.id);
-    if (index === -1) return;
-
-    this.raffles[index] = updated;
-    this.persist();
+  async save(updated: Raffle): Promise<void> {
+    await prisma.raffle.upsert({
+      where: { id: updated.id },
+      create: {
+        ...updated,
+        endsAt: BigInt(updated.endsAt),
+        messageId: updated.messageId ?? null,
+        tagRole: updated.tagRole ?? null,
+        invocationText: updated.invocationText ?? null,
+        ritualType: updated.ritualType ?? null,
+        winnerId: updated.winnerId ?? null,
+        boundUsers: updated.boundUsers ?? []
+      }
+      ,update: {
+        guildId: updated.guildId,
+        channelId: updated.channelId,
+        messageId: updated.messageId ?? null,
+        name: updated.name,
+        prize: updated.prize,
+        endsAt: BigInt(updated.endsAt),
+        tagRole: updated.tagRole ?? null,
+        invocationText: updated.invocationText ?? null,
+        ritualType: updated.ritualType ?? null,
+        winnerId: updated.winnerId ?? null,
+        ended: updated.ended,
+        entries: updated.entries,
+        boundUsers: updated.boundUsers ?? []
+      }
+    });
   }
 
-  markEnded(raffleId: string): void {
-    const raffle = this.getById(raffleId);
-    if (!raffle) return;
-
-    raffle.ended = true;
-    this.save(raffle);
-    this.cleanup();
+  async markEnded(raffleId: string): Promise<void> {
+    await prisma.raffle.updateMany({
+      where: { id: raffleId },
+      data: { ended: true }
+    });
+    await this.cleanup();
   }
 
-  end(raffleId: string): void {
-    const nextRaffles = this.raffles.filter(raffle => raffle.id !== raffleId);
-    if (nextRaffles.length === this.raffles.length) return;
-
-    this.raffles = nextRaffles;
-    this.persist();
+  async end(raffleId: string): Promise<void> {
+    await prisma.raffle.deleteMany({
+      where: { id: raffleId }
+    });
   }
 
-  all(): Raffle[] {
-    return this.raffles;
+  async all(): Promise<Raffle[]> {
+    const raffles = await prisma.raffle.findMany({
+      orderBy: [
+        { endsAt: "asc" },
+        { createdAt: "asc" }
+      ]
+    });
+
+    return raffles.map(toRaffleRecord);
   }
 
-  getById(id: string): Raffle | undefined {
-    return this.raffles.find(raffle => raffle.id === id);
+  async getById(id: string): Promise<Raffle | undefined> {
+    const raffle = await prisma.raffle.findUnique({
+      where: { id }
+    });
+
+    return raffle ? toRaffleRecord(raffle) : undefined;
   }
 
-  getIdByMessage(messageId: string | undefined): string | null {
-    const raffle = this.raffles.find(current => current.messageId === messageId);
+  async getIdByMessage(messageId: string | undefined): Promise<string | null> {
+    if (!messageId) {
+      return null;
+    }
+
+    const raffle = await prisma.raffle.findFirst({
+      where: { messageId },
+      select: { id: true }
+    });
     return raffle?.id ?? null;
   }
 
-  getByMessageId(messageId: string): Raffle | undefined {
-    return this.raffles.find(raffle => raffle.messageId === messageId);
+  async getByMessageId(messageId: string): Promise<Raffle | undefined> {
+    const raffle = await prisma.raffle.findFirst({
+      where: { messageId }
+    });
+
+    return raffle ? toRaffleRecord(raffle) : undefined;
   }
 
-  setMessageId(raffleId: string, messageId: string): void {
-    const raffle = this.getById(raffleId);
-    if (!raffle) return;
-
-    raffle.messageId = messageId;
-    this.save(raffle);
+  async setMessageId(raffleId: string, messageId: string): Promise<void> {
+    await prisma.raffle.updateMany({
+      where: { id: raffleId },
+      data: { messageId }
+    });
   }
 
-  getActive(guildId: string): Raffle | undefined {
-    return this.raffles.find(
-      raffle => raffle.guildId === guildId && !raffle.ended && Date.now() < raffle.endsAt
-    );
+  async getActive(guildId: string): Promise<Raffle | undefined> {
+    const raffle = await prisma.raffle.findFirst({
+      where: {
+        guildId,
+        ended: false,
+        endsAt: {
+          gt: BigInt(Date.now())
+        }
+      },
+      orderBy: {
+        endsAt: "asc"
+      }
+    });
+
+    return raffle ? toRaffleRecord(raffle) : undefined;
   }
 }
 

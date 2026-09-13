@@ -48,7 +48,7 @@ export async function handleEventRsvpButton(
     return;
   }
 
-  const event = getEventById(parsed.eventId);
+  const event = await getEventById(parsed.eventId);
 
   if (
     !event ||
@@ -62,7 +62,7 @@ export async function handleEventRsvpButton(
     return;
   }
 
-  const updatedEvent = updateEventRsvp(parsed.eventId, interaction.user.id, state);
+  const updatedEvent = await updateEventRsvp(parsed.eventId, interaction.user.id, state);
   if (!updatedEvent) {
     await interaction.reply({
       content: "❌ This gathering is no longer inscribed in the ledger.",

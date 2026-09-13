@@ -44,7 +44,7 @@ const command: CommandModule = {
     }
 
     try {
-      const updatedUser = sigilStore.award(interaction.guild.id, targetUser.id, amount, reason, interaction.user.id);
+      const updatedUser = await sigilStore.award(interaction.guild.id, targetUser.id, amount, reason, interaction.user.id);
       const embed = buildBalanceEmbed(
         targetUser,
         updatedUser.balance,

@@ -19,7 +19,7 @@ export function startAstralSelection(client: Client): void {
       }
 
       for (const [guildId, guild] of client.guilds.cache) {
-        const users = sigilStore.getGuildUsers(guildId);
+        const users = await sigilStore.getGuildUsers(guildId);
         const userIds = Object.keys(users);
 
         if (userIds.length === 0) {
@@ -28,8 +28,7 @@ export function startAstralSelection(client: Client): void {
 
         const randomUserId = userIds[Math.floor(Math.random() * userIds.length)];
         const amount = Math.floor(Math.random() * 3) + 1;
-        sigilStore.awardSigils(guildId, randomUserId, amount, "Astral Selection");
-        sigilStore.save();
+        await sigilStore.awardSigils(guildId, randomUserId, amount, "Astral Selection");
 
         const member = await guild.members.fetch(randomUserId).catch(() => null);
 
