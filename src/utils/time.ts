@@ -8,7 +8,7 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   EDT: "America/New_York",
   CST: "America/Chicago",
   CDT: "America/Chicago",
-  MST: "America/Phoenix", // Phoenix does not use DST
+  MST: "America/Phoenix",
   MDT: "America/Denver",
   PST: "America/Los_Angeles",
   PDT: "America/Los_Angeles"
@@ -20,16 +20,13 @@ export interface ParsedEventStart {
   startAtUnix: number;
 }
 
-function normalizeTimeForComparison(timeInput: string): string {
-  return timeInput.trim().toUpperCase().replace(/\s+/g, " ");
+function normalizeTime(time: string): string {
+  return time.trim().toUpperCase().replace(/\s+/g, " ");
 }
 
 export function normalizeTimezone(input?: string | null): string | null {
-  const rawValue = input?.trim();
-  const candidate = rawValue
-    ? TIMEZONE_ALIASES[rawValue.toUpperCase()] ?? rawValue
-    : env.defaultEventTimezone;
-
+  const raw = input?.trim();
+  const candidate = raw ? TIMEZONE_ALIASES[raw.toUpperCase()] ?? raw : env.defaultEventTimezone;
   return IANAZone.isValidZone(candidate) ? candidate : null;
 }
 
@@ -43,27 +40,18 @@ function parseInDuration(dateStr: string, zone: string): DateTime | null {
   const value = parseInt(match[1]);
   const unit = match[2].toLowerCase();
 
-  const now = DateTime.now().setZone(zone);
-
-  return now.plus({ [unit]: value });
+  return DateTime.now().setZone(zone).plus({ [unit]: value });
 }
 
 // ------------------------------------------------------------
 // NATURAL LANGUAGE: "tomorrow at 7pm"
 // ------------------------------------------------------------
 function parseTomorrow(timeStr: string, zone: string): DateTime | null {
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
-
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
   const now = DateTime.now().setZone(zone);
-  return now.plus({ days: 1 }).set({ hour, minute, second: 0, millisecond: 0 });
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
+
+  return now.plus({ days: 1 }).set(time);
 }
 
 // ------------------------------------------------------------
@@ -71,43 +59,27 @@ function parseTomorrow(timeStr: string, zone: string): DateTime | null {
 // ------------------------------------------------------------
 function parseTonight(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
 
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
-
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  return now.set({ hour, minute, second: 0, millisecond: 0 });
+  return now.set(time);
 }
 
 // ------------------------------------------------------------
 // NATURAL LANGUAGE: "this weekend at noon"
+// Weekend = Saturday
 // ------------------------------------------------------------
 function parseThisWeekend(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
 
-  // Weekend = Saturday
   let weekend = now;
   while (weekend.weekday !== 6) {
     weekend = weekend.plus({ days: 1 });
   }
 
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
-
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  return weekend.set({ hour, minute, second: 0, millisecond: 0 });
+  return weekend.set(time);
 }
 
 // ------------------------------------------------------------
@@ -117,17 +89,10 @@ function parseNextMonth(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
   const nextMonth = now.plus({ months: 1 }).set({ day: 1 });
 
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
 
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  return nextMonth.set({ hour, minute, second: 0, millisecond: 0 });
+  return nextMonth.set(time);
 }
 
 // ------------------------------------------------------------
@@ -136,11 +101,11 @@ function parseNextMonth(timeStr: string, zone: string): DateTime | null {
 const WEEKDAYS = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
 
 function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime | null {
-  const weekdayMatch = dateStr.match(/^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/i);
-  if (!weekdayMatch) return null;
+  const match = dateStr.match(/^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/i);
+  if (!match) return null;
 
-  const isNext = !!weekdayMatch[1];
-  const weekdayName = weekdayMatch[2].toUpperCase();
+  const isNext = !!match[1];
+  const weekdayName = match[2].toUpperCase();
   const targetIndex = WEEKDAYS.indexOf(weekdayName);
 
   const now = DateTime.now().setZone(zone);
@@ -154,45 +119,45 @@ function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime 
     eventDate = eventDate.plus({ days: 7 });
   }
 
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
 
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
-
-  if (ampm === "PM" && hour !== 12) hour += 12;
-  if (ampm === "AM" && hour === 12) hour = 0;
-
-  return eventDate.set({ hour, minute, second: 0, millisecond: 0 });
+  return eventDate.set(time);
 }
 
 // ------------------------------------------------------------
 // STANDARD FORMAT: MM/DD/YYYY 7:30 PM
 // ------------------------------------------------------------
 function parseStandard(dateStr: string, timeStr: string, zone: string): DateTime | null {
-  const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (!dateMatch) return null;
+  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!match) return null;
 
-  let [_, month, day, year] = dateMatch;
+  let [_, month, day, year] = match;
   month = parseInt(month);
   day = parseInt(day);
   year = year.length === 2 ? 2000 + parseInt(year) : parseInt(year);
 
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
-  if (!timeMatch) return null;
+  const time = parseTimeOnly(timeStr);
+  if (!time) return null;
 
-  let hour = parseInt(timeMatch[1]);
-  const minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-  const ampm = timeMatch[3].toUpperCase();
+  return DateTime.fromObject({ year, month, day, ...time }, { zone });
+}
+
+// ------------------------------------------------------------
+// TIME PARSER (12-hour)
+// ------------------------------------------------------------
+function parseTimeOnly(timeStr: string): { hour: number; minute: number; second: number; millisecond: number } | null {
+  const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
+  if (!match) return null;
+
+  let hour = parseInt(match[1]);
+  const minute = match[2] ? parseInt(match[2]) : 0;
+  const ampm = match[3].toUpperCase();
 
   if (ampm === "PM" && hour !== 12) hour += 12;
   if (ampm === "AM" && hour === 12) hour = 0;
 
-  return DateTime.fromObject(
-    { year, month, day, hour, minute },
-    { zone }
-  );
+  return { hour, minute, second: 0, millisecond: 0 };
 }
 
 // ------------------------------------------------------------
@@ -207,7 +172,7 @@ export function parseEventStart(
   if (!zone) return null;
 
   const dateStr = dateInput.trim().toLowerCase();
-  const timeStr = normalizeTimeForComparison(timeInput);
+  const timeStr = normalizeTime(timeInput);
 
   let dt: DateTime | null = null;
 
