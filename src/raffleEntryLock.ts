@@ -1,9 +1,9 @@
-const raffleEntryLocks = new Map();
+const raffleEntryLocks = new Map<string, Promise<void>>();
 
-export async function withRaffleEntryLock(raffleId, callback) {
+export async function withRaffleEntryLock<T>(raffleId: string, callback: () => Promise<T>): Promise<T> {
   const previous = raffleEntryLocks.get(raffleId) ?? Promise.resolve();
-  let release;
-  const current = new Promise(resolve => {
+  let release!: () => void;
+  const current = new Promise<void>(resolve => {
     release = resolve;
   });
 

@@ -1,7 +1,16 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { randomUUID } from "crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import type {
+  SigilGuildRecord,
+  SigilGuildStats,
+  SigilRedemptionResult,
+  SigilStoreData,
+  SigilTransaction,
+  SigilTransactionMetadata,
+  SigilUserRecord
+} from "./types/legacy.js";
 
 const configuredSigilRate = Number.parseInt(process.env.SIGILS_PER_RAFFLE_ENTRY ?? "", 10);
 export const SIGILS_PER_RAFFLE_ENTRY = Number.isInteger(configuredSigilRate) && configuredSigilRate > 0
@@ -14,11 +23,13 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 const DATA_PATH = path.join(DATA_DIR, "sigils.json");
 
 class SigilStore {
+  private data: SigilStoreData;
+
   constructor() {
     this.data = this.load();
   }
 
-  load() {
+  load(): SigilStoreData {
     try {
       fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -27,7 +38,7 @@ class SigilStore {
       }
 
       const raw = fs.readFileSync(DATA_PATH, "utf8");
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as SigilStoreData;
       return parsed && typeof parsed === "object" ? parsed : { guilds: {} };
     } catch (err) {
       console.error("Failed to load sigil store:", err);
@@ -44,7 +55,7 @@ class SigilStore {
     this.persist();
   }
 
-  ensureGuild(guildId) {
+  ensureGuild(guildId: string): SigilGuildRecord {
     if (!this.data.guilds[guildId]) {
       this.data.guilds[guildId] = { users: {} };
     }
@@ -52,7 +63,7 @@ class SigilStore {
     return this.data.guilds[guildId];
   }
 
-  ensureUser(guildId, userId) {
+  ensureUser(guildId: string, userId: string): SigilUserRecord {
     const guild = this.ensureGuild(guildId);
 
     if (!guild.users[userId]) {
@@ -66,11 +77,11 @@ class SigilStore {
     return guild.users[userId];
   }
 
-  getGuildUsers(guildId) {
+  getGuildUsers(guildId: string): Record<string, SigilUserRecord> {
     return this.ensureGuild(guildId).users;
   }
 
-  recalculateUser(user) {
+  recalculateUser(user: SigilUserRecord) {
     let runningBalance = 0;
 
     for (let index = user.transactions.length - 1; index >= 0; index -= 1) {
@@ -81,15 +92,21 @@ class SigilStore {
     user.balance = runningBalance;
   }
 
-  getUser(guildId, userId) {
+  getUser(guildId: string, userId: string): SigilUserRecord {
     return this.ensureUser(guildId, userId);
   }
 
-  getBalance(guildId, userId) {
+  getBalance(guildId: string, userId: string): number {
     return this.getUser(guildId, userId).balance;
   }
 
-  addTransaction(guildId, userId, amount, reason, metadata = {}) {
+  addTransaction(
+    guildId: string,
+    userId: string,
+    amount: number,
+    reason: string,
+    metadata: SigilTransactionMetadata = {}
+  ): { user: SigilUserRecord; transaction: SigilTransaction } {
     if (!Number.isInteger(amount) || amount === 0) {
       throw new Error("Sigil amount must be a non-zero integer.");
     }
@@ -101,7 +118,7 @@ class SigilStore {
       throw new Error("This user does not have enough sigils for that adjustment.");
     }
 
-    const transaction = {
+    const transaction: SigilTransaction = {
       id: randomUUID(),
       timestamp: new Date().toISOString(),
       amount,
@@ -117,7 +134,7 @@ class SigilStore {
     return { user, transaction };
   }
 
-  rollbackTransaction(guildId, userId, transactionId) {
+  rollbackTransaction(guildId: string, userId: string, transactionId: string): boolean {
     const user = this.ensureUser(guildId, userId);
     const index = user.transactions.findIndex(transaction => transaction.id === transactionId);
 
@@ -131,18 +148,30 @@ class SigilStore {
     return true;
   }
 
-  award(guildId, userId, amount, reason, actorId) {
+  award(guildId: string, userId: string, amount: number, reason: string, actorId?: string): SigilUserRecord {
     return this.addTransaction(guildId, userId, amount, reason, {
       actorId,
       type: amount > 0 ? "award" : "removal"
     }).user;
   }
 
-  awardSigils(guildId, userId, amount, reason, actorId = "system") {
+  awardSigils(
+    guildId: string,
+    userId: string,
+    amount: number,
+    reason: string,
+    actorId = "system"
+  ): SigilUserRecord {
     return this.award(guildId, userId, amount, reason, actorId);
   }
 
-  redeem(guildId, userId, entryCount, raffleId, raffleName) {
+  redeem(
+    guildId: string,
+    userId: string,
+    entryCount: number,
+    raffleId: string,
+    raffleName: string
+  ): SigilRedemptionResult {
     if (!Number.isInteger(entryCount) || entryCount <= 0) {
       throw new Error("Entry count must be a positive integer.");
     }
@@ -169,11 +198,11 @@ class SigilStore {
     };
   }
 
-  getTransactions(guildId, userId, limit = 10) {
+  getTransactions(guildId: string, userId: string, limit = 10): SigilTransaction[] {
     return this.getUser(guildId, userId).transactions.slice(0, limit);
   }
 
-  getLeaderboard(guildId, limit = 10) {
+  getLeaderboard(guildId: string, limit = 10): SigilUserRecord[] {
     const guild = this.ensureGuild(guildId);
 
     return Object.values(guild.users)
@@ -181,7 +210,7 @@ class SigilStore {
       .slice(0, limit);
   }
 
-  getGuildStats(guildId) {
+  getGuildStats(guildId: string): SigilGuildStats {
     const guild = this.ensureGuild(guildId);
     const users = Object.values(guild.users);
 

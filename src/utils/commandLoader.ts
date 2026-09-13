@@ -23,7 +23,7 @@ export function getCommandFiles(directory: string): string[] {
       continue;
     }
 
-    if (entry.endsWith(".js")) {
+    if ((entry.endsWith(".js") || entry.endsWith(".ts")) && !entry.endsWith(".d.ts")) {
       results.push(fullPath);
     }
   }

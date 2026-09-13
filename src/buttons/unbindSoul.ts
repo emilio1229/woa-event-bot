@@ -1,27 +1,37 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, MessageFlags, type ButtonInteraction, type Message } from "discord.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { withRaffleEntryLock } from "../raffleEntryLock.js";
 import { raffleStore } from "../raffleStore.js";
 
-function removeSingleEntry(entries, userId) {
+function isMessageCapableChannel(channel: unknown): channel is {
+  send: (payload: unknown) => Promise<unknown>;
+  messages: { fetch: (messageId: string) => Promise<Message> };
+} {
+  return typeof channel === "object" && channel !== null && "send" in channel && "messages" in channel;
+}
+
+function removeSingleEntry(entries: string[], userId: string): void {
   const index = entries.indexOf(userId);
+
   if (index !== -1) {
     entries.splice(index, 1);
   }
 }
 
-function countEntriesForUser(entries, userId) {
+function countEntriesForUser(entries: string[], userId: string): number {
   return entries.filter(id => id === userId).length;
 }
 
-export async function handleUnbindSoul(interaction, raffleId) {
-  return withRaffleEntryLock(raffleId, async () => {
+export async function handleUnbindSoul(interaction: ButtonInteraction, raffleId: string): Promise<void> {
+  await withRaffleEntryLock(raffleId, async () => {
     const raffle = raffleStore.getById(raffleId);
+
     if (!raffle) {
-      return interaction.reply({
+      await interaction.reply({
         content: "❌ This ritual has already ended.",
-        flags: 64
+        flags: MessageFlags.Ephemeral
       });
+      return;
     }
 
     const userId = interaction.user.id;
@@ -29,10 +39,11 @@ export async function handleUnbindSoul(interaction, raffleId) {
     raffle.entries ??= [];
 
     if (!raffle.boundUsers.includes(userId)) {
-      return interaction.reply({
+      await interaction.reply({
         content: "⚫ You are not part of this ritual.",
-        flags: 64
+        flags: MessageFlags.Ephemeral
       });
+      return;
     }
 
     const originalEntries = [...raffle.entries];
@@ -43,21 +54,26 @@ export async function handleUnbindSoul(interaction, raffleId) {
 
     try {
       const channel = await interaction.client.channels.fetch(raffle.channelId);
-      const msg = await channel.messages.fetch(raffle.messageId);
 
-      await msg.edit({
+      if (!isMessageCapableChannel(channel) || !raffle.messageId) {
+        throw new Error("The ritual could not be updated.");
+      }
+
+      const message = await channel.messages.fetch(raffle.messageId);
+      await message.edit({
         embeds: [buildActiveRaffleEmbed(raffle)],
-        components: msg.components,
+        components: message.components,
         files: ["./assets/woa_ritual_bg.png"]
       });
-    } catch (err) {
+    } catch {
       raffle.entries = originalEntries;
       raffle.boundUsers = originalBoundUsers;
 
-      return interaction.reply({
+      await interaction.reply({
         content: "❌ The ritual could not be updated. You remain within the circle.",
-        flags: 64
+        flags: MessageFlags.Ephemeral
       });
+      return;
     }
 
     raffleStore.save(raffle);
@@ -69,21 +85,21 @@ export async function handleUnbindSoul(interaction, raffleId) {
       .setTitle(`${glowSymbol} Ritual Left`)
       .setDescription(
         [
-          `You step away from the ritual circle.`,
-          `The energies dim as your presence fades.`,
-          ``,
+          "You step away from the ritual circle.",
+          "The energies dim as your presence fades.",
+          "",
           `🜂 **Your Remaining Entries:** ${countEntriesForUser(raffle.entries, userId)}`,
           `💠 **Total Participants:** ${raffle.entries.length}`,
-          ``,
-          `⟐ The ritual shifts with your departure.`
+          "",
+          "⟐ The ritual shifts with your departure."
         ].join("\n")
       )
       .setColor(0x2E003E)
       .setFooter({ text: "The ritual calms…" });
 
-    return interaction.reply({
+    await interaction.reply({
       embeds: [embed],
-      flags: 64
+      flags: MessageFlags.Ephemeral
     });
   });
 }
