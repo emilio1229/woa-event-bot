@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
 import { buildApiServer } from "./api/server.js";
 import { assertRuntimeEnv, env } from "./config/env.js";
-import { closePostgresConnection, connectPostgres } from "./database/prisma.js";
+import { applyDatabaseSchema, closePostgresConnection, connectPostgres } from "./database/prisma.js";
 import { registerDiscordSyncHandlers } from "./events/discordSync.js";
 import { registerInteractionCreateHandler } from "./events/interactionCreate.js";
 import { registerReadyHandler } from "./events/ready.js";
@@ -94,6 +94,7 @@ process.once("SIGTERM", () => {
 });
 
 try {
+  applyDatabaseSchema();
   await connectPostgres();
   await client.login(env.token);
   await once(client, Events.ClientReady);

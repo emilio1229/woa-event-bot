@@ -11,8 +11,8 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# db:push runs on every container start so schema changes always reach Postgres,
-# regardless of whether the platform's own start-command override is applied.
+# The app applies the Prisma schema itself at startup (see src/database/prisma.ts),
+# so the container's start command does not need to run db:push separately.
 # Hosts can override the default command with `node dist/deploy-commands.js`
 # after the image is built if they need to register slash commands separately.
-CMD ["sh", "-c", "npm run db:push && npm start"]
+CMD ["npm", "start"]
