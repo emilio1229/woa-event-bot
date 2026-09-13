@@ -24,7 +24,7 @@ export interface ParsedEventStart {
 }
 
 // ------------------------------------------------------------
-// NORMALIZATION HELPERS
+// HELPERS
 // ------------------------------------------------------------
 function normalizeTime(time: string): string {
   return time.trim().toUpperCase().replace(/\s+/g, " ");
@@ -42,9 +42,7 @@ export function normalizeTimezone(input?: string | null): string | null {
 // ------------------------------------------------------------
 // TIME PARSER (12-hour)
 // ------------------------------------------------------------
-function parseTimeOnly(
-  timeStr: string
-): { hour: number; minute: number; second: number; millisecond: number } | null {
+function parseTimeOnly(timeStr: string): { hour: number; minute: number } | null {
   const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
   if (!match) return null;
 
@@ -55,7 +53,7 @@ function parseTimeOnly(
   if (ampm === "PM" && hour !== 12) hour += 12;
   if (ampm === "AM" && hour === 12) hour = 0;
 
-  return { hour, minute, second: 0, millisecond: 0 };
+  return { hour, minute };
 }
 
 // ------------------------------------------------------------
@@ -76,10 +74,15 @@ function parseInDuration(dateStr: string, zone: string): DateTime | null {
 // ------------------------------------------------------------
 function parseTomorrow(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
-  return now.plus({ days: 1 }).set(time);
+  return now.plus({ days: 1 }).set({
+    hour: t.hour,
+    minute: t.minute,
+    second: 0,
+    millisecond: 0
+  });
 }
 
 // ------------------------------------------------------------
@@ -87,10 +90,15 @@ function parseTomorrow(timeStr: string, zone: string): DateTime | null {
 // ------------------------------------------------------------
 function parseTonight(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
-  return now.set(time);
+  return now.set({
+    hour: t.hour,
+    minute: t.minute,
+    second: 0,
+    millisecond: 0
+  });
 }
 
 // ------------------------------------------------------------
@@ -99,15 +107,20 @@ function parseTonight(timeStr: string, zone: string): DateTime | null {
 // ------------------------------------------------------------
 function parseThisWeekend(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
   let weekend = now;
   while (weekend.weekday !== 6) {
     weekend = weekend.plus({ days: 1 });
   }
 
-  return weekend.set(time);
+  return weekend.set({
+    hour: t.hour,
+    minute: t.minute,
+    second: 0,
+    millisecond: 0
+  });
 }
 
 // ------------------------------------------------------------
@@ -117,10 +130,15 @@ function parseNextMonth(timeStr: string, zone: string): DateTime | null {
   const now = DateTime.now().setZone(zone);
   const nextMonth = now.plus({ months: 1 }).set({ day: 1 });
 
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
-  return nextMonth.set(time);
+  return nextMonth.set({
+    hour: t.hour,
+    minute: t.minute,
+    second: 0,
+    millisecond: 0
+  });
 }
 
 // ------------------------------------------------------------
@@ -156,10 +174,15 @@ function parseWeekday(dateStr: string, timeStr: string, zone: string): DateTime 
     eventDate = eventDate.plus({ days: 7 });
   }
 
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
-  return eventDate.set(time);
+  return eventDate.set({
+    hour: t.hour,
+    minute: t.minute,
+    second: 0,
+    millisecond: 0
+  });
 }
 
 // ------------------------------------------------------------
@@ -174,10 +197,21 @@ function parseStandard(dateStr: string, timeStr: string, zone: string): DateTime
   day = parseInt(day, 10);
   year = year.length === 2 ? 2000 + parseInt(year, 10) : parseInt(year, 10);
 
-  const time = parseTimeOnly(timeStr);
-  if (!time) return null;
+  const t = parseTimeOnly(timeStr);
+  if (!t) return null;
 
-  return DateTime.fromObject({ year, month, day, ...time }, { zone });
+  return DateTime.fromObject(
+    {
+      year,
+      month,
+      day,
+      hour: t.hour,
+      minute: t.minute,
+      second: 0,
+      millisecond: 0
+    },
+    { zone }
+  );
 }
 
 // ------------------------------------------------------------
