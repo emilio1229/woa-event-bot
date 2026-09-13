@@ -1,24 +1,30 @@
+import { DateTime, IANAZone } from "luxon";
+
+interface ClockTime {
+  hour: number;
+  minute: number;
+}
+
+function parseClock(match: RegExpMatchArray | null, defaultTime: ClockTime): ClockTime | null {
+  if (!match) return defaultTime;
+
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
+  const ampm = match[3];
+
+  if (ampm === "pm" && hour < 12) hour += 12;
+  if (ampm === "am" && hour === 12) hour = 0;
+
+  return hour <= 23 && minute <= 59 ? { hour, minute } : null;
+}
+
+function withTime(date: DateTime, time: ClockTime): number | null {
+  const result = date.set({ hour: time.hour, minute: time.minute, second: 0, millisecond: 0 });
+  return result.isValid ? result.toMillis() : null;
+}
+
 export function parseTime(input: string, timezone: string): number | null {
   input = input.trim().toLowerCase();
-
-  function toTZ(date: Date): number {
-    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-
-    const offsets: Record<string, number> = {
-      "America/Phoenix": -7,
-      "America/Los_Angeles": -8,
-      "America/Denver": -7,
-      "America/Chicago": -6,
-      "America/New_York": -5,
-      "Europe/London": 0,
-      "Europe/Copenhagen": 1,
-      "Africa/Johannesburg": 2,
-      "Australia/Sydney": 10
-    };
-
-    const hours = offsets[timezone] ?? 0;
-    return utc + hours * 3600000;
-  }
 
   const durationMatch = input.match(/^in\s+(\d+)\s*(seconds?|minutes?|hours?|days?)$/);
   if (durationMatch) {
@@ -39,97 +45,34 @@ export function parseTime(input: string, timezone: string): number | null {
     return Date.now() + value * multipliers[unit];
   }
 
+  if (!IANAZone.isValidZone(timezone)) {
+    return null;
+  }
+
+  const now = DateTime.now().setZone(timezone);
+  const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+
   if (input.startsWith("tomorrow")) {
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
-
-    if (timeMatch) {
-      let hour = parseInt(timeMatch[1], 10);
-      const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-      const ampm = timeMatch[3];
-
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-
-      tomorrow.setHours(hour, minute, 0, 0);
-    } else {
-      tomorrow.setHours(12, 0, 0, 0);
-    }
-
-    return toTZ(tomorrow);
+    const time = parseClock(timeMatch, { hour: 12, minute: 0 });
+    return time ? withTime(now.plus({ days: 1 }).startOf("day"), time) : null;
   }
 
   if (input.startsWith("tonight")) {
-    const now = new Date();
-    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
-
-    if (timeMatch) {
-      let hour = parseInt(timeMatch[1], 10);
-      const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-      const ampm = timeMatch[3];
-
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-
-      now.setHours(hour, minute, 0, 0);
-    } else {
-      now.setHours(21, 0, 0, 0);
-    }
-
-    return toTZ(now);
+    const time = parseClock(timeMatch, { hour: 21, minute: 0 });
+    return time ? withTime(now.startOf("day"), time) : null;
   }
 
   if (input.startsWith("this weekend")) {
-    const now = new Date();
-    const day = now.getDay();
-    const daysUntilSaturday = (6 - day + 7) % 7;
+    const time = parseClock(timeMatch, { hour: 12, minute: 0 });
+    if (!time) return null;
 
-    const weekend = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + daysUntilSaturday
-    );
-
-    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
-
-    let hour = 12;
-    let minute = 0;
-
-    if (timeMatch) {
-      hour = parseInt(timeMatch[1], 10);
-      minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-      const ampm = timeMatch[3];
-
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-    }
-
-    weekend.setHours(hour, minute, 0, 0);
-    return toTZ(weekend);
+    const daysUntilSaturday = (6 - (now.weekday % 7) + 7) % 7;
+    return withTime(now.plus({ days: daysUntilSaturday }).startOf("day"), time);
   }
 
   if (input.startsWith("next month")) {
-    const now = new Date();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-    const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
-
-    let hour = 17;
-    let minute = 0;
-
-    if (timeMatch) {
-      hour = parseInt(timeMatch[1], 10);
-      minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-      const ampm = timeMatch[3];
-
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-    }
-
-    nextMonth.setHours(hour, minute, 0, 0);
-    return toTZ(nextMonth);
+    const time = parseClock(timeMatch, { hour: 17, minute: 0 });
+    return time ? withTime(now.plus({ months: 1 }).startOf("month"), time) : null;
   }
 
   const weekdayMatch = input.match(
@@ -137,12 +80,6 @@ export function parseTime(input: string, timezone: string): number | null {
   );
 
   if (weekdayMatch) {
-    const isNext = !!weekdayMatch[1];
-    const weekdayName = weekdayMatch[2];
-    const hourStr = weekdayMatch[3];
-    const minuteStr = weekdayMatch[4];
-    const ampm = weekdayMatch[5];
-
     const WEEKDAY_MAP: Record<string, number> = {
       sunday: 0,
       monday: 1,
@@ -153,33 +90,19 @@ export function parseTime(input: string, timezone: string): number | null {
       saturday: 6
     };
 
-    const now = new Date();
-    const targetDay = WEEKDAY_MAP[weekdayName];
-    const currentDay = now.getDay();
+    const isNext = !!weekdayMatch[1];
+    const targetDay = WEEKDAY_MAP[weekdayMatch[2]];
+    let daysAhead = (targetDay - (now.weekday % 7) + 7) % 7;
+    if (isNext) daysAhead += 7;
 
-    let daysAhead = (targetDay - currentDay + 7) % 7;
-    if (daysAhead === 0 && isNext) daysAhead = 7;
-    else if (isNext) daysAhead += 7;
-
-    let hour = hourStr ? parseInt(hourStr, 10) : 17;
-    const minute = minuteStr ? parseInt(minuteStr, 10) : 0;
-
-    if (ampm) {
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-    }
-
-    const target = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + daysAhead,
-      hour,
-      minute,
-      0,
-      0
+    const time = parseClock(
+      weekdayMatch[3]
+        ? (["", weekdayMatch[3], weekdayMatch[4], weekdayMatch[5]] as RegExpMatchArray)
+        : null,
+      { hour: 17, minute: 0 }
     );
 
-    return toTZ(target);
+    return time ? withTime(now.plus({ days: daysAhead }).startOf("day"), time) : null;
   }
 
   const dateMatch = input.match(
@@ -187,23 +110,31 @@ export function parseTime(input: string, timezone: string): number | null {
   );
 
   if (dateMatch) {
-    const month = parseInt(dateMatch[1], 10) - 1;
-    const day = parseInt(dateMatch[2], 10);
-    let year = parseInt(dateMatch[3], 10);
+    const time = parseClock(
+      dateMatch[4]
+        ? (["", dateMatch[4], dateMatch[5], dateMatch[6]] as RegExpMatchArray)
+        : null,
+      { hour: 0, minute: 0 }
+    );
+    if (!time) return null;
 
+    let year = parseInt(dateMatch[3], 10);
     if (year < 100) year += 2000;
 
-    let hour = dateMatch[4] ? parseInt(dateMatch[4], 10) : 0;
-    const minute = dateMatch[5] ? parseInt(dateMatch[5], 10) : 0;
-    const ampm = dateMatch[6];
+    const parsed = DateTime.fromObject(
+      {
+        year,
+        month: parseInt(dateMatch[1], 10),
+        day: parseInt(dateMatch[2], 10),
+        hour: time.hour,
+        minute: time.minute,
+        second: 0,
+        millisecond: 0
+      },
+      { zone: timezone }
+    );
 
-    if (ampm) {
-      if (ampm === "pm" && hour < 12) hour += 12;
-      if (ampm === "am" && hour === 12) hour = 0;
-    }
-
-    const date = new Date(year, month, day, hour, minute, 0, 0);
-    return toTZ(date);
+    return parsed.isValid ? parsed.toMillis() : null;
   }
 
   return null;
