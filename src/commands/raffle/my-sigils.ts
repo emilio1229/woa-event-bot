@@ -1,19 +1,18 @@
-import { SlashCommandBuilder } from "discord.js";
+import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { sigilStore } from "../../sigilStore.js";
 import { buildBalanceEmbed } from "../../sigilUtils.js";
+import type { CommandModule } from "../../utils/commandLoader.js";
 
-export default {
+const command: CommandModule = {
   data: new SlashCommandBuilder()
     .setName("my-sigils")
     .setDescription("View your sigil balance and recent ledger activity.")
     .setDMPermission(false),
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.inGuild() || !interaction.guild) {
-      return interaction.reply({
-        content: "❌ Your sigil ledger can only be viewed inside a server.",
-        flags: 64
-      });
+      await interaction.reply({ content: "❌ Your sigil ledger can only be viewed inside a server.", flags: MessageFlags.Ephemeral });
+      return;
     }
 
     const userRecord = sigilStore.getUser(interaction.guild.id, interaction.user.id);
@@ -28,7 +27,9 @@ export default {
           "Your personal sigil ledger and recent ritual activity."
         )
       ],
-      flags: 64
+      flags: MessageFlags.Ephemeral
     });
   }
 };
+
+export default command;

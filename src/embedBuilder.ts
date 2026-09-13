@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
+import type { Raffle } from "./types/legacy.js";
 
-export function buildActiveRaffleEmbed(raffle) {
+export function buildActiveRaffleEmbed(raffle: Raffle) {
   return new EmbedBuilder()
     .setTitle(`🔮 ${raffle.name}`)
     .setColor(0x4B0082)
@@ -24,7 +25,7 @@ export function buildActiveRaffleEmbed(raffle) {
     .setImage("attachment://woa_ritual_bg.png");
 }
 
-export function buildRaffleEmbed(raffle, entryCount) {
+export function buildRaffleEmbed(raffle: Raffle, entryCount: number) {
   const embed = new EmbedBuilder()
     .setColor(0x8A2BE2)
     .setTitle("🔮 Ritual Raffle")
@@ -66,7 +67,7 @@ export function buildRaffleEmbed(raffle, entryCount) {
   return embed;
 }
 
-export function buildRaffleEndedEmbed(raffle, entryCount, winnerId = null) {
+export function buildRaffleEndedEmbed(raffle: Raffle, entryCount: number, winnerId: string | null = null) {
   if (winnerId) {
     return new EmbedBuilder()
       .setColor(0xFF4500)

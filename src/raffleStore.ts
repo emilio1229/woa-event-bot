@@ -1,14 +1,20 @@
+import type { CreateRaffleInput, Raffle } from "./types/legacy.js";
+
 class RaffleStore {
+  private raffles: Raffle[];
+  private readonly debugEnabled: boolean;
+
   constructor() {
     this.raffles = [];
     this.debugEnabled = true; // toggle if needed
   }
 
-  debug(msg) {
+  debug(msg: string) {
     if (this.debugEnabled) {
       console.log(`[RAFFLE DEBUG] ${msg}`);
     }
   }
+
   cleanup() {
     const before = this.raffles.length;
 
@@ -24,15 +30,14 @@ class RaffleStore {
     }
   }
 
-  // Create a new raffle
-   create(data) {
+  create(data: CreateRaffleInput): Raffle {
     this.cleanup(); // auto-clean before creating new raffle
 
-    const raffle = {
+    const raffle: Raffle = {
+      ...data,
       id: Date.now().toString(),
       ended: false,
-      entries: [],
-      ...data
+      entries: data.entries ?? []
     };
 
     this.raffles.push(raffle);
@@ -42,7 +47,7 @@ class RaffleStore {
 
 
   // Save updated raffle
-   save(updated) {
+  save(updated: Raffle) {
     const index = this.raffles.findIndex(r => r.id === updated.id);
     if (index !== -1) {
       this.raffles[index] = updated;
@@ -54,7 +59,7 @@ class RaffleStore {
 
 
   // Mark raffle as ended (soft end)
-  markEnded(raffleId) {
+  markEnded(raffleId: string) {
     const raffle = this.getById(raffleId);
     if (raffle) {
       raffle.ended = true;
@@ -64,34 +69,31 @@ class RaffleStore {
   }
 
   // Hard delete raffle
-    end(raffleId) {
+  end(raffleId: string) {
     this.raffles = this.raffles.filter(r => r.id !== raffleId);
     this.debug(`Hard removed raffle ${raffleId}`);
     this.cleanup(); // auto-clean after hard delete
   }
 
   // Return ALL raffles
-  all() {
+  all(): Raffle[] {
     return this.raffles;
   }
 
-  // Get raffle by ID
-  getById(id) {
+  getById(id: string): Raffle | undefined {
     return this.raffles.find(r => r.id === id);
   }
 
-  // Get raffle ID by message ID
-  getIdByMessage(messageId) {
+  getIdByMessage(messageId: string | undefined): string | null {
     const raffle = this.raffles.find(r => r.messageId === messageId);
     return raffle ? raffle.id : null;
   }
 
-  getByMessageId(messageId) {
+  getByMessageId(messageId: string): Raffle | undefined {
     return this.raffles.find(r => r.messageId === messageId);
   }
 
-  // Set the message ID after sending the raffle embed
-  setMessageId(raffleId, messageId) {
+  setMessageId(raffleId: string, messageId: string) {
     const raffle = this.getById(raffleId);
     if (raffle) {
       raffle.messageId = messageId;
@@ -100,8 +102,7 @@ class RaffleStore {
     }
   }
 
-  // FIXED: Get active raffle for a guild
-  getActive(guildId) {
+  getActive(guildId: string): Raffle | undefined {
     const active = this.raffles.find(
       r =>
         r.guildId === guildId &&

@@ -1,13 +1,13 @@
-// src/components.js
 import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   StringSelectMenuBuilder
 } from "discord.js";
+import type { Raffle } from "./types/legacy.js";
 
-export function buildRaffleButtons(raffleId) {
-  return new ActionRowBuilder().addComponents(
+export function buildRaffleButtons(raffleId: string) {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`enter_${raffleId}`)
       .setLabel("🔮 Join Ritual")
@@ -20,7 +20,7 @@ export function buildRaffleButtons(raffleId) {
   );
 }
 
-export function buildRaffleSelectMenu(raffles, customId) {
+export function buildRaffleSelectMenu(raffles: Raffle[], customId: string) {
   const menu = new StringSelectMenuBuilder()
     .setCustomId(customId)
     .setPlaceholder("Choose a raffle…");
@@ -33,5 +33,5 @@ export function buildRaffleSelectMenu(raffles, customId) {
     });
   }
 
-  return new ActionRowBuilder().addComponents(menu);
+  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
 }

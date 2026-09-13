@@ -28,7 +28,8 @@ The bot is currently designed around four command groups:
 
 - Main runtime entry is now `src/index.ts`, compiled to `dist/index.js`
 - Slash command deployment entry is now `src/deploy-commands.ts`, compiled to `dist/deploy-commands.js`
-- Legacy raffle and sigil modules remain in place and are compiled through the TypeScript build so existing features keep working
+- The TypeScript migration is now complete: no runtime `.js` source files remain under `src/`
+- Legacy raffle, sigil, bounty, and interaction modules now live as typed `.ts` source files and compile into a fully runnable `dist/` output
 - New event modules live under:
   - `src/config/`
   - `src/commands/event/`
@@ -39,6 +40,14 @@ The bot is currently designed around four command groups:
   - `src/ui/`
   - `src/utils/`
 - Event times are stored in UTC and rendered with Discord timestamp tags (`<t:UNIX:F>` and `<t:UNIX:R>`), so every viewer sees the event in their local timezone automatically
+
+## Deployment
+
+- Always run `npm run build` before `npm start`
+- `npm start` launches the compiled bot from `dist/index.js`
+- `npm run deploy` rebuilds the project and registers slash commands via `dist/deploy-commands.js`
+- The repository includes a `Dockerfile` that installs dependencies, builds the bot, and starts it from `dist/`
+- A fallback `Procfile` is also included for hosts that expect one
 
 ---
 
