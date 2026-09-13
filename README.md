@@ -47,7 +47,7 @@ The bot is currently designed around four command groups:
 - `npm start` launches the compiled bot from `dist/index.js`
 - `npm run deploy` rebuilds the project and registers slash commands via `dist/deploy-commands.js`
 - The repository includes a `Dockerfile` that installs dependencies, builds the bot, and starts it from `dist/`
-- When using Docker, mount persistent storage at `/app/data` so raffle, event, and sigil data survive container replacement
+- When deploying to Railway, add a Railway Volume with mount path `/app/data` so raffle, event, and sigil data survive container replacement
 - A fallback `Procfile` is also included for hosts that expect one
 
 ---
