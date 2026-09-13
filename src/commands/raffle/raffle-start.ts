@@ -8,11 +8,11 @@ import {
   SlashCommandBuilder,
   type ChatInputCommandInteraction
 } from "discord.js";
+
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
-import { applyUSRegionTimezone } from "../../utils/discordRegionTimezone.js"
 
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -59,40 +59,50 @@ const command: CommandModule = {
     .addStringOption(option =>
       option.setName("name")
         .setDescription("Name of the ritual raffle (optional)")
-        .setRequired(true)
+        .setRequired(false)
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.inGuild() || !interaction.guild || !interaction.channel?.isTextBased()) {
-      await interaction.reply({ content: "❌ Ritual raffles can only be started from a server text channel.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: "❌ Ritual raffles can only be started from a server text channel.",
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
     const guild = interaction.guild;
     const channel = interaction.channel;
-    const prize = interaction.options.getString("prize", true);
-    const durationInput = interaction.options.getString("duration", true); 
-    
-    // -------------------------------
-    // TIMEZONE DETECTION
-    // -------------------------------
-    
-    const locale = interaction.userLocale ?? interaction.locale;
-    const region = interaction.guild?.region ?? null;
 
-    const adjustedLocale = applyUSRegionTimezone(locale, region);
-    const timezone = getTimezoneForLocale(adjustedLocale, interaction.user.id);
-    const endsAt = parseTime(durationInput);
+    const prize = interaction.options.getString("prize", true);
+    const durationInput = interaction.options.getString("duration", true);
+
+    // ------------------------------------------------------------
+    // TIMEZONE DETECTION (Discord.js v14 safe)
+    // ------------------------------------------------------------
+    const locale = interaction.locale ?? "en-US";
+    const timezone = getTimezoneForLocale(locale, interaction.user.id);
+
+    // ------------------------------------------------------------
+    // NATURAL LANGUAGE TIME PARSING
+    // ------------------------------------------------------------
+    const endsAt = parseTime(durationInput, timezone);
 
     if (!endsAt || Number.isNaN(endsAt)) {
-      await interaction.reply({ content: "❌ I could not understand that time format.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: "❌ I could not understand that time format.",
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
     const durationMs = endsAt - Date.now();
 
     if (durationMs <= 0) {
-      await interaction.reply({ content: "❌ That time is already in the past.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: "❌ That time is already in the past.",
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
@@ -119,9 +129,7 @@ const command: CommandModule = {
     });
 
     collector.on("collect", async roleSelection => {
-      if (!roleSelection.isRoleSelectMenu()) {
-        return;
-      }
+      if (!roleSelection.isRoleSelectMenu()) return;
 
       await roleSelection.deferUpdate().catch(() => {});
 
