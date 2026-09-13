@@ -69,6 +69,7 @@ The bot is currently designed around four command groups:
 - `TOKEN` — Discord bot token
 - `CLIENT_ID` — Discord application client ID
 - `GUILD_IDS` — comma-separated guild IDs for slash command deployment
+- `ALLOWED_GUILD_IDS` — optional comma-separated Discord server IDs the bot is allowed to stay in; the bot automatically leaves any other server at startup and whenever it's invited to one. Leave unset to allow any server.
 - `DATABASE_URL` — PostgreSQL connection string
 - `PORT` — Railway-provided HTTP port; takes precedence over `API_PORT` when present
 - `API_HOST` — Fastify bind host, default `0.0.0.0`

@@ -4,27 +4,25 @@ function readEnv(name: string): string {
   return process.env[name]?.trim() || "";
 }
 
-function readGuildIds(): string[] {
-  const configuredGuilds = process.env.GUILD_IDS
+function readCommaSeparatedList(name: string): string[] {
+  const configured = process.env[name]
     ?.split(",")
     .map(value => value.trim())
     .filter(Boolean);
 
-  return configuredGuilds ?? [];
+  return configured ?? [];
 }
 
 export const env = {
   token: readEnv("TOKEN"),
   clientId: readEnv("CLIENT_ID"),
-  guildIds: readGuildIds(),
+  guildIds: readCommaSeparatedList("GUILD_IDS"),
+  allowedGuildIds: readCommaSeparatedList("ALLOWED_GUILD_IDS"),
   databaseUrl: readEnv("DATABASE_URL"),
   apiKey: readEnv("API_KEY"),
   apiHost: process.env.API_HOST?.trim() || "0.0.0.0",
   apiPort: Number.parseInt(process.env.PORT?.trim() || process.env.API_PORT?.trim() || "3000", 10),
-  councilRoleIds: process.env.COUNCIL_ROLE_IDS
-    ?.split(",")
-    .map(value => value.trim())
-    .filter(Boolean) ?? [],
+  councilRoleIds: readCommaSeparatedList("COUNCIL_ROLE_IDS"),
   defaultEventTimezone: process.env.DEFAULT_EVENT_TIMEZONE?.trim() || "UTC",
   astralChannelId: process.env.ASTRAL_CHANNEL_ID?.trim() || null
 };

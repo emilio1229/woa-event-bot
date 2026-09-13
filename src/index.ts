@@ -6,6 +6,7 @@ import { buildApiServer } from "./api/server.js";
 import { assertRuntimeEnv, env } from "./config/env.js";
 import { applyDatabaseSchema, closePostgresConnection, connectPostgres } from "./database/prisma.js";
 import { registerDiscordSyncHandlers } from "./events/discordSync.js";
+import { enforceStartupGuildAllowlist, registerGuildCreateAccessControl } from "./events/guildAccessControl.js";
 import { registerInteractionCreateHandler } from "./events/interactionCreate.js";
 import { registerReadyHandler } from "./events/ready.js";
 import { reconcileDiscordToDatabase } from "./services/discordSyncService.js";
@@ -44,6 +45,7 @@ for (const command of commands) {
 }
 
 registerDiscordSyncHandlers(client);
+registerGuildCreateAccessControl(client);
 registerReadyHandler(client);
 registerInteractionCreateHandler(client);
 
@@ -98,6 +100,7 @@ try {
   await connectPostgres();
   await client.login(env.token);
   await once(client, Events.ClientReady);
+  await enforceStartupGuildAllowlist(client);
   await reconcileDiscordToDatabase(client);
   await startApiServer();
 } catch (error) {
