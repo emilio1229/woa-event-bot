@@ -115,6 +115,14 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
 
     await raffleStore.save(raffle);
 
+    try {
+      const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null);
+
+      if (isMessageCapableChannel(messageChannel)) {
+        await messageChannel.send(`🔮 <@${userId}> joined the raffle!`);
+      }
+    } catch {}
+
     const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
     const glowSymbol = glow[Math.floor(Math.random() * glow.length)];
 
