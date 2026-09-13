@@ -48,7 +48,7 @@ export async function closeRaffleThread(client: Client, raffle: Raffle): Promise
       return;
     }
 
-    await channel.delete("Raffle ended").catch(() => {});
+    await channel.delete("Raffle ended");
   } catch (error) {
     logError("Failed to delete raffle thread.", error, { raffleId: raffle.id, threadId: raffle.threadId });
   }
