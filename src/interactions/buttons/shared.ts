@@ -56,8 +56,21 @@ export async function handleEventRsvpButton(
     return;
   }
 
-  const updatedEvent = updateEventRsvp(parsed.eventId, interaction.user.id, state);
+  const event = getEventById(parsed.eventId);
 
+  if (
+    !event ||
+    interaction.guildId !== event.guildId ||
+    interaction.message.id !== event.messageId
+  ) {
+    await interaction.reply({
+      content: "❌ This gathering is no longer inscribed in the ledger.",
+      flags: MessageFlags.Ephemeral
+    });
+    return;
+  }
+
+  const updatedEvent = updateEventRsvp(parsed.eventId, interaction.user.id, state);
   if (!updatedEvent) {
     await interaction.reply({
       content: "❌ This gathering is no longer inscribed in the ledger.",

@@ -20,7 +20,9 @@ function parseClock(match: RegExpMatchArray | null, defaultTime: ClockTime): Clo
 
 function withTime(date: DateTime, time: ClockTime): number | null {
   const result = date.set({ hour: time.hour, minute: time.minute, second: 0, millisecond: 0 });
-  return result.isValid ? result.toMillis() : null;
+  return result.isValid && result.hour === time.hour && result.minute === time.minute
+    ? result.toMillis()
+    : null;
 }
 
 export function parseTime(input: string, timezone: string): number | null {
@@ -134,7 +136,9 @@ export function parseTime(input: string, timezone: string): number | null {
       { zone: timezone }
     );
 
-    return parsed.isValid ? parsed.toMillis() : null;
+    return parsed.isValid && parsed.hour === time.hour && parsed.minute === time.minute
+      ? parsed.toMillis()
+      : null;
   }
 
   return null;

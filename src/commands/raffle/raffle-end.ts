@@ -2,6 +2,7 @@ import {
   AttachmentBuilder,
   EmbedBuilder,
   MessageFlags,
+  PermissionFlagsBits,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   ActionRowBuilder,
@@ -24,11 +25,21 @@ function isMessageCapableChannel(channel: unknown): channel is MessageCapableCha
 const command: CommandModule = {
   data: new SlashCommandBuilder()
     .setName("raffle-end")
-    .setDescription("Force-end the current ritual raffle."),
+    .setDescription("Force-end the current ritual raffle.")
+    .setDMPermission(false)
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.inGuild() || !interaction.guild) {
       await interaction.reply({ content: "❌ Rituals can only be ended from inside a server.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+      await interaction.reply({
+        content: "❌ Only members with Manage Server may end a ritual raffle.",
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
@@ -68,14 +79,13 @@ const command: CommandModule = {
 };
 
 async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle: Raffle): Promise<void> {
-  raffleStore.markEnded(raffle.id);
-  raffle.ended = true;
+  let winnerId = raffle.winnerId ?? null;
 
-  let winnerId: string | null = null;
-
-  if (raffle.entries.length > 0) {
+  if (!winnerId && raffle.entries.length > 0) {
     const randomIndex = Math.floor(Math.random() * raffle.entries.length);
     winnerId = raffle.entries[randomIndex];
+    raffle.winnerId = winnerId;
+    raffleStore.save(raffle);
   }
 
   const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
@@ -96,7 +106,11 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
   try {
     const channel = await interaction.client.channels.fetch(raffle.channelId);
 
-    if (isMessageCapableChannel(channel) && raffle.messageId) {
+    if (!isMessageCapableChannel(channel)) {
+      throw new Error("The raffle channel is no longer available.");
+    }
+
+    if (raffle.messageId) {
       const message = await channel.messages.fetch(raffle.messageId).catch(() => null);
 
       if (message) {
@@ -128,11 +142,24 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
             roles: raffle.tagRole ? [raffle.tagRole] : []
           }
         });
+      } else {
+        await channel.send({ embeds: [embed] });
       }
+    } else if (winnerId) {
+      throw new Error("The raffle message is missing, so the winner cannot be announced safely.");
+    } else {
+      await channel.send({ embeds: [embed] });
     }
   } catch (error) {
     console.error("Manual end failed:", error);
+    await interaction.reply({
+      content: "❌ The raffle could not be announced, so it remains active for a safe retry.",
+      flags: MessageFlags.Ephemeral
+    });
+    return;
   }
+
+  raffleStore.end(raffle.id);
 
   await interaction.reply({
     content: "🔮 The ritual has been ended.",

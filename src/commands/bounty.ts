@@ -112,7 +112,11 @@ const command: CommandModule = {
       components: [...statMenus, buttons]
     });
 
-    const collector = interaction.channel.createMessageComponentCollector({ time: 600000 });
+    const panelMessage = await interaction.fetchReply();
+    const collector = panelMessage.createMessageComponentCollector({
+      time: 600000,
+      filter: component => component.user.id === interaction.user.id
+    });
 
     collector.on("collect", async component => {
       if (component.customId === "randomize_stats" && component.isButton()) {

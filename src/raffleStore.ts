@@ -1,122 +1,119 @@
+import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import type { CreateRaffleInput, Raffle } from "./types/legacy.js";
+import { writeJsonAtomic } from "./utils/atomicJson.js";
+
+interface RaffleStoreState {
+  raffles: Raffle[];
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DATA_PATH = path.join(__dirname, "..", "data", "raffles.json");
 
 class RaffleStore {
   private raffles: Raffle[];
-  private readonly debugEnabled: boolean;
 
   constructor() {
-    this.raffles = [];
-    this.debugEnabled = true; // toggle if needed
+    this.raffles = this.load();
   }
 
-  debug(msg: string) {
-    if (this.debugEnabled) {
-      console.log(`[RAFFLE DEBUG] ${msg}`);
+  private load(): Raffle[] {
+    try {
+      if (!fs.existsSync(DATA_PATH)) return [];
+
+      const parsed = JSON.parse(fs.readFileSync(DATA_PATH, "utf8")) as Partial<RaffleStoreState>;
+      return Array.isArray(parsed.raffles) ? parsed.raffles : [];
+    } catch (error) {
+      console.error("Failed to load raffle store:", error);
+      return [];
     }
   }
 
-  cleanup() {
-    const before = this.raffles.length;
+  private persist(): void {
+    writeJsonAtomic(DATA_PATH, { raffles: this.raffles });
+  }
 
-    this.raffles = this.raffles.filter(r => {
-      const expiredByTime = Date.now() >= r.endsAt;
-      return !r.ended && !expiredByTime;
-    });
-
-    const after = this.raffles.length;
-
-    if (this.debugEnabled) {
-      console.log(`[RAFFLE DEBUG] Cleanup removed ${before - after} raffles`);
+  /** Removes raffles that were fully announced and explicitly completed. */
+  cleanup(): void {
+    const activeRaffles = this.raffles.filter(raffle => !raffle.ended);
+    if (activeRaffles.length !== this.raffles.length) {
+      this.raffles = activeRaffles;
+      this.persist();
     }
   }
 
   create(data: CreateRaffleInput): Raffle {
-    this.cleanup(); // auto-clean before creating new raffle
+    this.cleanup();
 
     const raffle: Raffle = {
       ...data,
-      id: Date.now().toString(),
+      id: randomUUID(),
       ended: false,
       entries: data.entries ?? []
     };
 
     this.raffles.push(raffle);
-    this.debug(`Created raffle ${raffle.id}`);
+    this.persist();
     return raffle;
   }
 
+  save(updated: Raffle): void {
+    const index = this.raffles.findIndex(raffle => raffle.id === updated.id);
+    if (index === -1) return;
 
-  // Save updated raffle
-  save(updated: Raffle) {
-    const index = this.raffles.findIndex(r => r.id === updated.id);
-    if (index !== -1) {
-      this.raffles[index] = updated;
-      this.debug(`Saved raffle ${updated.id}`);
-    }
-
-    this.cleanup(); // auto-clean after saving
+    this.raffles[index] = updated;
+    this.persist();
   }
 
-
-  // Mark raffle as ended (soft end)
-  markEnded(raffleId: string) {
+  markEnded(raffleId: string): void {
     const raffle = this.getById(raffleId);
-    if (raffle) {
-      raffle.ended = true;
-      this.save(raffle);
-      this.debug(`Marked raffle ${raffleId} as ended`);
-    }
+    if (!raffle) return;
+
+    raffle.ended = true;
+    this.save(raffle);
+    this.cleanup();
   }
 
-  // Hard delete raffle
-  end(raffleId: string) {
-    this.raffles = this.raffles.filter(r => r.id !== raffleId);
-    this.debug(`Hard removed raffle ${raffleId}`);
-    this.cleanup(); // auto-clean after hard delete
+  end(raffleId: string): void {
+    const nextRaffles = this.raffles.filter(raffle => raffle.id !== raffleId);
+    if (nextRaffles.length === this.raffles.length) return;
+
+    this.raffles = nextRaffles;
+    this.persist();
   }
 
-  // Return ALL raffles
   all(): Raffle[] {
     return this.raffles;
   }
 
   getById(id: string): Raffle | undefined {
-    return this.raffles.find(r => r.id === id);
+    return this.raffles.find(raffle => raffle.id === id);
   }
 
   getIdByMessage(messageId: string | undefined): string | null {
-    const raffle = this.raffles.find(r => r.messageId === messageId);
-    return raffle ? raffle.id : null;
+    const raffle = this.raffles.find(current => current.messageId === messageId);
+    return raffle?.id ?? null;
   }
 
   getByMessageId(messageId: string): Raffle | undefined {
-    return this.raffles.find(r => r.messageId === messageId);
+    return this.raffles.find(raffle => raffle.messageId === messageId);
   }
 
-  setMessageId(raffleId: string, messageId: string) {
+  setMessageId(raffleId: string, messageId: string): void {
     const raffle = this.getById(raffleId);
-    if (raffle) {
-      raffle.messageId = messageId;
-      this.save(raffle);
-      this.debug(`Set messageId for raffle ${raffleId}`);
-    }
+    if (!raffle) return;
+
+    raffle.messageId = messageId;
+    this.save(raffle);
   }
 
   getActive(guildId: string): Raffle | undefined {
-    const active = this.raffles.find(
-      r =>
-        r.guildId === guildId &&
-        !r.ended &&                // MUST NOT be ended
-        Date.now() < r.endsAt     // MUST still be running
+    return this.raffles.find(
+      raffle => raffle.guildId === guildId && !raffle.ended && Date.now() < raffle.endsAt
     );
-
-    this.debug(
-      active
-        ? `Active raffle found: ${active.id}`
-        : `No active raffle for guild ${guildId}`
-    );
-
-    return active;
   }
 }
 

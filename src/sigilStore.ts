@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { writeJsonAtomic } from "./utils/atomicJson.js";
 import type {
   SigilGuildRecord,
   SigilGuildStats,
@@ -47,8 +48,7 @@ class SigilStore {
   }
 
   persist() {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(DATA_PATH, JSON.stringify(this.data, null, 2));
+    writeJsonAtomic(DATA_PATH, this.data);
   }
 
   save() {

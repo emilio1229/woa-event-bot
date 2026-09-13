@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
   MessageFlags,
+  PermissionFlagsBits,
   RoleSelectMenuBuilder,
   SlashCommandBuilder,
   type ChatInputCommandInteraction
@@ -46,6 +47,8 @@ const command: CommandModule = {
   data: new SlashCommandBuilder()
     .setName("raffle-start")
     .setDescription("Begin a new arcane ritual raffle.")
+    .setDMPermission(false)
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addStringOption(option =>
       option.setName("prize")
         .setDescription("The offering for the ritual.")
@@ -66,6 +69,14 @@ const command: CommandModule = {
     if (!interaction.inGuild() || !interaction.guild || !interaction.channel?.isTextBased()) {
       await interaction.reply({
         content: "❌ Ritual raffles can only be started from a server text channel.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
+
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+      await interaction.reply({
+        content: "❌ Only members with Manage Server may begin a ritual raffle.",
         flags: MessageFlags.Ephemeral
       });
       return;
@@ -164,7 +175,10 @@ const command: CommandModule = {
         )
         .setColor(0x4B0082);
 
-      await channel.send({ embeds: [announcementEmbed] });
+        await channel.send({
+          embeds: [announcementEmbed],
+          allowedMentions: { roles: [tagRole] }
+        });
 
       const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()

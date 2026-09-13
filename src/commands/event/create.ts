@@ -1,12 +1,10 @@
-import {
-  SlashCommandBuilder,
-  EmbedBuilder,
-  MessageFlags,
-  type ChatInputCommandInteraction
-} from "discord.js";
+import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
+import { createEvent, attachEventMessageId } from "../../services/eventService.js";
+import { buildEventRsvpButtons } from "../../interactions/buttons/shared.js";
+import { buildEventEmbed } from "../../ui/eventEmbed.js";
 import type { CommandModule } from "../../utils/commandLoader.js";
 
 const command: CommandModule = {
@@ -55,21 +53,24 @@ const command: CommandModule = {
       return;
     }
 
-    const unix = Math.floor(millis / 1000);
+    const event = createEvent({
+      guildId: interaction.guild.id,
+      channelId: interaction.channelId,
+      title,
+      hostId: interaction.user.id,
+      creatorId: interaction.user.id,
+      timezone,
+      startAtIso: new Date(millis).toISOString(),
+      startAtUnix: Math.floor(millis / 1000)
+    });
 
-    const embed = new EmbedBuilder()
-      .setTitle("📅 Event Scheduled")
-      .setDescription(
-        [
-          `**Title:** ${title}`,
-          `**Starts:** <t:${unix}:F>`,
-          "",
-          "The event has been successfully created."
-        ].join("\n")
-      )
-      .setColor(0x4B0082);
+    await interaction.reply({
+      embeds: [buildEventEmbed(event)],
+      components: [buildEventRsvpButtons(event.id)]
+    });
 
-    await interaction.reply({ embeds: [embed] });
+    const message = await interaction.fetchReply();
+    attachEventMessageId(event.id, message.id);
   }
 };
 

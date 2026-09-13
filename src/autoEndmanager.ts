@@ -7,6 +7,7 @@ import { raffleStore } from "./raffleStore.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ASSET_PATH = path.join(__dirname, "..", "assets", "woa_winner_bg.png");
+const endingRaffleIds = new Set<string>();
 
 type MessageCapableChannel = {
   messages: {
@@ -29,15 +30,24 @@ export function startAutoEndLoop(client: BotClient): void {
           continue;
         }
 
+        if (endingRaffleIds.has(raffle.id)) {
+          continue;
+        }
+
+        endingRaffleIds.add(raffle.id);
+
+        try {
         console.log(`[autoEndManager] Ending raffle ${raffle.id} (guild=${raffle.guildId})`);
 
         const entries = raffle.entries ?? [];
-        let winnerId: string | null = null;
+        let winnerId = raffle.winnerId ?? null;
 
-        if (entries.length > 0) {
+        if (!winnerId && entries.length > 0) {
           winnerId = entries[Math.floor(Math.random() * entries.length)];
+          raffle.winnerId = winnerId;
+          raffleStore.save(raffle);
           console.log(`[autoEndManager] Chosen winner: ${winnerId}`);
-        } else {
+        } else if (!winnerId) {
           console.log(`[autoEndManager] No entries for raffle ${raffle.id}`);
         }
 
@@ -67,6 +77,8 @@ export function startAutoEndLoop(client: BotClient): void {
           console.error("autoEndManager button removal failed:", err);
         }
 
+        let announcementSent = false;
+
         try {
           const destinationChannel = await client.channels.fetch(raffle.channelId).catch(error => {
             console.error(`[autoEndManager] failed to fetch channel for announcement ${raffle.channelId}:`, error);
@@ -74,7 +86,7 @@ export function startAutoEndLoop(client: BotClient): void {
           });
 
           if (!isMessageCapableChannel(destinationChannel)) {
-            console.warn("[autoEndManager] destination channel not available, skipping announcement.");
+            throw new Error("Destination channel is not available for the raffle announcement.");
           } else if (winnerId) {
             const grandEmbed = new EmbedBuilder()
               .setColor(0xFF4500)
@@ -99,6 +111,7 @@ export function startAutoEndLoop(client: BotClient): void {
                 roles: raffle.tagRole ? [raffle.tagRole] : []
               }
             });
+            announcementSent = true;
             console.log(`[autoEndManager] sent grand announcement for raffle ${raffle.id}`);
           } else {
             const noWinnerEmbed = new EmbedBuilder()
@@ -109,17 +122,25 @@ export function startAutoEndLoop(client: BotClient): void {
               .setTimestamp();
 
             await destinationChannel.send({ embeds: [noWinnerEmbed] });
+            announcementSent = true;
             console.log(`[autoEndManager] sent no-winner announcement for raffle ${raffle.id}`);
           }
         } catch (err) {
           console.error("autoEndManager announcement (send) failed:", err);
         }
 
-        try {
-          raffleStore.end(raffle.id);
-          console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
-        } catch (err) {
-          console.error("[autoEndManager] failed to remove raffle from store:", err);
+        if (announcementSent) {
+          try {
+            raffleStore.end(raffle.id);
+            console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
+          } catch (err) {
+            console.error("[autoEndManager] failed to remove raffle from store:", err);
+          }
+        } else {
+          console.warn(`[autoEndManager] keeping raffle ${raffle.id} for announcement retry`);
+        }
+        } finally {
+          endingRaffleIds.delete(raffle.id);
         }
       }
     } catch (err) {

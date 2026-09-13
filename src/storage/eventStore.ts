@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import type { CreateEventInput, EventRecord, RsvpState } from "../services/eventTypes.js";
 import { logError } from "../utils/logger.js";
+import { writeJsonAtomic } from "../utils/atomicJson.js";
 
 interface EventStoreState {
   events: EventRecord[];
@@ -42,8 +43,7 @@ class EventStore {
   }
 
   private persist() {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(DATA_PATH, JSON.stringify(this.state, null, 2));
+    writeJsonAtomic(DATA_PATH, this.state);
   }
 
   create(input: CreateEventInput): EventRecord {

@@ -9,6 +9,7 @@ export interface Raffle {
   tagRole?: string;
   invocationText?: string;
   ritualType?: string;
+  winnerId?: string | null;
   ended: boolean;
   entries: string[];
   boundUsers?: string[];
