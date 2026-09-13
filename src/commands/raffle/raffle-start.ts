@@ -12,6 +12,7 @@ import {
 
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
+import { createRaffleThread } from "../../services/raffleThreadService.js";
 import { parseTime } from "../../utils/timeParser.js";
 import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
 
@@ -198,6 +199,12 @@ const command: CommandModule = {
       });
 
   await raffleStore.setMessageId(raffle.id, raffleMessage.id);
+
+      const threadId = await createRaffleThread(raffleMessage, raffle);
+
+      if (threadId) {
+        await raffleStore.setThreadId(raffle.id, threadId);
+      }
 
       await menuMessage.edit({
         content: "The ritual has begun.",

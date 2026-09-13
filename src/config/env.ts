@@ -13,6 +13,16 @@ function readCommaSeparatedList(name: string): string[] {
   return configured ?? [];
 }
 
+const ALLOWED_THREAD_AUTO_ARCHIVE_MINUTES = [60, 1440, 4320, 10080];
+
+function readRaffleThreadAutoArchiveMinutes(): 60 | 1440 | 4320 | 10080 {
+  const configured = Number.parseInt(process.env.RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES?.trim() || "", 10);
+
+  return ALLOWED_THREAD_AUTO_ARCHIVE_MINUTES.includes(configured)
+    ? configured as 60 | 1440 | 4320 | 10080
+    : 1440;
+}
+
 export const env = {
   token: readEnv("TOKEN"),
   clientId: readEnv("CLIENT_ID"),
@@ -24,7 +34,9 @@ export const env = {
   apiPort: Number.parseInt(process.env.PORT?.trim() || process.env.API_PORT?.trim() || "3000", 10),
   councilRoleIds: readCommaSeparatedList("COUNCIL_ROLE_IDS"),
   defaultEventTimezone: process.env.DEFAULT_EVENT_TIMEZONE?.trim() || "UTC",
-  astralChannelId: process.env.ASTRAL_CHANNEL_ID?.trim() || null
+  astralChannelId: process.env.ASTRAL_CHANNEL_ID?.trim() || null,
+  raffleThreadsEnabled: (process.env.RAFFLE_THREADS_ENABLED?.trim() || "true") !== "false",
+  raffleThreadAutoArchiveMinutes: readRaffleThreadAutoArchiveMinutes()
 };
 
 export function assertDiscordEnv() {

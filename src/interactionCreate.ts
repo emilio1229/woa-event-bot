@@ -17,6 +17,7 @@ import { handleUnbindSoul } from "./buttons/unbindSoul.js";
 import { buildActiveRaffleEmbed } from "./embedBuilder.js";
 import { raffleStore } from "./raffleStore.js";
 import { withRaffleEntryLock } from "./raffleEntryLock.js";
+import { closeRaffleThread } from "./services/raffleThreadService.js";
 import { sigilStore } from "./sigilStore.js";
 import { buildRedeemSuccessEmbed } from "./sigilUtils.js";
 
@@ -117,6 +118,8 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
     if (entries.length > 0) {
       winnerId = entries[Math.floor(Math.random() * entries.length)];
     }
+
+    await closeRaffleThread(interaction.client, raffle);
 
     try {
       const channel = await interaction.client.channels.fetch(raffle.channelId);

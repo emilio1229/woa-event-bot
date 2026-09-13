@@ -3,6 +3,7 @@ export interface Raffle {
   guildId: string;
   channelId: string;
   messageId?: string;
+  threadId?: string;
   name: string;
   prize: string;
   endsAt: number;

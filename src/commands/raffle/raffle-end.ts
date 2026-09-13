@@ -10,6 +10,7 @@ import {
   type Message
 } from "discord.js";
 import { raffleStore } from "../../raffleStore.js";
+import { closeRaffleThread } from "../../services/raffleThreadService.js";
 import type { Raffle } from "../../types/legacy.js";
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -160,6 +161,8 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
   }
 
   await raffleStore.end(raffle.id);
+
+  await closeRaffleThread(interaction.client, raffle);
 
   await interaction.reply({
     content: "🔮 The ritual has been ended.",

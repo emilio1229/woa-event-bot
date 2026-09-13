@@ -76,6 +76,8 @@ The bot is currently designed around four command groups:
 - `API_PORT` — Fastify bind port, default `3000`
 - `API_KEY` — required secret; callers must send it as the `x-api-key` header on all `/api/*` routes
 - `COUNCIL_ROLE_IDS` — optional comma-separated Discord role IDs for the council endpoint
+- `RAFFLE_THREADS_ENABLED` — when `true` (default), each raffle gets a linked Discord thread for entries; the thread is locked and archived when the raffle ends
+- `RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES` — thread auto-archive duration; must be one of `60`, `1440`, `4320`, `10080` (default `1440`)
 
 ## Railway Setup
 

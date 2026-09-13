@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { AttachmentBuilder, EmbedBuilder, type Message } from "discord.js";
 import type { BotClient } from "./index.js";
 import { raffleStore } from "./raffleStore.js";
+import { closeRaffleThread } from "./services/raffleThreadService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,6 +132,7 @@ export function startAutoEndLoop(client: BotClient): void {
 
         if (announcementSent) {
           try {
+            await closeRaffleThread(client, raffle);
             await raffleStore.end(raffle.id);
             console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
           } catch (err) {

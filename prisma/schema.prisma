@@ -82,6 +82,7 @@ model Raffle {
   guildId        String
   channelId      String
   messageId      String?
+  threadId       String?
   name           String
   prize          String
   endsAt         BigInt
