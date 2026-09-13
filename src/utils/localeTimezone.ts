@@ -38,7 +38,12 @@ const LOCALE_TIMEZONE_MAP: Record<string, string> = {
   "ru-RU": "Europe/Moscow"
 };
 
-export function getTimezoneForLocale(locale?: string | null): string {
+export function getTimezoneForLocale(locale?: string | null, userId?: string | null): string {
+  // Phoenix override for YOU
+  if (userId === "443711167609831424") {
+    return "America/Phoenix";
+  }
+
   const key = locale?.trim();
   if (!key) return env.defaultEventTimezone;
 
