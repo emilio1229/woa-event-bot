@@ -11,6 +11,9 @@ import {
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
 import { parseTime } from "../../utils/timeParser.js";
+import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
+import { applyUSRegionTimezone } from "../../utils/discordRegionTimezone.js"
+
 import type { CommandModule } from "../../utils/commandLoader.js";
 
 const ARCANE_NAMES = [
@@ -56,7 +59,7 @@ const command: CommandModule = {
     .addStringOption(option =>
       option.setName("name")
         .setDescription("Name of the ritual raffle (optional)")
-        .setRequired(false)
+        .setRequired(true)
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -68,7 +71,17 @@ const command: CommandModule = {
     const guild = interaction.guild;
     const channel = interaction.channel;
     const prize = interaction.options.getString("prize", true);
-    const durationInput = interaction.options.getString("duration", true);
+    const durationInput = interaction.options.getString("duration", true); 
+    
+    // -------------------------------
+    // TIMEZONE DETECTION
+    // -------------------------------
+    
+    const locale = interaction.userLocale ?? interaction.locale;
+    const region = interaction.guild?.region ?? null;
+
+    const adjustedLocale = applyUSRegionTimezone(locale, region);
+    const timezone = getTimezoneForLocale(adjustedLocale, interaction.user.id);
     const endsAt = parseTime(durationInput);
 
     if (!endsAt || Number.isNaN(endsAt)) {
