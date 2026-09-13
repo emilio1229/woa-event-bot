@@ -1,116 +1,57 @@
-type DurationUnit =
-  | "s"
-  | "sec"
-  | "secs"
-  | "seconds"
-  | "m"
-  | "min"
-  | "mins"
-  | "minutes"
-  | "h"
-  | "hr"
-  | "hrs"
-  | "hours"
-  | "d"
-  | "day"
-  | "days"
-  | "w"
-  | "wk"
-  | "wks"
-  | "week"
-  | "weeks"
-  | "mo"
-  | "month"
-  | "months";
+// FINAL NATURAL-LANGUAGE TIME PARSER (timezone-aware, build-safe)
 
-type NaturalLanguageUnit =
-  | "second"
-  | "seconds"
-  | "minute"
-  | "minutes"
-  | "hour"
-  | "hours"
-  | "day"
-  | "days"
-  | "week"
-  | "weeks"
-  | "month"
-  | "months";
-
-const DURATION_MULTIPLIERS: Record<DurationUnit, number> = {
-  s: 1000,
-  sec: 1000,
-  secs: 1000,
-  seconds: 1000,
-  m: 60000,
-  min: 60000,
-  mins: 60000,
-  minutes: 60000,
-  h: 3600000,
-  hr: 3600000,
-  hrs: 3600000,
-  hours: 3600000,
-  d: 86400000,
-  day: 86400000,
-  days: 86400000,
-  w: 604800000,
-  wk: 604800000,
-  wks: 604800000,
-  week: 604800000,
-  weeks: 604800000,
-  mo: 2592000000,
-  month: 2592000000,
-  months: 2592000000
-};
-
-const NATURAL_LANGUAGE_MULTIPLIERS: Record<NaturalLanguageUnit, number> = {
-  second: 1000,
-  seconds: 1000,
-  minute: 60000,
-  minutes: 60000,
-  hour: 3600000,
-  hours: 3600000,
-  day: 86400000,
-  days: 86400000,
-  week: 604800000,
-  weeks: 604800000,
-  month: 2592000000,
-  months: 2592000000
-};
-
-const WEEKDAY_MAP: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6
-};
-
-export function parseTime(input: string): number | null {
+export function parseTime(input: string, timezone: string): number | null {
   input = input.trim().toLowerCase();
 
-  // "in 3h", "in 2 days", etc
-  const durationMatch = input.match(
-    /^(\d+)\s*(s|sec|secs|seconds|m|min|mins|minutes|h|hr|hrs|hours|d|day|days|w|wk|wks|week|weeks|mo|month|months)$/
-  );
+  // ------------------------------------------------------------
+  // Helper: convert local date/time to correct timezone
+  // ------------------------------------------------------------
+  function toTZ(date: Date): number {
+    // Convert JS local date → UTC → target timezone offset
+    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
 
+    // Timezone offset map (static offsets, DST handled by Discord)
+    const offsets: Record<string, number> = {
+      "America/Phoenix": -7,
+      "America/Los_Angeles": -8,
+      "America/Denver": -7,
+      "America/Chicago": -6,
+      "America/New_York": -5,
+      "Europe/London": 0,
+      "Europe/Copenhagen": 1,
+      "Africa/Johannesburg": 2,
+      "Australia/Sydney": 10
+    };
+
+    const hours = offsets[timezone] ?? 0;
+    return utc + hours * 3600000;
+  }
+
+  // ------------------------------------------------------------
+  // DURATIONS: "in 3 hours", "in 2 days"
+  // ------------------------------------------------------------
+  const durationMatch = input.match(/^in\s+(\d+)\s*(seconds?|minutes?|hours?|days?)$/);
   if (durationMatch) {
-    const value = Number.parseInt(durationMatch[1], 10);
-    const unit = durationMatch[2] as DurationUnit;
-    return Date.now() + value * DURATION_MULTIPLIERS[unit];
+    const value = parseInt(durationMatch[1], 10);
+    const unit = durationMatch[2];
+
+    const multipliers: Record<string, number> = {
+      second: 1000,
+      seconds: 1000,
+      minute: 60000,
+      minutes: 60000,
+      hour: 3600000,
+      hours: 3600000,
+      day: 86400000,
+      days: 86400000
+    };
+
+    return Date.now() + value * multipliers[unit];
   }
 
-  const inMatch = input.match(/^in\s+(\d+)\s*(seconds?|minutes?|hours?|days?|weeks?|months?)$/);
-
-  if (inMatch) {
-    const value = Number.parseInt(inMatch[1], 10);
-    const unit = inMatch[2] as NaturalLanguageUnit;
-    return Date.now() + value * NATURAL_LANGUAGE_MULTIPLIERS[unit];
-  }
-
-  // "tomorrow at 7pm"
+  // ------------------------------------------------------------
+  // TOMORROW
+  // ------------------------------------------------------------
   if (input.startsWith("tomorrow")) {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -118,147 +59,139 @@ export function parseTime(input: string): number | null {
     const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
 
     if (timeMatch) {
-      let hour = Number.parseInt(timeMatch[1], 10);
-      const minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      let hour = parseInt(timeMatch[1], 10);
+      const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
       const ampm = timeMatch[3];
 
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
 
       tomorrow.setHours(hour, minute, 0, 0);
     } else {
       tomorrow.setHours(12, 0, 0, 0);
     }
 
-    return tomorrow.getTime();
+    return toTZ(tomorrow);
   }
 
-  // "tonight at 11pm"
+  // ------------------------------------------------------------
+  // TONIGHT
+  // ------------------------------------------------------------
   if (input.startsWith("tonight")) {
     const now = new Date();
     const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
 
     if (timeMatch) {
-      let hour = Number.parseInt(timeMatch[1], 10);
-      const minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      let hour = parseInt(timeMatch[1], 10);
+      const minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
       const ampm = timeMatch[3];
 
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
 
       now.setHours(hour, minute, 0, 0);
     } else {
-      now.setHours(21, 0, 0, 0); // default 9pm
+      now.setHours(21, 0, 0, 0);
     }
 
-    return now.getTime();
+    return toTZ(now);
   }
 
-  // "this weekend at noon" (Saturday)
+  // ------------------------------------------------------------
+  // THIS WEEKEND (Saturday)
+  // ------------------------------------------------------------
   if (input.startsWith("this weekend")) {
     const now = new Date();
+    const day = now.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+
+    const weekend = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + daysUntilSaturday
+    );
+
     const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
 
     let hour = 12;
     let minute = 0;
 
     if (timeMatch) {
-      hour = Number.parseInt(timeMatch[1], 10);
-      minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      hour = parseInt(timeMatch[1], 10);
+      minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
       const ampm = timeMatch[3];
 
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
     }
 
-    const day = now.getDay();
-    const daysUntilSaturday = (6 - day + 7) % 7;
-    const weekend = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + daysUntilSaturday,
-      hour,
-      minute,
-      0,
-      0
-    );
-
-    return weekend.getTime();
+    weekend.setHours(hour, minute, 0, 0);
+    return toTZ(weekend);
   }
 
-  // "next month 5pm"
+  // ------------------------------------------------------------
+  // NEXT MONTH
+  // ------------------------------------------------------------
   if (input.startsWith("next month")) {
     const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
     const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
 
     let hour = 17;
     let minute = 0;
 
     if (timeMatch) {
-      hour = Number.parseInt(timeMatch[1], 10);
-      minute = timeMatch[2] ? Number.parseInt(timeMatch[2], 10) : 0;
+      hour = parseInt(timeMatch[1], 10);
+      minute = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
       const ampm = timeMatch[3];
 
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
     }
 
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, hour, minute, 0, 0);
-    return nextMonth.getTime();
+    nextMonth.setHours(hour, minute, 0, 0);
+    return toTZ(nextMonth);
   }
 
-  // "next friday 6pm" / "friday 6pm"
-  const weekdayMatch = input.match(/^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/);
+  // ------------------------------------------------------------
+  // WEEKDAYS: "friday 5pm", "next friday 6pm"
+  // ------------------------------------------------------------
+  const weekdayMatch = input.match(
+    /^(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/
+  );
 
   if (weekdayMatch) {
     const isNext = !!weekdayMatch[1];
-    const weekdayName = weekdayMatch[2].toLowerCase();
+    const weekdayName = weekdayMatch[2];
     const hourStr = weekdayMatch[3];
     const minuteStr = weekdayMatch[4];
     const ampm = weekdayMatch[5];
+
+    const WEEKDAY_MAP: Record<string, number> = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6
+    };
 
     const now = new Date();
     const targetDay = WEEKDAY_MAP[weekdayName];
     const currentDay = now.getDay();
 
     let daysAhead = (targetDay - currentDay + 7) % 7;
-    if (daysAhead === 0 && isNext) {
-      daysAhead = 7;
-    } else if (isNext) {
-      daysAhead += 7;
-    }
+    if (daysAhead === 0 && isNext) daysAhead = 7;
+    else if (isNext) daysAhead += 7;
 
-    let hour = hourStr ? Number.parseInt(hourStr, 10) : 18;
-    const minute = minuteStr ? Number.parseInt(minuteStr, 10) : 0;
+    let hour = hourStr ? parseInt(hourStr, 10) : 17;
+    const minute = minuteStr ? parseInt(minuteStr, 10) : 0;
 
     if (ampm) {
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
     }
 
     const target = new Date(
@@ -271,39 +204,34 @@ export function parseTime(input: string): number | null {
       0
     );
 
-    return target.getTime();
+    return toTZ(target);
   }
 
+  // ------------------------------------------------------------
   // MM/DD/YYYY or MM/DD/YY with optional time
+  // ------------------------------------------------------------
   const dateMatch = input.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/
   );
 
   if (dateMatch) {
-    const month = Number.parseInt(dateMatch[1], 10) - 1;
-    const day = Number.parseInt(dateMatch[2], 10);
-    let year = Number.parseInt(dateMatch[3], 10);
+    const month = parseInt(dateMatch[1], 10) - 1;
+    const day = parseInt(dateMatch[2], 10);
+    let year = parseInt(dateMatch[3], 10);
 
-    if (year < 100) {
-      year += 2000;
-    }
+    if (year < 100) year += 2000;
 
-    let hour = dateMatch[4] ? Number.parseInt(dateMatch[4], 10) : 0;
-    const minute = dateMatch[5] ? Number.parseInt(dateMatch[5], 10) : 0;
+    let hour = dateMatch[4] ? parseInt(dateMatch[4], 10) : 0;
+    const minute = dateMatch[5] ? parseInt(dateMatch[5], 10) : 0;
     const ampm = dateMatch[6];
 
     if (ampm) {
-      if (ampm === "pm" && hour < 12) {
-        hour += 12;
-      }
-
-      if (ampm === "am" && hour === 12) {
-        hour = 0;
-      }
+      if (ampm === "pm" && hour < 12) hour += 12;
+      if (ampm === "am" && hour === 12) hour = 0;
     }
 
     const date = new Date(year, month, day, hour, minute, 0, 0);
-    return date.getTime();
+    return toTZ(date);
   }
 
   return null;
