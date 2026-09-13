@@ -10,7 +10,6 @@ const LOCALE_TIMEZONE_MAP: Record<string, string> = {
   "sv-SE": "Europe/Stockholm",
   "pl-PL": "Europe/Warsaw",
   "ru-RU": "Europe/Moscow",
-  "en-GB": "Europe/London",
   "da-DK": "Europe/Copenhagen",
   "en-ZA": "Africa/Johannesburg",
   "af-ZA": "Africa/Johannesburg",
