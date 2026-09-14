@@ -13,8 +13,8 @@ import {
 import { buildActiveRaffleEmbed } from "../../embedBuilder.js";
 import { raffleStore } from "../../raffleStore.js";
 import { createRaffleThreadFromMessage } from "../../services/raffleThreadService.js";
+import { getAdminTimezone } from "../../services/adminTimezoneService.js";
 import { parseTime } from "../../utils/timeParser.js";
-import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
 
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -89,15 +89,15 @@ const command: CommandModule = {
     const prize = interaction.options.getString("prize", true);
     const durationInput = interaction.options.getString("duration", true);
 
-    // ------------------------------------------------------------
-    // TIMEZONE DETECTION (Discord.js v14 safe)
-    // ------------------------------------------------------------
-    const locale = interaction.locale ?? "en-US";
-    const timezone = getTimezoneForLocale(locale, interaction.user.id);
+    const timezone = await getAdminTimezone(guild.id, interaction.user.id);
+    if (!timezone) {
+      await interaction.reply({
+        content: "⚠️ Your timezone is not set yet. Open **/council → Configuration → 🌎 My Timezone** and select it once before creating scheduled giveaways.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
 
-    // ------------------------------------------------------------
-    // NATURAL LANGUAGE TIME PARSING
-    // ------------------------------------------------------------
     const endsAt = parseTime(durationInput, timezone);
 
     if (!endsAt || Number.isNaN(endsAt)) {
@@ -205,7 +205,7 @@ const command: CommandModule = {
         files: ["./assets/woa_ritual_bg.png"]
       });
 
-  await raffleStore.setMessageId(raffle.id, raffleMessage.id);
+      await raffleStore.setMessageId(raffle.id, raffleMessage.id);
 
       await menuMessage.edit({
         content: thread ? `The ritual has begun in <#${thread.id}>!` : "The ritual has begun.",
