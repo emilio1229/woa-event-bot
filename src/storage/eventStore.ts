@@ -60,6 +60,19 @@ class EventStore {
     return event ? toEventRecord(event) : undefined;
   }
 
+  async getUpcoming(guildId: string, limit = 10): Promise<EventRecord[]> {
+    const events = await prisma.event.findMany({
+      where: {
+        guildId,
+        startAtUnix: { gt: Math.floor(Date.now() / 1000) }
+      },
+      orderBy: { startAtUnix: "asc" },
+      take: limit
+    });
+
+    return events.map(toEventRecord);
+  }
+
   async updateMessageId(eventId: string, messageId: string): Promise<EventRecord | undefined> {
     const event = await prisma.event.update({
       where: { id: eventId },
