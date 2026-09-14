@@ -25,6 +25,14 @@ export async function updateEventRsvp(
   return eventStore.updateRsvp(eventId, userId, state);
 }
 
+export async function endEvent(eventId: string): Promise<EventRecord | undefined> {
+  return eventStore.end(eventId);
+}
+
+export function isEventEnded(event: EventRecord): boolean {
+  return event.notes?.startsWith("[ENDED]") ?? false;
+}
+
 export async function deleteEvent(eventId: string): Promise<boolean> {
   return eventStore.delete(eventId);
 }
