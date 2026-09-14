@@ -74,11 +74,17 @@ async function showSigilHistory(interaction: ButtonInteraction) {
   await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 SIGIL LEDGER").setDescription(description.slice(0, 4000)).setFooter({ text: "The Wizards of Ark • Your Sigil History" })], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Sigils", `${REALM_PREFIX}:sigils`, ButtonStyle.Secondary), button("🏠 Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
-async function showRaffles(interaction: ButtonInteraction) {
+async function getVisibleRaffles(interaction: ButtonInteraction) {
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
+  const member = await interaction.guild!.members.fetch(interaction.user.id).catch(() => null);
+  return raffles.filter(raffle => !raffle.tagRole || member?.roles.cache.has(raffle.tagRole));
+}
+
+async function showRaffles(interaction: ButtonInteraction) {
+  const raffles = await getVisibleRaffles(interaction);
   const embed = new EmbedBuilder().setTitle("🎟️ ACTIVE COMMUNITY GIVEAWAYS").setFooter({ text: "The Wizards of Ark • Raffle Chamber" });
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
-  if (!raffles.length) embed.setDescription("There are no active community giveaways right now. Check back when the Council opens the next one.");
+  if (!raffles.length) embed.setDescription("There are no active community giveaways available to you right now. Check back when the Council opens the next one.");
   else {
     embed.setDescription(raffles.slice(0, 10).map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Giveaway"}**\n🎁 ${raffle.prize}\n👥 ${raffle.entries.length} entries • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n"));
     for (const raffle of raffles.slice(0, 5)) if (raffle.messageId) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setLabel(`🎟️ Open ${raffle.name || "Giveaway"}`.slice(0, 80)).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${raffle.guildId}/${raffle.threadId ?? raffle.channelId}/${raffle.messageId}`)));
@@ -114,7 +120,7 @@ async function handleRealmEventRsvp(interaction: ButtonInteraction, eventButtonD
 }
 
 async function showRewards(interaction: ButtonInteraction) {
-  const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && Date.now() < raffle.endsAt && !raffle.ended);
+  const activeRaffles = await getVisibleRaffles(interaction);
   const balance = await sigilStore.getBalance(interaction.guild!.id, interaction.user.id);
   const components = buildShopComponents(activeRaffles);
   const activeText = activeRaffles.length ? activeRaffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize} • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "No active community giveaway is available for redemption right now.";
