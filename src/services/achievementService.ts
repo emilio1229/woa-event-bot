@@ -1,4 +1,3 @@
-import { raffleStore } from "../raffleStore.js";
 import { sigilStore } from "../sigilStore.js";
 import { bountyStore } from "../utils/bountyStore.js";
 
@@ -13,7 +12,6 @@ export interface AchievementRecord {
 
 export async function getUserAchievements(guildId: string, userId: string): Promise<AchievementRecord[]> {
   const user = await sigilStore.getUser(guildId, userId);
-  const raffles = (await raffleStore.all()).filter(entry => entry.guildId === guildId && entry.entries.includes(userId));
   const bounties = await bountyStore.getActive(guildId);
   const transactions = user.transactions.length;
   const balance = user.balance;
@@ -52,18 +50,10 @@ export async function getUserAchievements(guildId: string, userId: string): Prom
       progress: `${Math.min(transactions, 25)}/25`
     },
     {
-      id: "community-participant",
-      name: "Community Participant",
-      description: "Participate in a WoA community giveaway.",
-      icon: "🎟️",
-      unlocked: raffles.length > 0,
-      progress: `${Math.min(raffles.length, 1)}/1`
-    },
-    {
       id: "bounty-watcher",
       name: "Bounty Watcher",
       description: "Visit the active bounty board while a hunt is running.",
-      icon: "📜",
+      icon: "🜁",
       unlocked: bounties.length > 0
     }
   ];
