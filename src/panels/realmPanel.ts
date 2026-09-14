@@ -167,15 +167,19 @@ async function showEvents(interaction: ButtonInteraction) {
   const events = await getUpcomingEvents(interaction.guild!.id, 10);
   const embed = new EmbedBuilder().setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
-  if (events.length === 0) embed.setDescription("No upcoming gatherings are inscribed in the event ledger yet. Check back soon.");
-  else {
+  if (events.length === 0) {
+    embed.setDescription("No upcoming gatherings are inscribed in the event ledger yet. Check back soon.");
+  } else {
     embed.setDescription(events.map((event, index) => {
       const summary = getEventRsvpSummary(event);
-      const mine = event.rsvps[interaction.user.id];
-      return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n👥 ${summary.going} going • ${summary.maybe} maybe • ${summary.no} unavailable${mine ? `\n✨ Your RSVP: **${mine}**` : ""}${event.notes ? `\n📝 ${event.notes}` : ""}`;
+      const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going");
+      const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet";
+      return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`;
     }).join("\n\n").slice(0, 4000));
     for (const event of events.slice(0, 5)) {
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button(`🜂 ${event.title}`.slice(0, 80), `${REALM_PREFIX}:event:${event.id}:going`, ButtonStyle.Success));
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        button("🟢 Going", `${REALM_PREFIX}:event:${event.id}:going`, ButtonStyle.Success)
+      );
       if (event.messageId) row.addComponents(new ButtonBuilder().setLabel("Open Event").setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${event.guildId}/${event.channelId}/${event.messageId}`));
       components.push(row);
     }
@@ -184,12 +188,18 @@ async function showEvents(interaction: ButtonInteraction) {
   await interaction.update({ embeds: [embed], components });
 }
 
-async function handleRealmEventRsvp(interaction: ButtonInteraction, eventId: string) {
+async function handleRealmEventRsvp(interaction: ButtonInteraction, eventButtonData: string) {
+  const [eventId, state] = eventButtonData.split(":");
+  if (!eventId || state !== "going") {
+    await interaction.reply({ content: "❌ That event RSVP could not be read.", ephemeral: true });
+    return;
+  }
+
   const event = await getUpcomingEvents(interaction.guild!.id, 50).then(events => events.find(candidate => candidate.id === eventId));
   if (!event) return void await interaction.reply({ content: "❌ That gathering is no longer upcoming.", ephemeral: true });
   const updated = await updateEventRsvp(eventId, interaction.user.id, "going");
   if (!updated) return void await interaction.reply({ content: "❌ That gathering could not be updated.", ephemeral: true });
-  await interaction.reply({ content: `🜂 **RSVP recorded!** You are marked **going** to **${event.title}**.`, ephemeral: true });
+  await interaction.reply({ content: `🜂 **RSVP recorded!** You are marked **Going** to **${event.title}**.`, ephemeral: true });
 }
 
 async function showRewards(interaction: ButtonInteraction) {
