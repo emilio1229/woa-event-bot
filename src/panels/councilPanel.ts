@@ -269,8 +269,8 @@ async function showEconomy(interaction: ButtonInteraction) {
 }
 
 async function showRaffles(interaction: ButtonInteraction) {
-  const raffles = await raffleStore.getActive(interaction.guildId ?? "");
-  const description = raffles.length ? raffles.map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}`).join("\n") : "No active community giveaways.";
+  const raffle = await raffleStore.getActive(interaction.guildId ?? "");
+  const description = raffle ? `🎟️ **${raffle.name}** — ${raffle.prize}` : "No active community giveaways.";
   await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`)), backButtonRow()] });
 }
 
@@ -287,7 +287,8 @@ async function showBounties(interaction: ButtonInteraction) {
 }
 
 async function showRewards(interaction: ButtonInteraction) {
-  const raffles = await raffleStore.getActive(interaction.guildId ?? "");
+  const raffle = await raffleStore.getActive(interaction.guildId ?? "");
+  const raffles = raffle ? [raffle] : [];
   const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id);
   const components = buildShopComponents();
   components[0].addComponents(backButton());
@@ -303,7 +304,8 @@ async function showMembers(interaction: ButtonInteraction) {
 
 async function showStatistics(interaction: ButtonInteraction) {
   const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
-  const activeRaffles = (await raffleStore.getActive(interaction.guildId ?? "")).length;
+  const activeRaffle = await raffleStore.getActive(interaction.guildId ?? "");
+  const activeRaffles = activeRaffle ? 1 : 0;
   const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length;
   const events = await getUpcomingEvents(interaction.guildId ?? "", 1000);
   await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButtonRow()] });
