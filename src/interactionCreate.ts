@@ -19,6 +19,7 @@ import { withRaffleEntryLock } from "./raffleEntryLock.js";
 import { closeRaffleThread, getRaffleMessageChannelId } from "./services/raffleThreadService.js";
 import { sigilStore } from "./sigilStore.js";
 import { buildRedeemSuccessEmbed } from "./sigilUtils.js";
+import type { BotClient } from "./index.js";
 
 type MessageCapableChannel = { messages: { fetch: (messageId: string) => Promise<Message> }; send: (payload: unknown) => Promise<unknown> };
 function isMessageCapableChannel(channel: unknown): channel is MessageCapableChannel { return typeof channel === "object" && channel !== null && "messages" in channel && "send" in channel; }
@@ -90,7 +91,7 @@ async function handleSigilShopSelection(interaction: StringSelectMenuInteraction
 export async function handleInteraction(interaction: Interaction): Promise<void> {
   try {
     if (interaction.isChatInputCommand()) {
-      const command = interaction.client.commands.get(interaction.commandName);
+      const command = (interaction.client as BotClient).commands.get(interaction.commandName);
       if (!command) return;
       await command.execute(interaction);
       return;
@@ -128,21 +129,27 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
             await message.edit({ embeds: [buildActiveRaffleEmbed(raffle, getParticipantNames(interaction, raffle.boundUsers))], components: message.components, files: ["./assets/woa_ritual_bg.png"], allowedMentions: { parse: [] } });
           } catch {
             raffle.entries = originalEntries; raffle.boundUsers = originalBoundUsers;
-            await sigilStore.rollbackTransaction(guild.id, interaction.user.id, redemption.transaction.id);
             throw new Error("The ritual display could not be updated. Your sigils were not spent.");
           }
-          await raffleStore.save(raffle);
-          await interaction.editReply({ embeds: [buildRedeemSuccessEmbed(raffle, entryCount, redemption.sigilCost, redemption.user.balance)] });
+          await sigilStore.confirmRedemption(redemption);
         });
-      } catch (error) { await interaction.editReply({ content: `❌ ${getErrorMessage(error)}` }); }
+        const currentRaffle = await raffleStore.getById(raffle.id);
+        if (currentRaffle) {
+          currentRaffle.entries = raffle.entries;
+          currentRaffle.boundUsers = raffle.boundUsers;
+          await raffleStore.save(currentRaffle);
+        }
+        await interaction.editReply({ embeds: [buildRedeemSuccessEmbed(entryCount, raffle.name)] });
+      } catch (error) {
+        console.error("sigil redemption error:", error);
+        await interaction.editReply({ content: `❌ ${getErrorMessage(error)}` });
+      }
       return;
     }
     if (interaction.isStringSelectMenu()) {
       if (interaction.customId === "sigil_shop_select") { await handleSigilShopSelection(interaction); return; }
       if (interaction.customId === "select_status_raffle") { await handleStatusSelection(interaction); return; }
-      if (interaction.customId === "select_end_raffle") { await handleEndSelection(interaction); }
-      return;
+      if (interaction.customId === "select_end_raffle") { await handleEndSelection(interaction); return; }
     }
-    if (interaction.isRoleSelectMenu()) { try { await interaction.deferUpdate(); } catch {} }
-  } catch (error) { console.error("interaction handler error:", error); }
+  } catch (error) { console.error("interactionCreate error:", error); }
 }
