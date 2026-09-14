@@ -11,6 +11,8 @@ export interface CommandModule {
   execute: (interaction: ChatInputCommandInteraction) => Promise<unknown> | unknown;
 }
 
+const PUBLIC_COMMANDS = new Set(["realm", "council"]);
+
 export function getCommandFiles(directory: string): string[] {
   let results: string[] = [];
 
@@ -41,6 +43,13 @@ export async function loadCommandModules(commandsPath: string): Promise<CommandM
 
     if (!command?.data?.name || typeof command.execute !== "function") {
       console.error(`❌ Invalid command file: ${path.relative(commandsPath, filePath)}`);
+      continue;
+    }
+
+    // The new WoA UI intentionally exposes only /realm and /council.
+    // Existing command modules remain available internally while they are migrated
+    // behind the new panel system.
+    if (!PUBLIC_COMMANDS.has(command.data.name)) {
       continue;
     }
 
