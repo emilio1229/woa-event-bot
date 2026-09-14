@@ -17,7 +17,7 @@ import {
 } from "discord.js";
 import { env } from "../config/env.js";
 import { raffleStore } from "../raffleStore.js";
-import { sigilStore } from "../sigilStore.js";
+import { sigilStore, SIGILS_PER_RAFFLE_ENTRY } from "../sigilStore.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { buildBalanceEmbed, buildShopComponents } from "../sigilUtils.js";
 import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
