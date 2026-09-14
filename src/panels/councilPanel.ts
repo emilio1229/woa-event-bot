@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
   PermissionFlagsBits,
+  PermissionsBitField,
   type Interaction
 } from "discord.js";
 import { env } from "../config/env.js";
@@ -14,7 +15,13 @@ export function isCouncilMember(interaction: Interaction) {
   if (!interaction.inGuild() || !interaction.member) return false;
 
   const member = interaction.member;
-  if ("permissions" in member && member.permissions.has(PermissionFlagsBits.Administrator)) return true;
+  const permissions = member.permissions;
+  if (
+    permissions instanceof PermissionsBitField &&
+    permissions.has(PermissionFlagsBits.Administrator)
+  ) {
+    return true;
+  }
 
   if (env.councilRoleIds.length === 0) return false;
   if (!("roles" in member)) return false;
