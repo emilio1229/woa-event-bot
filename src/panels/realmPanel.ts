@@ -8,6 +8,8 @@ import {
 } from "discord.js";
 import { raffleStore } from "../raffleStore.js";
 import { sigilStore } from "../sigilStore.js";
+import { buildShopComponents, buildShopEmbed } from "../sigilUtils.js";
+import { getEventRsvpSummary, getUpcomingEvents, updateEventRsvp } from "../services/eventService.js";
 
 export const REALM_PREFIX = "woa:realm";
 
@@ -76,6 +78,18 @@ export async function handleRealmPanel(interaction: Interaction) {
     await showRaffles(buttonInteraction);
     return true;
   }
+  if (section === "events") {
+    await showEvents(buttonInteraction);
+    return true;
+  }
+  if (section.startsWith("event:")) {
+    await handleRealmEventRsvp(buttonInteraction, section.slice("event:".length));
+    return true;
+  }
+  if (section === "rewards") {
+    await showRewards(buttonInteraction);
+    return true;
+  }
   if (section === "leaderboard") {
     await showLeaderboard(buttonInteraction);
     return true;
@@ -87,8 +101,6 @@ export async function handleRealmPanel(interaction: Interaction) {
 
   const names: Record<string, string> = {
     bounties: "📜 Bounties",
-    events: "🏆 Events",
-    rewards: "🎁 Rewards",
     achievements: "🏅 Achievements"
   };
 
@@ -167,13 +179,93 @@ async function showRaffles(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
   const embed = new EmbedBuilder().setTitle("🎟️ ACTIVE RITUAL RAFFLES").setFooter({ text: "The Wizards of Ark • Raffle Chamber" });
+  const components: ActionRowBuilder<ButtonBuilder>[] = [];
+
   if (raffles.length === 0) {
     embed.setDescription("There are no active raffles right now. Check back when the Council opens the next ritual.");
   } else {
     embed.setDescription(raffles.slice(0, 10).map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Raffle"}**\n🎁 ${raffle.prize}\n🎟️ ${raffle.entries.length} entries • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n"));
+
+    for (const raffle of raffles.slice(0, 5)) {
+      const channelId = raffle.threadId ?? raffle.channelId;
+      if (raffle.messageId) {
+        components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel(`🎟️ Enter ${raffle.name || "Raffle"}`.slice(0, 80))
+            .setStyle(ButtonStyle.Link)
+            .setURL(`https://discord.com/channels/${raffle.guildId}/${channelId}/${raffle.messageId}`)
+        ));
+      }
+    }
   }
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary));
-  await interaction.update({ embeds: [embed], components: [row] });
+
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
+  await interaction.update({ embeds: [embed], components });
+}
+
+async function showEvents(interaction: ButtonInteraction) {
+  if (!interaction.inGuild() || !interaction.guild) return;
+  const events = await getUpcomingEvents(interaction.guild.id, 10);
+  const embed = new EmbedBuilder()
+    .setTitle("🏆 UPCOMING GATHERINGS")
+    .setFooter({ text: "The Wizards of Ark • Event Hall" });
+  const components: ActionRowBuilder<ButtonBuilder>[] = [];
+
+  if (events.length === 0) {
+    embed.setDescription("No upcoming gatherings are inscribed in the event ledger yet. Check back soon.");
+  } else {
+    embed.setDescription(events.map((event, index) => {
+      const summary = getEventRsvpSummary(event);
+      const mine = event.rsvps[interaction.user.id];
+      return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n👥 ${summary.going} going • ${summary.maybe} maybe • ${summary.no} unavailable${mine ? `\n✨ Your RSVP: **${mine}**` : ""}${event.notes ? `\n📝 ${event.notes}` : ""}`;
+    }).join("\n\n").slice(0, 4000));
+
+    for (const event of events.slice(0, 5)) {
+      const row = new ActionRowBuilder<ButtonBuilder>();
+      row.addComponents(button(`🜂 ${event.title}`.slice(0, 80), `${REALM_PREFIX}:event:${event.id}:going`, ButtonStyle.Success));
+      if (event.messageId) {
+        row.addComponents(
+          new ButtonBuilder()
+            .setLabel("Open Event")
+            .setStyle(ButtonStyle.Link)
+            .setURL(`https://discord.com/channels/${event.guildId}/${event.channelId}/${event.messageId}`)
+        );
+      }
+      components.push(row);
+    }
+  }
+
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
+  await interaction.update({ embeds: [embed], components });
+}
+
+async function handleRealmEventRsvp(interaction: ButtonInteraction, eventId: string) {
+  const event = await getUpcomingEvents(interaction.guild!.id, 50).then(events => events.find(candidate => candidate.id === eventId));
+  if (!event) {
+    await interaction.reply({ content: "❌ That gathering is no longer upcoming.", ephemeral: true });
+    return;
+  }
+
+  const updated = await updateEventRsvp(eventId, interaction.user.id, "going");
+  if (!updated) {
+    await interaction.reply({ content: "❌ That gathering could not be updated.", ephemeral: true });
+    return;
+  }
+
+  await interaction.reply({ content: `🜂 **RSVP recorded!** You are marked **going** to **${event.title}**.`, ephemeral: true });
+}
+
+async function showRewards(interaction: ButtonInteraction) {
+  if (!interaction.inGuild() || !interaction.guild) return;
+  const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && Date.now() < raffle.endsAt && !raffle.ended);
+  const balance = await sigilStore.getBalance(interaction.guild.id, interaction.user.id);
+  await interaction.update({
+    embeds: [buildShopEmbed(activeRaffles, balance)],
+    components: [
+      ...buildShopComponents(activeRaffles.length === 0),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))
+    ]
+  });
 }
 
 async function showLeaderboard(interaction: ButtonInteraction) {
