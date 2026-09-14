@@ -90,7 +90,9 @@ class EventStore {
       : {};
     if ("__endedAt" in raw) return toEventRecord(event);
     raw.__endedAt = new Date().toISOString();
-    const updated = await prisma.event.update({ where: { id: eventId }, data: { rsvps: raw as Prisma.InputJsonValue } });
+    const originalNotes = event.notes ?? "";
+    const endedNotes = originalNotes.startsWith(ENDED_MARKER) ? originalNotes : `${ENDED_MARKER} ${originalNotes}`.trim();
+    const updated = await prisma.event.update({ where: { id: eventId }, data: { rsvps: raw as Prisma.InputJsonValue, notes: endedNotes } });
     return toEventRecord(updated);
   }
 
