@@ -48,7 +48,7 @@ export async function cleanBotMessages(client: Client, channelId: string): Promi
     for (const message of ordered) {
       if (message.author.id !== botId) continue;
       try {
-        await message.delete("WoA High Council channel cleanup");
+        await message.delete();
         deleted += 1;
       } catch {
         failed += 1;
