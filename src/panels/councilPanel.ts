@@ -19,7 +19,7 @@ import { env } from "../config/env.js";
 import { raffleStore } from "../raffleStore.js";
 import { sigilStore } from "../sigilStore.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
-import { buildBalanceEmbed, buildShopComponents, buildShopEmbed } from "../sigilUtils.js";
+import { buildBalanceEmbed, buildShopComponents } from "../sigilUtils.js";
 import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import { parseTime } from "../utils/timeParser.js";
 import { getTimezoneForLocale } from "../utils/localeTimezone.js";
@@ -28,6 +28,7 @@ import { attachEventMessageId, createEvent, getEventRsvpSummary, getUpcomingEven
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { createRaffleThreadFromMessage } from "../services/raffleThreadService.js";
+import { SIGILS_PER_RAFFLE_ENTRY } from "../sigilStore.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 
@@ -288,11 +289,30 @@ async function showBounties(interaction: ButtonInteraction) {
 
 async function showRewards(interaction: ButtonInteraction) {
   const raffle = await raffleStore.getActive(interaction.guildId ?? "");
-  const raffles = raffle ? [raffle] : [];
   const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id);
   const components = buildShopComponents();
-  components[0].addComponents(backButton());
-  await interaction.update({ embeds: [buildShopEmbed(raffles, user.balance)], components });
+  await interaction.update({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xD4AF37)
+        .setTitle("🛍️ Sigil Shop")
+        .setDescription([
+          "Trade your hard-earned sigils for weighted raffle entries.",
+          `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`,
+          `Current balance: **${user.balance} sigils**.`
+        ].join("\n"))
+        .addFields({
+          name: "🔮 Active Rituals",
+          value: raffle
+            ? `• **${raffle.name}** — Prize: ${raffle.prize}\n  ID: \`${raffle.id}\` • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`
+            : "No active raffles are available for redemption right now.",
+          inline: false
+        })
+        .setFooter({ text: "Press the button below to open the redemption modal." })
+        .setTimestamp()
+    ],
+    components: [...components, backButtonRow()]
+  });
 }
 
 async function showMembers(interaction: ButtonInteraction) {
