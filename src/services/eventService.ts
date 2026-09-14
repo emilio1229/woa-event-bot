@@ -13,6 +13,10 @@ export async function getEventById(eventId: string): Promise<EventRecord | undef
   return eventStore.getById(eventId);
 }
 
+export async function getUpcomingEvents(guildId: string, limit = 10): Promise<EventRecord[]> {
+  return eventStore.getUpcoming(guildId, limit);
+}
+
 export async function updateEventRsvp(
   eventId: string,
   userId: string,
