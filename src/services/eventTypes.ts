@@ -6,7 +6,7 @@ export interface EventRecord {
   channelId: string;
   messageId: string | null;
   title: string;
-  description: string;
+  description: string | null;
   notes: string | null;
   hostId: string;
   creatorId: string;
