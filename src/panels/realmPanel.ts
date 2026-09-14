@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  type ButtonInteraction,
   type Interaction
 } from "discord.js";
 import { raffleStore } from "../raffleStore.js";
@@ -47,39 +48,40 @@ export function buildRealmPanel() {
 export async function handleRealmPanel(interaction: Interaction) {
   if (!interaction.isButton() || !interaction.customId.startsWith(`${REALM_PREFIX}:`)) return false;
 
-  const section = interaction.customId.slice(`${REALM_PREFIX}:`.length);
+  const buttonInteraction = interaction as ButtonInteraction;
+  const section = buttonInteraction.customId.slice(`${REALM_PREFIX}:`.length);
   if (section === "home") {
-    await interaction.update(buildRealmPanel());
+    await buttonInteraction.update(buildRealmPanel());
     return true;
   }
 
-  if (!interaction.inGuild() || !interaction.guild) {
-    await interaction.reply({ content: "❌ This Realm panel can only be used inside the WoA server.", ephemeral: true });
+  if (!buttonInteraction.inGuild() || !buttonInteraction.guild) {
+    await buttonInteraction.reply({ content: "❌ This Realm panel can only be used inside the WoA server.", ephemeral: true });
     return true;
   }
 
   if (section === "sigils") {
-    await showSigils(interaction);
+    await showSigils(buttonInteraction);
     return true;
   }
   if (section === "sigils:daily") {
-    await claimDaily(interaction);
+    await claimDaily(buttonInteraction);
     return true;
   }
   if (section === "sigils:history") {
-    await showSigilHistory(interaction);
+    await showSigilHistory(buttonInteraction);
     return true;
   }
   if (section === "raffles") {
-    await showRaffles(interaction);
+    await showRaffles(buttonInteraction);
     return true;
   }
   if (section === "leaderboard") {
-    await showLeaderboard(interaction);
+    await showLeaderboard(buttonInteraction);
     return true;
   }
   if (section === "profile") {
-    await showProfile(interaction);
+    await showProfile(buttonInteraction);
     return true;
   }
 
@@ -98,11 +100,11 @@ export async function handleRealmPanel(interaction: Interaction) {
   const back = new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("◀ Back to Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)
   );
-  await interaction.update({ embeds: [embed], components: [back] });
+  await buttonInteraction.update({ embeds: [embed], components: [back] });
   return true;
 }
 
-async function showSigils(interaction: Interaction & { isButton(): true }) {
+async function showSigils(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const user = await sigilStore.getUser(interaction.guild.id, interaction.user.id);
   const stats = await sigilStore.getGuildStats(interaction.guild.id);
@@ -126,7 +128,7 @@ async function showSigils(interaction: Interaction & { isButton(): true }) {
   await interaction.update({ embeds: [embed], components: [row] });
 }
 
-async function claimDaily(interaction: Interaction & { isButton(): true }) {
+async function claimDaily(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const guildId = interaction.guild.id;
   const userId = interaction.user.id;
@@ -149,7 +151,7 @@ async function claimDaily(interaction: Interaction & { isButton(): true }) {
   await interaction.reply({ content: "✨ **Daily Sigil claimed!** You received **+1 Sigil**.", ephemeral: true });
 }
 
-async function showSigilHistory(interaction: Interaction & { isButton(): true }) {
+async function showSigilHistory(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const transactions = await sigilStore.getTransactions(interaction.guild.id, interaction.user.id, 10);
   const description = transactions.length === 0 ? "No Sigil transactions yet." : transactions.map((tx, index) => `**${index + 1}.** ${tx.amount > 0 ? "+" : ""}${tx.amount} • ${tx.reason}\n<t:${Math.floor(new Date(tx.timestamp).getTime() / 1000)}:R>`).join("\n\n");
@@ -161,7 +163,7 @@ async function showSigilHistory(interaction: Interaction & { isButton(): true })
   await interaction.update({ embeds: [embed], components: [row] });
 }
 
-async function showRaffles(interaction: Interaction & { isButton(): true }) {
+async function showRaffles(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
   const embed = new EmbedBuilder().setTitle("🎟️ ACTIVE RITUAL RAFFLES").setFooter({ text: "The Wizards of Ark • Raffle Chamber" });
@@ -174,7 +176,7 @@ async function showRaffles(interaction: Interaction & { isButton(): true }) {
   await interaction.update({ embeds: [embed], components: [row] });
 }
 
-async function showLeaderboard(interaction: Interaction & { isButton(): true }) {
+async function showLeaderboard(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const leaderboard = await sigilStore.getLeaderboard(interaction.guild.id, 10);
   const lines = await Promise.all(leaderboard.map(async (user, index) => {
@@ -186,7 +188,7 @@ async function showLeaderboard(interaction: Interaction & { isButton(): true }) 
   await interaction.update({ embeds: [embed], components: [row] });
 }
 
-async function showProfile(interaction: Interaction & { isButton(): true }) {
+async function showProfile(interaction: ButtonInteraction) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const user = await sigilStore.getUser(interaction.guild.id, interaction.user.id);
   const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
