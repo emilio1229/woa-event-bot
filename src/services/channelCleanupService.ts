@@ -38,8 +38,13 @@ export async function cleanBotMessages(client: Client, channelId: string): Promi
   let failed = 0;
 
   for (let page = 0; page < MAX_PAGES; page += 1) {
-    const fetchMessages = channel.messages.fetch;
-    const messages = await fetchMessages({ limit: PAGE_SIZE, ...(before ? { before } : {}) });
+    // Keep the method bound to the Discord.js message manager.
+    // Calling an extracted `fetch` function loses its `this` context and can
+    // cause Discord.js internals to fail with `resolveId` being undefined.
+    const messages = await channel.messages.fetch({
+      limit: PAGE_SIZE,
+      ...(before ? { before } : {})
+    });
     if (messages.size === 0) break;
 
     scanned += messages.size;
