@@ -55,7 +55,8 @@ async function updateCouncilPanel(interaction: ButtonInteraction | StringSelectM
       return;
     }
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ ...payload, content: payload.content ?? undefined, flags: MessageFlags.Ephemeral });
+      const content = "content" in payload ? payload.content ?? undefined : undefined;
+      await interaction.reply({ ...payload, content, flags: MessageFlags.Ephemeral });
     }
     return;
   }
@@ -220,7 +221,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   }
   if (id.startsWith(`${COUNCIL_PREFIX}:bounty:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:bounty:modal:`.length); const draft = postingDrafts.get(userId);
-    if (!draft || draft.kind !== "bounty" || !draft.roleId) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ That bounty setup expired or has no notification role. Start the bounty again.")], components: [backButtonRow()] }); return; }
+    if (!draft || draft.kind !== "bounty" || !draft.roleId) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ That bounty setup expired or has no notification role. Start it again.")], components: [backButtonRow()] }); return; }
     const dinos = interaction.fields.getTextInputValue("dinos").split(",").map(value => value.trim()).filter(Boolean); const bonus = interaction.fields.getTextInputValue("bonus").trim() || null;
     if (dinos.length !== 4 || dinos.some(dino => dino.length < 1)) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ Enter exactly four dino names separated by commas.")], components: [backButtonRow()] }); return; }
     bountyDrafts.set(userId, { guildId: guild.id, channelId: draft.channelId, roleId: draft.roleId, dinos, bonus, stats: ["Melee", "Melee", "Melee", "Melee"] }); postingDrafts.delete(userId); await showBountyStatPicker(interaction, userId);
