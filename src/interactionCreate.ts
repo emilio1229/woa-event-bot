@@ -114,7 +114,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const raffle = await raffleStore.getById(raffleId);
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) { await interaction.editReply({ content: "❌ That giveaway is not active right now." }); return; }
       if (!Number.isInteger(entryCount) || entryCount <= 0) { await interaction.editReply({ content: "❌ Enter a valid positive number of raffle entries." }); return; }
-      let redemption: Awaited<ReturnType<typeof sigilStore.redeem>>;
+      let redemption: Awaited<ReturnType<typeof sigilStore.redeem>> | null = null;
       try {
         await withRaffleEntryLock(raffle.id, async () => {
           const originalEntries = [...(raffle.entries ?? [])];
@@ -130,10 +130,13 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
             await message.edit({ embeds: [buildActiveRaffleEmbed(raffle, getParticipantNames(interaction, raffle.boundUsers))], components: message.components, files: ["./assets/woa_ritual_bg.png"], allowedMentions: { parse: [] } });
           } catch {
             raffle.entries = originalEntries; raffle.boundUsers = originalBoundUsers;
+            if (redemption) await sigilStore.rollbackTransaction(guild.id, interaction.user.id, redemption.transaction.id);
             throw new Error("The ritual display could not be updated. Your sigils were not spent.");
           }
+          if (!redemption) throw new Error("The sigil redemption could not be completed.");
           await sigilStore.confirmRedemption(redemption);
         });
+        if (!redemption) throw new Error("The sigil redemption could not be completed.");
         const currentRaffle = await raffleStore.getById(raffle.id);
         if (currentRaffle) {
           currentRaffle.entries = raffle.entries;
