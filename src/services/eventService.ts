@@ -20,7 +20,7 @@ export async function getUpcomingEvents(guildId: string, limit = 10): Promise<Ev
 export async function updateEventRsvp(
   eventId: string,
   userId: string,
-  state: RsvpState
+  state: RsvpState = "going"
 ): Promise<EventRecord | undefined> {
   return eventStore.updateRsvp(eventId, userId, state);
 }
@@ -30,11 +30,7 @@ export async function deleteEvent(eventId: string): Promise<boolean> {
 }
 
 export function getEventRsvpSummary(event: EventRecord): EventRsvpSummary {
-  return Object.values(event.rsvps).reduce<EventRsvpSummary>(
-    (summary, state) => {
-      summary[state] += 1;
-      return summary;
-    },
-    { going: 0, maybe: 0, no: 0 }
-  );
+  return {
+    going: Object.values(event.rsvps).filter(state => state === "going").length
+  };
 }
