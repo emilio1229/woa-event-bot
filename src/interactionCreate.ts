@@ -114,11 +114,12 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const raffle = await raffleStore.getById(raffleId);
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) { await interaction.editReply({ content: "❌ That giveaway is not active right now." }); return; }
       if (!Number.isInteger(entryCount) || entryCount <= 0) { await interaction.editReply({ content: "❌ Enter a valid positive number of raffle entries." }); return; }
+      let redemption: Awaited<ReturnType<typeof sigilStore.redeem>>;
       try {
         await withRaffleEntryLock(raffle.id, async () => {
           const originalEntries = [...(raffle.entries ?? [])];
           const originalBoundUsers = [...(raffle.boundUsers ?? [])];
-          const redemption = await sigilStore.redeem(guild.id, interaction.user.id, entryCount, raffle.id, raffle.name);
+          redemption = await sigilStore.redeem(guild.id, interaction.user.id, entryCount, raffle.id, raffle.name);
           raffle.entries = [...originalEntries]; raffle.boundUsers = [...originalBoundUsers];
           if (!raffle.boundUsers.includes(interaction.user.id)) raffle.boundUsers.push(interaction.user.id);
           for (let index = 0; index < entryCount; index += 1) raffle.entries.push(interaction.user.id);
