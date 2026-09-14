@@ -1,4 +1,4 @@
-export type RsvpState = "going" | "maybe" | "no";
+export type RsvpState = "going";
 
 export interface EventRecord {
   id: string;
@@ -30,6 +30,4 @@ export interface CreateEventInput {
 
 export interface EventRsvpSummary {
   going: number;
-  maybe: number;
-  no: number;
 }
