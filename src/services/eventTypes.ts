@@ -6,6 +6,7 @@ export interface EventRecord {
   channelId: string;
   messageId: string | null;
   title: string;
+  description: string;
   notes: string | null;
   hostId: string;
   creatorId: string;
@@ -20,6 +21,7 @@ export interface CreateEventInput {
   guildId: string;
   channelId: string;
   title: string;
+  description: string;
   notes?: string | null;
   hostId: string;
   creatorId: string;
