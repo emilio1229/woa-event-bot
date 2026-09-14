@@ -41,7 +41,9 @@ import { cleanBotMessages } from "../services/channelCleanupService.js";
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
 type BountyDraft = { guildId: string; channelId: string; roleId: string; dinos: string[]; bonus: string | null; stats: string[] };
+type PostingDraft = { kind: "event" | "raffle" | "bounty"; channelId: string; roleId: string | null };
 const bountyDrafts = new Map<string, BountyDraft>();
+const postingDrafts = new Map<string, PostingDraft>();
 
 export function isCouncilMember(interaction: Interaction) {
   if (!interaction.inGuild() || !interaction.member) return false;
@@ -97,15 +99,48 @@ export async function handleCouncilPanel(interaction: Interaction) {
   return true;
 }
 
-async function showCleanup(interaction: ButtonInteraction) {
-  const channelMenu = new ChannelSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:cleanup:channel`).setPlaceholder("Choose the channel to clean").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread);
-  await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription("Choose a channel to clean.\n\n**Only messages authored by WoA-Event-BOT can be deleted.**\n\n🔒 Sigils, raffle entries, events, bounties, winners, users, and all other database records are never touched.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channelMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+function postingChannelMenu(kind: PostingDraft["kind"]) {
+  return new ChannelSelectMenuBuilder()
+    .setCustomId(`${COUNCIL_PREFIX}:post:channel:${kind}`)
+    .setPlaceholder(`Choose where to post the ${kind}`)
+    .setMinValues(1)
+    .setMaxValues(1)
+    .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread);
 }
 
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
-  if (interaction.customId !== `${COUNCIL_PREFIX}:cleanup:channel`) return;
+  if (interaction.customId === `${COUNCIL_PREFIX}:cleanup:channel`) {
+    const channelId = interaction.values[0];
+    await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription(`Selected channel: <#${channelId}>\n\nThis cleanup can **only delete messages authored by WoA-Event-BOT**.\n\n🔒 **Nothing in the database is deleted or changed.**`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Clean Bot Messages", `${COUNCIL_PREFIX}:cleanup:bot:${channelId}`, ButtonStyle.Danger), button("◀ Choose Another", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary), button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+    return;
+  }
+
+  const match = interaction.customId.match(new RegExp(`^${COUNCIL_PREFIX.replace(":", "\\:")}:post:channel:(event|raffle|bounty)$`));
+  if (!match) return;
+  const kind = match[1] as PostingDraft["kind"];
   const channelId = interaction.values[0];
-  await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription(`Selected channel: <#${channelId}>\n\nThis cleanup can **only delete messages authored by WoA-Event-BOT**.\n\n🔒 **Nothing in the database is deleted or changed.**`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Clean Bot Messages", `${COUNCIL_PREFIX}:cleanup:bot:${channelId}`, ButtonStyle.Danger), button("◀ Choose Another", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary), button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isSendable()) {
+    await interaction.update({ content: "❌ That channel cannot receive messages from the bot. Please choose another channel.", embeds: [], components: [backButtonRow()] });
+    return;
+  }
+
+  postingDrafts.set(interaction.user.id, { kind, channelId, roleId: null });
+
+  if (kind === "event") {
+    const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:event:role`).setPlaceholder("Choose the role to notify");
+    const skip = button("No role to tag", `${COUNCIL_PREFIX}:event:no-role`, ButtonStyle.Secondary);
+    await interaction.update({ content: `📍 **Event channel selected:** <#${channelId}>\n\n🔔 Choose the Discord role to notify, or skip the role tag.`, embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(skip, backButton())] });
+    return;
+  }
+
+  const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:${kind}:role`).setPlaceholder(`Choose the role to notify for this ${kind}` ).setMinValues(1).setMaxValues(1);
+  await interaction.update({ content: `📍 **${kind[0].toUpperCase() + kind.slice(1)} channel selected:** <#${channelId}>\n\n🔔 Choose the Discord role to notify.`, embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
+}
+
+async function showCleanup(interaction: ButtonInteraction) {
+  const channelMenu = new ChannelSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:cleanup:channel`).setPlaceholder("Choose the channel to clean").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread);
+  await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription("Choose a channel to clean.\n\n**Only messages authored by WoA-Event-BOT can be deleted.**\n\n🔒 Sigils, raffle entries, events, bounties, winners, users, and all other database records are never touched.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channelMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
 async function runCleanup(interaction: ButtonInteraction, channelId: string) {
@@ -120,9 +155,26 @@ async function runCleanup(interaction: ButtonInteraction, channelId: string) {
 
 async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
   const roleId = interaction.values[0] ?? null;
-  if (interaction.customId === `${COUNCIL_PREFIX}:raffle:role`) return void await interaction.showModal(buildRaffleModal(roleId));
-  if (interaction.customId === `${COUNCIL_PREFIX}:bounty:role`) return void await interaction.showModal(buildBountyModal(roleId));
-  if (interaction.customId === `${COUNCIL_PREFIX}:event:role`) return void await interaction.showModal(buildEventModal(roleId));
+  if (interaction.customId === `${COUNCIL_PREFIX}:event:role`) {
+    const draft = postingDrafts.get(interaction.user.id);
+    if (!draft || draft.kind !== "event") { await interaction.update({ content: "❌ That event setup expired. Start the event again.", embeds: [], components: [backButtonRow()] }); return; }
+    draft.roleId = roleId;
+    await interaction.showModal(buildEventModal(interaction.user.id));
+    return;
+  }
+  if (interaction.customId === `${COUNCIL_PREFIX}:raffle:role`) {
+    const draft = postingDrafts.get(interaction.user.id);
+    if (!draft || draft.kind !== "raffle") { await interaction.update({ content: "❌ That giveaway setup expired. Start the giveaway again.", embeds: [], components: [backButtonRow()] }); return; }
+    draft.roleId = roleId;
+    await interaction.showModal(buildRaffleModal(interaction.user.id));
+    return;
+  }
+  if (interaction.customId === `${COUNCIL_PREFIX}:bounty:role`) {
+    const draft = postingDrafts.get(interaction.user.id);
+    if (!draft || draft.kind !== "bounty") { await interaction.update({ content: "❌ That bounty setup expired. Start the bounty again.", embeds: [], components: [backButtonRow()] }); return; }
+    draft.roleId = roleId;
+    await interaction.showModal(buildBountyModal(interaction.user.id));
+  }
 }
 
 async function handleCouncilStringSelect(interaction: StringSelectMenuInteraction) {
@@ -136,6 +188,7 @@ async function handleCouncilStringSelect(interaction: StringSelectMenuInteractio
 
 async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   const id = interaction.customId; const guild = interaction.guild; if (!guild) return;
+
   if (id.startsWith(`${COUNCIL_PREFIX}:sigil:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:sigil:modal:`.length); const amount = Number.parseInt(interaction.fields.getTextInputValue("amount").trim(), 10); const reason = interaction.fields.getTextInputValue("reason").trim();
     if (!Number.isInteger(amount) || amount === 0 || !reason) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription("❌ Enter a non-zero whole-number amount and a reason.")], components: [backButtonRow()] }); return; }
@@ -149,36 +202,49 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     }
     return;
   }
+
   if (id.startsWith(`${COUNCIL_PREFIX}:event:modal:`)) {
-    const channel = interaction.channel; if (!channel || !channel.isSendable()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ This control must be used in a channel where the bot can send messages.")], components: [backButtonRow()] }); return; }
+    const userId = id.slice(`${COUNCIL_PREFIX}:event:modal:`.length);
+    const draft = postingDrafts.get(userId);
+    if (!draft || draft.kind !== "event") { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ That event setup expired. Start the event again.")], components: [backButtonRow()] }); return; }
+    const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+    if (!channel || !channel.isSendable()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ The selected posting channel is unavailable or the bot cannot send there.")], components: [backButtonRow()] }); return; }
     const title = interaction.fields.getTextInputValue("title").trim(); const time = interaction.fields.getTextInputValue("time").trim(); const description = interaction.fields.getTextInputValue("description").trim(); const notes = interaction.fields.getTextInputValue("notes").trim() || null;
-    const roleId = id.split(":").at(-1) === "none" ? null : id.split(":").at(-1) || null; const timezone = getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id); const millis = parseTime(time, timezone);
+    const timezone = getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id); const millis = parseTime(time, timezone);
     if (!title || !description || millis === null || Number.isNaN(millis) || millis <= Date.now()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ Please provide a title, description, and valid future event time.")], components: [backButtonRow()] }); return; }
-    const event = await createEvent({ guildId: guild.id, channelId: channel.id, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
+    const event = await createEvent({ guildId: guild.id, channelId: draft.channelId, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
     const announcement = await channel.send({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } });
-    await attachEventMessageId(event.id, announcement.id); if (roleId && /^\d{17,20}$/.test(roleId)) await announcement.edit({ content: `<@&${roleId}>`, allowedMentions: { roles: [roleId] } });
-    await showEvents(interaction, `✨ **Event created:** ${event.title}`); return;
+    await attachEventMessageId(event.id, announcement.id); if (draft.roleId && /^\d{17,20}$/.test(draft.roleId)) await announcement.edit({ content: `<@&${draft.roleId}>`, allowedMentions: { roles: [draft.roleId] } });
+    postingDrafts.delete(userId); await showEvents(interaction, `✨ **Event created:** ${event.title} in <#${draft.channelId}>`); return;
   }
-  const channel = interaction.channel; if (!channel || !channel.isSendable()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏛️ Council").setDescription("❌ This control must be used in a channel where the bot can send messages.")], components: [backButtonRow()] }); return; }
+
   if (id.startsWith(`${COUNCIL_PREFIX}:raffle:modal:`)) {
-    const prize = interaction.fields.getTextInputValue("prize").trim(); const duration = interaction.fields.getTextInputValue("duration").trim(); const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway"; const roleId = id.split(":").at(-1) ?? ""; const endsAt = parseTime(duration, getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id));
-    if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now() || !/^\d{17,20}$/.test(roleId)) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ Provide a prize and a valid future end time.")], components: [backButtonRow()] }); return; }
-    const raffle = await raffleStore.create({ guildId: guild.id, channelId: channel.id, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
-    const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [roleId] } });
+    const userId = id.slice(`${COUNCIL_PREFIX}:raffle:modal:`.length);
+    const draft = postingDrafts.get(userId);
+    if (!draft || draft.kind !== "raffle" || !draft.roleId) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ That giveaway setup expired or has no notification role. Start it again.")], components: [backButtonRow()] }); return; }
+    const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+    if (!channel || !channel.isSendable()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ The selected posting channel is unavailable or the bot cannot send there.")], components: [backButtonRow()] }); return; }
+    const prize = interaction.fields.getTextInputValue("prize").trim(); const duration = interaction.fields.getTextInputValue("duration").trim(); const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway"; const endsAt = parseTime(duration, getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id));
+    if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now()) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ Provide a prize and a valid future end time.")], components: [backButtonRow()] }); return; }
+    const raffle = await raffleStore.create({ guildId: guild.id, channelId: draft.channelId, name, prize, endsAt, tagRole: draft.roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
+    const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${draft.roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [draft.roleId] } });
     const thread = await createRaffleThreadFromMessage(announcement, raffle); const destination = thread ?? channel; if (thread) await raffleStore.setThreadId(raffle.id, thread.id);
     const message = await destination.send({ embeds: [buildActiveRaffleEmbed(raffle)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Join Giveaway", "bindSoul"), button("⚫ Leave Giveaway", "unbindSoul", ButtonStyle.Secondary))], files: ["./assets/woa_ritual_bg.png"] });
-    await raffleStore.setMessageId(raffle.id, message.id); await showRaffles(interaction); return;
+    await raffleStore.setMessageId(raffle.id, message.id); postingDrafts.delete(userId); await showRaffles(interaction); return;
   }
+
   if (id.startsWith(`${COUNCIL_PREFIX}:bounty:modal:`)) {
-    const dinos = interaction.fields.getTextInputValue("dinos").split(",").map(value => value.trim()).filter(Boolean); const roleId = id.split(":").at(-1) ?? ""; const bonus = interaction.fields.getTextInputValue("bonus").trim() || null;
-    if (dinos.length !== 4 || dinos.some(dino => dino.length < 1) || !/^\d{17,20}$/.test(roleId)) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ Enter exactly four dino names separated by commas and select a valid Discord role.")], components: [backButtonRow()] }); return; }
-    bountyDrafts.set(interaction.user.id, { guildId: guild.id, channelId: channel.id, roleId, dinos, bonus, stats: ["Melee", "Melee", "Melee", "Melee"] }); await showBountyStatPicker(interaction, interaction.user.id);
+    const userId = id.slice(`${COUNCIL_PREFIX}:bounty:modal:`.length); const draft = postingDrafts.get(userId);
+    if (!draft || draft.kind !== "bounty" || !draft.roleId) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ That bounty setup expired or has no notification role. Start it again.")], components: [backButtonRow()] }); return; }
+    const dinos = interaction.fields.getTextInputValue("dinos").split(",").map(value => value.trim()).filter(Boolean); const bonus = interaction.fields.getTextInputValue("bonus").trim() || null;
+    if (dinos.length !== 4 || dinos.some(dino => dino.length < 1)) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ Enter exactly four dino names separated by commas.")], components: [backButtonRow()] }); return; }
+    bountyDrafts.set(userId, { guildId: guild.id, channelId: draft.channelId, roleId: draft.roleId, dinos, bonus, stats: ["Melee", "Melee", "Melee", "Melee"] }); postingDrafts.delete(userId); await showBountyStatPicker(interaction, userId);
   }
 }
 
-function buildEventModal(roleId: string | null) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:event:modal:${roleId ?? "none"}`).setTitle("Create WoA Event"); modal.addComponents(inputRow("title", "Event title", "e.g. Shoulder Pet Battle", TextInputStyle.Short), inputRow("time", "Start time", "e.g. Friday 7pm or tomorrow 6pm", TextInputStyle.Short), inputRow("description", "Description", "What is happening? Include the important details.", TextInputStyle.Paragraph), inputRow("notes", "Notes", "Optional extra notes for players", TextInputStyle.Paragraph, false)); return modal; }
-function buildRaffleModal(roleId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:modal:${roleId}`).setTitle("Create Community Giveaway"); modal.addComponents(inputRow("prize", "Prize", "What is being given away?", TextInputStyle.Short), inputRow("duration", "End time", "e.g. 2h or tomorrow 7pm", TextInputStyle.Short), inputRow("name", "Giveaway name", "Optional", TextInputStyle.Short, false)); return modal; }
-function buildBountyModal(roleId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal:${roleId}`).setTitle("Start Weekly Bounty"); modal.addComponents(inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph), inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false)); return modal; }
+function buildEventModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:event:modal:${userId}`).setTitle("Create WoA Event"); modal.addComponents(inputRow("title", "Event title", "e.g. Shoulder Pet Battle", TextInputStyle.Short), inputRow("time", "Start time", "e.g. Friday 7pm or tomorrow 6pm", TextInputStyle.Short), inputRow("description", "Description", "What is happening? Include the important details.", TextInputStyle.Paragraph), inputRow("notes", "Notes", "Optional extra notes for players", TextInputStyle.Paragraph, false)); return modal; }
+function buildRaffleModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:modal:${userId}`).setTitle("Create Community Giveaway"); modal.addComponents(inputRow("prize", "Prize", "What is being given away?", TextInputStyle.Short), inputRow("duration", "End time", "e.g. 2h or tomorrow 7pm", TextInputStyle.Short), inputRow("name", "Giveaway name", "Optional", TextInputStyle.Short, false)); return modal; }
+function buildBountyModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal:${userId}`).setTitle("Start Weekly Bounty"); modal.addComponents(inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph), inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false)); return modal; }
 
 async function showBountyStatPicker(interaction: ModalSubmitInteraction | StringSelectMenuInteraction, userId: string) {
   const draft = bountyDrafts.get(userId); if (!draft) return; const rows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
@@ -189,19 +255,24 @@ async function showBountyStatPicker(interaction: ModalSubmitInteraction | String
 
 async function postBounty(interaction: ButtonInteraction, userId: string) {
   const draft = bountyDrafts.get(userId); if (!draft) { await interaction.update({ content: "❌ That bounty draft has expired. Start the bounty again.", embeds: [], components: [backButtonRow()] }); return; }
-  if (!interaction.channel?.isSendable()) { await interaction.update({ content: "❌ This channel cannot receive the bounty announcement.", embeds: [], components: [backButtonRow()] }); return; }
+  const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+  if (!channel || !channel.isSendable()) { await interaction.update({ content: "❌ The selected bounty channel cannot receive messages.", embeds: [], components: [backButtonRow()] }); return; }
   const record = await bountyStore.create({ guildId: draft.guildId, channelId: draft.channelId, tagRoleId: draft.roleId, dinos: draft.dinos, stats: draft.stats, bonus: draft.bonus });
   const attachment = new AttachmentBuilder(bountyWeeklyImage, { name: "bounty.png" }); const targets = draft.dinos.map((dino, index) => `• **${dino}** — **${draft.stats[index]}** ▸ 40–50`).join("\n");
   const ritual = ["**🜁 THE RITUAL OF THE HUNT**", "", "Every offering must satisfy the ancient rules of the Hunt:", "• Creature must spawn at the **server’s max wild level**", "• **Perfect taming effectiveness** is required", "• Final tame level must fall within the **perfect-tame range (202–224)**", "• Screenshot the stat page showing the final level", "• Cryopod the creature before submission", "• Open a **#🎫➖bounty-turn-in-ticket** and present your offering to an admin", "", "**⚔️ TARGETS OF THE WEEK**", targets, "", draft.bonus ? `⚡ **Bonus Bounty:** ${draft.bonus}` : "", "", `🜁 **Summoned Order:** <@&${draft.roleId}>`, "", "The stat target is **40–50** for every offering. Read the ritual carefully before you begin your hunt."].filter(Boolean).join("\n");
   const embed = new EmbedBuilder().setColor("#2b2d31").setImage("attachment://bounty.png").setTitle("🜁 THE WEEKLY HUNT 🜁").setDescription(ritual);
-  const message = await interaction.channel.send({ embeds: [embed], files: [attachment], allowedMentions: { roles: [draft.roleId] } }); await bountyStore.setMessageId(record.id, message.id); bountyDrafts.delete(userId);
-  await interaction.update({ content: "✅ The Weekly Hunt has been inscribed and posted.", components: [backButtonRow()], embeds: [] });
+  const message = await channel.send({ embeds: [embed], files: [attachment], allowedMentions: { roles: [draft.roleId] } }); await bountyStore.setMessageId(record.id, message.id); bountyDrafts.delete(userId);
+  await interaction.update({ content: `✅ The Weekly Hunt has been inscribed and posted in <#${draft.channelId}>.`, components: [backButtonRow()], embeds: [] });
 }
 async function randomizeAndPostBounty(interaction: ButtonInteraction, userId: string) { const draft = bountyDrafts.get(userId); if (!draft) { await interaction.update({ content: "❌ That bounty draft has expired. Start the bounty again.", embeds: [], components: [backButtonRow()] }); return; } draft.stats = draft.dinos.map(() => BOUNTY_STATS[Math.floor(Math.random() * BOUNTY_STATS.length)]); await postBounty(interaction, userId); }
 async function startSigilAssignment(interaction: ButtonInteraction) { const menu = new UserSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:user`).setPlaceholder("Select a player").setMinValues(1).setMaxValues(1); await interaction.update({ content: "💎 Select the player whose Sigils you want to adjust.", embeds: [], components: [new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 async function openSigilAdjustment(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:modal:${userId}`).setTitle("Adjust Player Sigils"); modal.addComponents(inputRow("amount", "Sigil amount", "25 to award, -25 to remove", TextInputStyle.Short), inputRow("reason", "Reason", "Event reward, correction, etc.", TextInputStyle.Paragraph)); await interaction.showModal(modal); }
-async function startEventModal(interaction: ButtonInteraction, roleId: string | null | undefined = undefined) { if (roleId !== undefined) { await interaction.showModal(buildEventModal(roleId)); return; } const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:event:role`).setPlaceholder("Choose the role to notify"); const skip = button("No role to tag", `${COUNCIL_PREFIX}:events:no-role`, ButtonStyle.Secondary); await interaction.update({ content: "🔔 Choose the Discord role to notify. You can also skip the role tag.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(skip, backButton())] }); }
-async function startRaffleModal(interaction: ButtonInteraction) { const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:role`).setPlaceholder("Choose the Discord role to notify for this giveaway.").setMinValues(1).setMaxValues(1); await interaction.update({ content: "🔔 Choose the Discord role to notify for this giveaway.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
+async function startEventModal(interaction: ButtonInteraction, roleId: string | null | undefined = undefined) {
+  if (roleId === null) { const menu = postingChannelMenu("event"); menu.setCustomId(`${COUNCIL_PREFIX}:post:channel:event:no-role`); await interaction.update({ content: "📍 Choose the channel where the event announcement should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); return; }
+  if (roleId !== undefined) { const menu = postingChannelMenu("event"); await interaction.update({ content: "📍 Choose the channel where the event announcement should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); return; }
+  const menu = postingChannelMenu("event"); await interaction.update({ content: "📍 Choose the channel where the event announcement should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
+}
+async function startRaffleModal(interaction: ButtonInteraction) { const menu = postingChannelMenu("raffle"); await interaction.update({ content: "📍 Choose the channel where the giveaway should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 async function startRaffleEndPicker(interaction: ButtonInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()).slice(0, 25); if (!raffles.length) { await interaction.update({ content: "❌ There are no active giveaways to end.", flags: MessageFlags.Ephemeral }); return; } const menu = new StringSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:end:select`).setPlaceholder("Choose the active giveaway to end"); menu.addOptions(raffles.map(raffle => ({ label: (raffle.name || "WoA Community Giveaway").slice(0, 100), value: raffle.id, description: `Prize: ${raffle.prize}`.slice(0, 100) }))); await interaction.update({ content: "🔮 **End a Giveaway**\nChoose the active ritual you want to conclude. The winner will be chosen from the entries.", embeds: [], components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raffleId: string) {
   const raffle = await raffleStore.getById(raffleId); if (!raffle || raffle.guildId !== interaction.guildId || raffle.ended || raffle.endsAt <= Date.now()) { await interaction.update({ content: "❌ That giveaway is no longer active.", components: [backButtonRow()], embeds: [] }); return; }
@@ -214,7 +285,7 @@ async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raf
     await raffleStore.end(raffle.id); await interaction.update({ content: winnerId ? `🔮 Giveaway ended. Winner: <@${winnerId}>` : "🔮 Giveaway ended with no entries.", components: [backButtonRow()], embeds: [] });
   } catch (error) { console.error("Council raffle end failed:", error); await interaction.update({ content: "❌ The giveaway could not be safely concluded. It remains active for a retry.", components: [backButtonRow()], embeds: [] }); }
 }
-async function startBountyModal(interaction: ButtonInteraction) { const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:role`).setPlaceholder("Choose the role to notify for this Hunt").setMinValues(1).setMaxValues(1); await interaction.update({ content: "🔔 Choose the Discord role to notify for this bounty.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
+async function startBountyModal(interaction: ButtonInteraction) { const menu = postingChannelMenu("bounty"); await interaction.update({ content: "📍 Choose the channel where the Weekly Hunt should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) { return new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required)); }
 async function showEconomy(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const active = users.filter(user => user.joinedAt).length; await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`)), backButtonRow()] }); }
 async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()); const description = raffles.length ? raffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}\nEnds <t:${Math.floor(raffle.endsAt / 1000)}:R> • **${raffle.entries.length} entries**`).join("\n\n") : "No active community giveaways."; await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🛑 End Giveaway", `${COUNCIL_PREFIX}:raffles:end`, ButtonStyle.Danger)), backButtonRow()] }); }
