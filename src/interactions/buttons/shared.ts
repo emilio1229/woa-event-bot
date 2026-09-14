@@ -5,7 +5,6 @@ import {
   MessageFlags,
   type ButtonInteraction
 } from "discord.js";
-import type { RsvpState } from "../../services/eventTypes.js";
 import { getEventById, updateEventRsvp } from "../../services/eventService.js";
 import { buildEventEmbed, buildEventRsvpConfirmation } from "../../ui/eventEmbed.js";
 
@@ -24,19 +23,18 @@ export function isEventRsvpButton(customId: string): boolean {
   return customId.startsWith(`${RSVP_BUTTON_PREFIX}:`);
 }
 
-export function parseEventRsvpButton(customId: string): { eventId: string; state: RsvpState } | null {
+export function parseEventRsvpButton(customId: string): { eventId: string } | null {
   const [, , state, eventId] = customId.split(":");
 
-  if (!eventId || (state !== "going" && state !== "maybe" && state !== "no")) {
+  if (state !== "going" || !eventId) {
     return null;
   }
 
-  return { eventId, state };
+  return { eventId };
 }
 
 export async function handleEventRsvpButton(
-  interaction: ButtonInteraction,
-  state: RsvpState
+  interaction: ButtonInteraction
 ): Promise<void> {
   const parsed = parseEventRsvpButton(interaction.customId);
 
@@ -62,7 +60,7 @@ export async function handleEventRsvpButton(
     return;
   }
 
-  const updatedEvent = await updateEventRsvp(parsed.eventId, interaction.user.id, state);
+  const updatedEvent = await updateEventRsvp(parsed.eventId, interaction.user.id, "going");
   if (!updatedEvent) {
     await interaction.reply({
       content: "❌ This gathering is no longer inscribed in the ledger.",
@@ -77,7 +75,7 @@ export async function handleEventRsvpButton(
   });
 
   await interaction.followUp({
-    content: buildEventRsvpConfirmation(state),
+    content: buildEventRsvpConfirmation(),
     flags: MessageFlags.Ephemeral
   });
 }
