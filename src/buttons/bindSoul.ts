@@ -3,6 +3,7 @@ import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { withRaffleEntryLock } from "../raffleEntryLock.js";
 import { raffleStore } from "../raffleStore.js";
 import { getRaffleMessageChannelId } from "../services/raffleThreadService.js";
+import { isUserEligibleForRaffle } from "../services/raffleEligibilityService.js";
 
 function isDiscordErrorWithCode(error: unknown, code: number): error is { code: number } {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === code;
@@ -48,6 +49,16 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
     const userId = interaction.user.id;
     raffle.boundUsers ??= [];
     raffle.entries ??= [];
+
+    if (raffle.guildId !== interaction.guildId || !interaction.guild) {
+      await interaction.reply({ content: "❌ This ritual can only be joined from its server.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    if (!(await isUserEligibleForRaffle(interaction.guild, raffle, userId))) {
+      await interaction.reply({ content: `⛔ You cannot enter this giveaway. Only members with <@&${raffle.tagRole}> may enter.`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+      return;
+    }
 
     if (raffle.boundUsers.includes(userId)) {
       try {
