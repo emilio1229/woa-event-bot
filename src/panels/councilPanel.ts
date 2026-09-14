@@ -124,3 +124,10 @@ async function showRewards(interaction: ButtonInteraction) {
     components: [...buildShopComponents(activeRaffles.length === 0), new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))]
   });
 }
+
+function button(label: string, customId: string, style = ButtonStyle.Primary) {
+  return new ButtonBuilder()
+    .setCustomId(customId)
+    .setLabel(label)
+    .setStyle(style);
+}
