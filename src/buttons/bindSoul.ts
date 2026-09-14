@@ -10,9 +10,7 @@ function isDiscordErrorWithCode(error: unknown, code: number): error is { code: 
 
 type MessageCapableChannel = {
   send: (payload: unknown) => Promise<unknown>;
-  messages: {
-    fetch: (messageId: string) => Promise<Message>;
-  };
+  messages: { fetch: (messageId: string) => Promise<Message> };
 };
 
 function isMessageCapableChannel(channel: unknown): channel is MessageCapableChannel {
@@ -29,17 +27,13 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
 
     if (!raffle || raffle.ended) {
       try {
-        await interaction.reply({
-          content: "❌ This ritual has already ended.",
-          flags: MessageFlags.Ephemeral
-        });
+        await interaction.reply({ content: "❌ This ritual has already ended.", flags: MessageFlags.Ephemeral });
         return;
       } catch (error) {
         if (isDiscordErrorWithCode(error, 10062) && isMessageCapableChannel(interaction.channel)) {
-          await interaction.channel.send(`<@${interaction.user.id}> ❌ This ritual has already ended.`);
+          await interaction.channel.send("🔮 This ritual has already ended.");
           return;
         }
-
         throw error;
       }
     }
@@ -50,112 +44,76 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
 
     if (raffle.boundUsers.includes(userId)) {
       try {
-        await interaction.reply({
-          content: "🔮 You have already joined this ritual.",
-          flags: MessageFlags.Ephemeral
-        });
+        await interaction.reply({ content: "🔮 You have already joined this ritual.", flags: MessageFlags.Ephemeral });
         return;
       } catch (error) {
         if (isDiscordErrorWithCode(error, 10062) && isMessageCapableChannel(interaction.channel)) {
-          console.log("[bindSoul] Interaction expired for double-join message");
-          await interaction.channel.send(`<@${interaction.user.id}> 🔮 You have already joined this ritual.`);
+          await interaction.channel.send("🔮 A participant is already bound to this ritual.");
           return;
         }
-
         throw error;
       }
     }
 
     let canReply = true;
-
     try {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch (error) {
-      if (isDiscordErrorWithCode(error, 10062)) {
-        console.log("[bindSoul] Interaction expired during deferReply");
-        canReply = false;
-      } else {
-        throw error;
-      }
+      if (isDiscordErrorWithCode(error, 10062)) canReply = false;
+      else throw error;
     }
 
     const originalEntries = [...raffle.entries];
     const originalBoundUsers = [...raffle.boundUsers];
-
     raffle.boundUsers.push(userId);
     raffle.entries.push(userId);
 
     try {
       const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
-
-      if (!isMessageCapableChannel(channel) || !raffle.messageId) {
-        throw new Error("The ritual display could not be updated. You were not joined.");
-      }
-
+      if (!isMessageCapableChannel(channel) || !raffle.messageId) throw new Error("The ritual display could not be updated. You were not joined.");
       const message = await channel.messages.fetch(raffle.messageId);
-      await message.edit({
-        embeds: [buildActiveRaffleEmbed(raffle)],
-        components: message.components,
-        files: ["./assets/woa_ritual_bg.png"]
-      });
+      await message.edit({ embeds: [buildActiveRaffleEmbed(raffle)], components: message.components, files: ["./assets/woa_ritual_bg.png"] });
     } catch {
       raffle.entries = originalEntries;
       raffle.boundUsers = originalBoundUsers;
-
-      if (canReply) {
-        await interaction.editReply({
-          content: "❌ The ritual could not be updated. You were not joined."
-        });
-      } else if (isMessageCapableChannel(interaction.channel)) {
-        await interaction.channel.send(`<@${interaction.user.id}> ❌ The ritual could not be updated. You were not joined.`);
-      }
-
+      if (canReply) await interaction.editReply({ content: "❌ The ritual could not be updated. You were not joined." });
+      else if (isMessageCapableChannel(interaction.channel)) await interaction.channel.send("❌ The ritual could not be updated. The participant was not joined.");
       return;
     }
 
     await raffleStore.save(raffle);
 
+    // Announce the participant without a Discord mention so the thread stays quiet.
     try {
       const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null);
-
       if (isMessageCapableChannel(messageChannel)) {
-        await messageChannel.send(`🔮 <@${userId}> joined the raffle!`);
+        const displayName = interaction.guild?.members.cache.get(userId)?.displayName ?? interaction.user.globalName ?? interaction.user.username;
+        await messageChannel.send(`🔮 **${displayName}** has joined the giveaway.`);
       }
     } catch {}
 
     const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
     const glowSymbol = glow[Math.floor(Math.random() * glow.length)];
-
     const embed = new EmbedBuilder()
       .setTitle(`${glowSymbol} Ritual Joined`)
-      .setDescription(
-        [
-          "You step into the ritual circle.",
-          "Arcane energies acknowledge your presence.",
-          "",
-          `💠 **Your Total Entries:** ${countEntriesForUser(raffle.entries, userId)}`,
-          `💠 **Total Participants:** ${raffle.entries.length}`,
-          "",
-          "⟐ The ritual deepens with your arrival."
-        ].join("\n")
-      )
+      .setDescription([
+        "You step into the ritual circle.",
+        "Arcane energies acknowledge your presence.",
+        "",
+        `💠 **Your Total Entries:** ${countEntriesForUser(raffle.entries, userId)}`,
+        `💠 **Total Participants:** ${raffle.boundUsers.length}`,
+        "",
+        "⟐ The ritual deepens with your arrival."
+      ].join("\n"))
       .setColor(0x5A00A0)
       .setFooter({ text: "The ritual intensifies…" });
 
     try {
-      if (canReply) {
-        await interaction.editReply({ embeds: [embed] });
-      } else if (isMessageCapableChannel(interaction.channel)) {
-        await interaction.channel.send(`<@${interaction.user.id}> 🔮 Your essence has been bound to the ritual.`);
-      }
+      if (canReply) await interaction.editReply({ embeds: [embed] });
+      else if (isMessageCapableChannel(interaction.channel)) await interaction.channel.send("🔮 Your essence has been bound to the ritual.");
     } catch (error) {
-      if (isDiscordErrorWithCode(error, 10062) && isMessageCapableChannel(interaction.channel)) {
-        console.log("[bindSoul] Interaction expired during editReply");
-        await interaction.channel.send(`<@${interaction.user.id}> 🔮 Your essence has been bound to the ritual.`);
-        return;
-      }
-
-      throw error;
+      if (isDiscordErrorWithCode(error, 10062) && isMessageCapableChannel(interaction.channel)) await interaction.channel.send("🔮 Your essence has been bound to the ritual.");
+      else throw error;
     }
   });
 }
