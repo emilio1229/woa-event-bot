@@ -1,7 +1,7 @@
 import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 
 import { parseTime } from "../../utils/timeParser.js";
-import { getTimezoneForLocale } from "../../utils/localeTimezone.js";
+import { getAdminTimezone } from "../../services/adminTimezoneService.js";
 import { createEvent, attachEventMessageId } from "../../services/eventService.js";
 import { buildEventRsvpButtons } from "../../interactions/buttons/shared.js";
 import { buildEventEmbed } from "../../ui/eventEmbed.js";
@@ -34,8 +34,15 @@ const command: CommandModule = {
       return;
     }
 
-    const locale = interaction.locale ?? "en-US";
-    const timezone = getTimezoneForLocale(locale, interaction.user.id);
+    const timezone = await getAdminTimezone(interaction.guild.id, interaction.user.id);
+    if (!timezone) {
+      await interaction.reply({
+        content: "⚠️ Your timezone is not set yet. Open **/council → Configuration → 🌎 My Timezone** and select it once before creating scheduled events.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
+
     const millis = parseTime(timeInput, timezone);
 
     if (!millis || Number.isNaN(millis)) {
