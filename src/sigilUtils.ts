@@ -5,6 +5,7 @@ import {
   EmbedBuilder,
   MessageFlags,
   PermissionsBitField,
+  StringSelectMenuBuilder,
   type ChatInputCommandInteraction,
   type User
 } from "discord.js";
@@ -23,14 +24,8 @@ export function isAdmin(interaction: ChatInputCommandInteraction): boolean {
 }
 
 export async function requireAdmin(interaction: ChatInputCommandInteraction): Promise<boolean> {
-  if (isAdmin(interaction)) {
-    return true;
-  }
-
-  await interaction.reply({
-    content: "❌ Only server administrators may wield this sigil rite.",
-    flags: MessageFlags.Ephemeral
-  });
+  if (isAdmin(interaction)) return true;
+  await interaction.reply({ content: "❌ Only server administrators may wield this sigil rite.", flags: MessageFlags.Ephemeral });
   return false;
 }
 
@@ -47,42 +42,20 @@ export function formatTransaction(tx: SigilTransaction): string {
   ].join("");
 }
 
-export function buildBalanceEmbed(
-  user: Pick<User, "tag" | "toString">,
-  balance: number,
-  transactions: SigilTransaction[],
-  title: string,
-  subtitle: string
-) {
-  const recent =
-    transactions.length > 0
-      ? transactions.map(formatTransaction).join("\n")
-      : "No movements echo through your sigil ledger.";
-
+export function buildBalanceEmbed(user: Pick<User, "tag" | "toString">, balance: number, transactions: SigilTransaction[], title: string, subtitle: string) {
+  const recent = transactions.length > 0 ? transactions.map(formatTransaction).join("\n") : "No movements echo through your sigil ledger.";
   return new EmbedBuilder()
     .setColor(COLORS.purple)
     .setTitle(title)
     .setDescription(subtitle)
     .addFields(
-      {
-        name: "💠 Sigil Balance",
-        value: `You currently hold **${balance} sigils**.`,
-        inline: false
-      },
-      {
-        name: `📜 Ledger Echoes (last ${Math.min(transactions.length || 1, transactions.length > 10 ? 15 : 10)})`,
-        value: recent,
-        inline: false
-      },
-      {
-        name: "🜂 Ledger Summary",
-        value: [
-          `• **Earned:** ${transactions.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0)}`,
-          `• **Spent / Removed:** ${transactions.filter(tx => tx.amount < 0).reduce((sum, tx) => sum + Math.abs(tx.amount), 0)}`,
-          `• **Current Balance:** ${balance}`
-        ].join("\n"),
-        inline: false
-      }
+      { name: "💠 Sigil Balance", value: `You currently hold **${balance} sigils**.`, inline: false },
+      { name: `📜 Ledger Echoes (last ${Math.min(transactions.length || 1, transactions.length > 10 ? 15 : 10)})`, value: recent, inline: false },
+      { name: "🜂 Ledger Summary", value: [
+        `• **Earned:** ${transactions.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0)}`,
+        `• **Spent / Removed:** ${transactions.filter(tx => tx.amount < 0).reduce((sum, tx) => sum + Math.abs(tx.amount), 0)}`,
+        `• **Current Balance:** ${balance}`
+      ].join("\n"), inline: false }
     )
     .setFooter({ text: `Sigil bearer: ${user.tag}` })
     .setTimestamp();
@@ -111,17 +84,9 @@ export function buildAdminPanelEmbed(stats: SigilGuildStats, activeRaffles: Raff
       { name: "🎫 Redeemed into Entries", value: `${stats.totalRedeemed}`, inline: true },
       { name: "📚 Ledger Entries", value: `${stats.totalTransactions}`, inline: true },
       { name: "🔮 Active Raffles", value: `${activeRaffles.length}`, inline: true },
-      {
-        name: "🗂️ Open Rituals",
-        value:
-          activeRaffles.length > 0
-            ? activeRaffles
-                .slice(0, 10)
-                .map(raffle => `• ${raffle.name} — \`${raffle.id}\` — ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`)
-                .join("\n")
-            : "No active raffles right now.",
-        inline: false
-      }
+      { name: "🗂️ Open Rituals", value: activeRaffles.length > 0
+        ? activeRaffles.slice(0, 10).map(raffle => `• ${raffle.name} — ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n")
+        : "No active raffles right now.", inline: false }
     )
     .setTimestamp();
 }
@@ -130,37 +95,39 @@ export function buildShopEmbed(activeRaffles: Raffle[], balance: number) {
   return new EmbedBuilder()
     .setColor(COLORS.gold)
     .setTitle("🛍️ Sigil Shop")
-    .setDescription(
-      [
-        "Trade your hard-earned sigils for weighted raffle entries.",
-        `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`,
-        `Current balance: **${balance} sigils**.`
-      ].join("\n")
-    )
+    .setDescription([
+      "Trade your hard-earned sigils for weighted community giveaway entries.",
+      `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`,
+      `Current balance: **${balance} sigils**.`
+    ].join("\n"))
     .addFields({
       name: "🔮 Active Rituals",
-      value:
-        activeRaffles.length > 0
-          ? activeRaffles
-              .map(raffle => `• **${raffle.name}** — Prize: ${raffle.prize}\n  ID: \`${raffle.id}\` • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`)
-              .join("\n")
-          : "No active raffles are available for redemption right now.",
+      value: activeRaffles.length > 0
+        ? activeRaffles.slice(0, 25).map(raffle => `• **${raffle.name}** — ${raffle.prize}\n  Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n")
+        : "No active raffles are available for redemption right now.",
       inline: false
     })
-    .setFooter({ text: "Press the button below to open the redemption modal." })
+    .setFooter({ text: "Choose an active giveaway below — no raffle ID needed." })
     .setTimestamp();
 }
 
-export function buildShopComponents(disabled = false): ActionRowBuilder<ButtonBuilder>[] {
-  return [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId("sigil_shop_open")
-        .setLabel("Redeem Sigils")
-        .setStyle(ButtonStyle.Primary)
-        .setDisabled(disabled)
-    )
-  ];
+export function buildShopComponents(activeRaffles: Raffle[] = []): ActionRowBuilder<StringSelectMenuBuilder>[] {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId("sigil_shop_select")
+    .setPlaceholder(activeRaffles.length > 0 ? "Choose the giveaway to enter" : "No active giveaways")
+    .setDisabled(activeRaffles.length === 0)
+    .setMinValues(1)
+    .setMaxValues(1);
+
+  for (const raffle of activeRaffles.slice(0, 25)) {
+    menu.addOptions({
+      label: (raffle.name || "WoA Community Giveaway").slice(0, 100),
+      value: raffle.id,
+      description: `${raffle.prize} • Ends ${new Date(raffle.endsAt).toLocaleString()}`.slice(0, 100)
+    });
+  }
+
+  return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
 }
 
 export function buildRedeemSuccessEmbed(raffle: Raffle, entryCount: number, sigilCost: number, balance: number) {
