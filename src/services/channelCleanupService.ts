@@ -9,7 +9,13 @@ export interface CleanupResult {
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50;
 
-function hasMessageManager(channel: unknown): channel is { messages: { fetch: (options: { limit: number; before?: string }) => Promise<Map<string, Message>> } } {
+type MessageFetchChannel = {
+  messages: {
+    fetch(options: { limit: number; before?: string }): Promise<Map<string, Message>>;
+  };
+};
+
+function hasMessageManager(channel: unknown): channel is MessageFetchChannel {
   return typeof channel === "object" && channel !== null && "messages" in channel;
 }
 
@@ -32,7 +38,8 @@ export async function cleanBotMessages(client: Client, channelId: string): Promi
   let failed = 0;
 
   for (let page = 0; page < MAX_PAGES; page += 1) {
-    const messages = await channel.messages.fetch({ limit: PAGE_SIZE, ...(before ? { before } : {}) });
+    const fetchMessages = channel.messages.fetch;
+    const messages = await fetchMessages({ limit: PAGE_SIZE, ...(before ? { before } : {}) });
     if (messages.size === 0) break;
 
     scanned += messages.size;
