@@ -34,6 +34,13 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "An unexpected error occurred.";
 }
 
+function getParticipantNames(interaction: StringSelectMenuInteraction, userIds: string[]): string[] {
+  return userIds.map(userId => {
+    const member = interaction.guild?.members.cache.get(userId);
+    return member?.displayName ?? interaction.client.users.cache.get(userId)?.globalName ?? interaction.client.users.cache.get(userId)?.username ?? `Wizard ${userId.slice(-4)}`;
+  });
+}
+
 async function getRaffleIdFromButton(interaction: ButtonInteraction): Promise<string | null> {
   if (interaction.customId === "bindSoul" || interaction.customId === "unbindSoul") return raffleStore.getIdByMessage(interaction.message?.id);
   if (interaction.customId.startsWith("bindSoul_")) return interaction.customId.slice("bindSoul_".length);
@@ -69,46 +76,29 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
     try { await interaction.editReply({ content: "Selected ritual not found.", components: [] }); } catch {}
     return;
   }
-
   try {
-    await raffleStore.markEnded(raffle.id);
-    raffle.ended = true;
     const entries = raffle.entries ?? [];
-    let winnerId: string | null = null;
-    if (entries.length > 0) winnerId = entries[Math.floor(Math.random() * entries.length)];
+    const winnerId = entries.length > 0 ? entries[Math.floor(Math.random() * entries.length)] : null;
     await closeRaffleThread(interaction.client, raffle);
-
-    try {
-      const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
-      if (isMessageCapableChannel(channel) && raffle.messageId) {
-        const message = await channel.messages.fetch(raffle.messageId);
-        await message.edit({ components: [] });
-      }
-    } catch {}
-
     if (winnerId) {
-      try {
-        const channel = await interaction.client.channels.fetch(raffle.channelId);
-        if (isMessageCapableChannel(channel)) {
-          const grandEmbed = new EmbedBuilder()
-            .setColor(0xFF4500)
-            .setTitle("✨ A Champion Has Been Chosen ✨")
-            .setDescription("The sigil storm erupts in violent cosmic fury.")
-            .addFields(
-              { name: "👑 Winner", value: `<@${winnerId}>`, inline: false },
-              { name: "📢 Ritual Role", value: raffle.tagRole ? `<@&${raffle.tagRole}>` : "None", inline: false },
-              { name: "🎁 Prize", value: `**${raffle.prize}**`, inline: false },
-              { name: "💠 Sigils Bound", value: `${entries.length}`, inline: true }
-            )
-            .setImage("attachment://woa_winner_bg.png")
-            .setFooter({ text: "Wizards of Ark • Ascension Complete" })
-            .setTimestamp();
-          const attachment = new AttachmentBuilder("./assets/woa_winner_bg.png", { name: "woa_winner_bg.png" });
-          await channel.send({ embeds: [grandEmbed], files: [attachment], allowedMentions: { users: [winnerId], roles: raffle.tagRole ? [raffle.tagRole] : [] } });
-        }
-      } catch (error) { console.error("Grand announcement failed:", error); }
+      const channel = await interaction.client.channels.fetch(raffle.channelId);
+      if (isMessageCapableChannel(channel)) {
+        const grandEmbed = new EmbedBuilder()
+          .setColor(0xFF4500)
+          .setTitle("✨ A Champion Has Been Chosen ✨")
+          .setDescription("The sigils have chosen their champion.")
+          .addFields(
+            { name: "👑 Winner", value: `<@${winnerId}>`, inline: false },
+            { name: "🎁 Prize", value: `**${raffle.prize}**`, inline: false },
+            { name: "💠 Sigils Bound", value: `${entries.length}`, inline: true }
+          )
+          .setFooter({ text: "Wizards of Ark • Ascension Complete" })
+          .setTimestamp();
+        const attachment = new AttachmentBuilder("./assets/woa_winner_bg.png", { name: "woa_winner_bg.png" });
+        await channel.send({ embeds: [grandEmbed], files: [attachment], allowedMentions: { users: [winnerId] } });
+      }
     }
-
+    await raffleStore.end(raffle.id);
     try { await interaction.editReply({ content: "🔮 The ritual has been ended.", components: [] }); } catch {}
   } catch (error) {
     console.error("select_end_raffle error:", error);
@@ -150,7 +140,6 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
     if (interaction.isButton()) {
       const raffleId = await getRaffleIdFromButton(interaction);
       const raffle = raffleId ? await raffleStore.getById(raffleId) : null;
-
       if ((interaction.customId === "bindSoul" || interaction.customId.startsWith("bindSoul_")) && raffleId && raffle) {
         await handleBindSoul(interaction, raffleId);
         return;
@@ -176,7 +165,6 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const entryCountRaw = interaction.fields.getTextInputValue("sigil_entry_count").trim();
       const entryCount = Number.parseInt(entryCountRaw, 10);
       const raffle = await raffleStore.getById(raffleId);
-
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) {
         await interaction.editReply({ content: "❌ That giveaway is not active right now." });
         return;
@@ -189,17 +177,26 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       try {
         await withRaffleEntryLock(raffle.id, async () => {
           const originalEntries = [...(raffle.entries ?? [])];
+          const originalBoundUsers = [...(raffle.boundUsers ?? [])];
           const redemption = await sigilStore.redeem(guild.id, interaction.user.id, entryCount, raffle.id, raffle.name);
           raffle.entries = [...originalEntries];
+          raffle.boundUsers = [...originalBoundUsers];
+          if (!raffle.boundUsers.includes(interaction.user.id)) raffle.boundUsers.push(interaction.user.id);
           for (let index = 0; index < entryCount; index += 1) raffle.entries.push(interaction.user.id);
 
           try {
             const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
             if (!isMessageCapableChannel(channel) || !raffle.messageId) throw new Error("The ritual display could not be updated. Your sigils were not spent.");
             const message = await channel.messages.fetch(raffle.messageId);
-            await message.edit({ embeds: [buildActiveRaffleEmbed(raffle)], components: message.components, files: ["./assets/woa_ritual_bg.png"] });
+            await message.edit({
+              embeds: [buildActiveRaffleEmbed(raffle, getParticipantNames(interaction, raffle.boundUsers))],
+              components: message.components,
+              files: ["./assets/woa_ritual_bg.png"],
+              allowedMentions: { parse: [] }
+            });
           } catch {
             raffle.entries = originalEntries;
+            raffle.boundUsers = originalBoundUsers;
             await sigilStore.rollbackTransaction(guild.id, interaction.user.id, redemption.transaction.id);
             throw new Error("The ritual display could not be updated. Your sigils were not spent.");
           }
