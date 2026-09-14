@@ -18,9 +18,16 @@ function toEventRecord(event: {
   createdAtIso: string;
   rsvps: Prisma.JsonValue;
 }): EventRecord {
+  const rawRsvps = event.rsvps && typeof event.rsvps === "object" && !Array.isArray(event.rsvps)
+    ? event.rsvps as Record<string, unknown>
+    : {};
+  const goingRsvps = Object.fromEntries(
+    Object.entries(rawRsvps).filter(([, state]) => state === "going")
+  ) as Record<string, RsvpState>;
+
   return {
     ...event,
-    rsvps: (event.rsvps ?? {}) as Record<string, RsvpState>
+    rsvps: goingRsvps
   };
 }
 
@@ -106,7 +113,7 @@ class EventStore {
     return result.count > 0;
   }
 
-  async updateRsvp(eventId: string, userId: string, state: RsvpState): Promise<EventRecord | undefined> {
+  async updateRsvp(eventId: string, userId: string, state: RsvpState = "going"): Promise<EventRecord | undefined> {
     const event = await this.getById(eventId);
 
     if (!event) {
