@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  MessageFlags,
   type ButtonInteraction,
   type Interaction
 } from "discord.js";
@@ -37,7 +38,7 @@ export async function handleRealmPanel(interaction: Interaction) {
   const buttonInteraction = interaction as ButtonInteraction;
   const section = buttonInteraction.customId.slice(`${REALM_PREFIX}:`.length);
   if (section === "home") { await buttonInteraction.update(buildRealmPanel()); return true; }
-  if (!buttonInteraction.inGuild() || !buttonInteraction.guild) { await buttonInteraction.reply({ content: "❌ This Realm panel can only be used inside the WoA server.", ephemeral: true }); return true; }
+  if (!buttonInteraction.inGuild() || !buttonInteraction.guild) { await buttonInteraction.update({ content: "❌ This Realm panel can only be used inside the WoA server.", embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏠 Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); return true; }
   if (section === "sigils") await showSigils(buttonInteraction);
   else if (section === "sigils:daily") await claimDaily(buttonInteraction);
   else if (section === "sigils:history") await showSigilHistory(buttonInteraction);
@@ -53,18 +54,18 @@ export async function handleRealmPanel(interaction: Interaction) {
   return true;
 }
 
-async function showSigils(interaction: ButtonInteraction) {
+async function showSigils(interaction: ButtonInteraction, notice?: string) {
   const user = await sigilStore.getUser(interaction.guild!.id, interaction.user.id);
   const stats = await sigilStore.getGuildStats(interaction.guild!.id);
   const history = user.transactions.slice(0, 5).length === 0 ? "No transactions yet." : user.transactions.slice(0, 5).map(tx => `${tx.amount > 0 ? "+" : ""}${tx.amount} — ${tx.reason}`).join("\n");
-  const embed = new EmbedBuilder().setTitle("💎 SIGIL CHAMBER").setDescription(`Your current balance is **${user.balance} Sigils**.`).addFields({ name: "✨ Recent Transactions", value: history.slice(0, 1024) }, { name: "🏛️ Realm Economy", value: `${stats.totalUsers} Wizards • ${stats.totalBalance} Sigils in circulation` }).setFooter({ text: "The Wizards of Ark • Sigil Chamber" });
+  const embed = new EmbedBuilder().setTitle("💎 SIGIL CHAMBER").setDescription(`${notice ? `${notice}\n\n` : ""}Your current balance is **${user.balance} Sigils**.`).addFields({ name: "✨ Recent Transactions", value: history.slice(0, 1024) }, { name: "🏛️ Realm Economy", value: `${stats.totalUsers} Wizards • ${stats.totalBalance} Sigils in circulation` }).setFooter({ text: "The Wizards of Ark • Sigil Chamber" });
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Daily +1", `${REALM_PREFIX}:sigils:daily`, ButtonStyle.Success), button("📜 Full History", `${REALM_PREFIX}:sigils:history`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
 async function claimDaily(interaction: ButtonInteraction) {
   const guildId = interaction.guild!.id, userId = interaction.user.id, user = await sigilStore.getUser(guildId, userId), now = Date.now(), dayMs = 86400000, lastDaily = user.lastDaily ?? 0;
-  if (now - lastDaily < dayMs) { const remaining = dayMs - (now - lastDaily); await interaction.reply({ content: `⏳ Your daily Sigil is not ready yet. Come back in **${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m ${Math.floor((remaining % 60000) / 1000)}s**.`, ephemeral: true }); return; }
-  await sigilStore.award(guildId, userId, 1, "Daily reward"); await sigilStore.setLastDaily(guildId, userId, now); await interaction.reply({ content: "✨ **Daily Sigil claimed!** You received **+1 Sigil**.", ephemeral: true });
+  if (now - lastDaily < dayMs) { const remaining = dayMs - (now - lastDaily); await showSigils(interaction, `⏳ **Daily Sigil not ready yet.** Come back in **${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m ${Math.floor((remaining % 60000) / 1000)}s**.`); return; }
+  await sigilStore.award(guildId, userId, 1, "Daily reward"); await sigilStore.setLastDaily(guildId, userId, now); await showSigils(interaction, "✨ **Daily Sigil claimed!** You received **+1 Sigil**.");
 }
 
 async function showSigilHistory(interaction: ButtonInteraction) {
@@ -94,22 +95,22 @@ async function showBounties(interaction: ButtonInteraction) {
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
-async function showEvents(interaction: ButtonInteraction) {
+async function showEvents(interaction: ButtonInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guild!.id, 10);
   const embed = new EmbedBuilder().setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
-  if (!events.length) embed.setDescription("No upcoming gatherings are inscribed in the event ledger yet. Check back soon.");
-  else embed.setDescription(events.map((event, index) => { const summary = getEventRsvpSummary(event); const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going"); const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet"; return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n📖 ${event.description ?? "No description provided."}\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`; }).join("\n\n").slice(0, 4000));
+  if (!events.length) embed.setDescription(`${notice ? `${notice}\n\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
+  else embed.setDescription(`${notice ? `${notice}\n\n` : ""}${events.map((event, index) => { const summary = getEventRsvpSummary(event); const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going"); const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet"; return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n📖 ${event.description ?? "No description provided."}\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`; }).join("\n\n")}`.slice(0, 4000));
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
 async function handleRealmEventRsvp(interaction: ButtonInteraction, eventButtonData: string) {
   const [eventId, state] = eventButtonData.split(":");
-  if (!eventId || state !== "going") { await interaction.reply({ content: "❌ That event RSVP could not be read.", ephemeral: true }); return; }
+  if (!eventId || state !== "going") { await interaction.update({ content: "❌ That event RSVP could not be read.", embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); return; }
   const event = await getUpcomingEvents(interaction.guild!.id, 50).then(events => events.find(candidate => candidate.id === eventId));
-  if (!event) { await interaction.reply({ content: "❌ That gathering is no longer upcoming.", ephemeral: true }); return; }
+  if (!event) { await interaction.update({ content: "❌ That gathering is no longer upcoming.", embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); return; }
   const updated = await updateEventRsvp(eventId, interaction.user.id, "going");
-  if (!updated) { await interaction.reply({ content: "❌ That gathering could not be updated.", ephemeral: true }); return; }
-  await interaction.reply({ content: `🜂 **RSVP recorded!** You are marked **Going** to **${event.title}**.`, ephemeral: true });
+  if (!updated) { await interaction.update({ content: "❌ That gathering could not be updated.", embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); return; }
+  await showEvents(interaction, `🜂 **RSVP recorded!** You are marked **Going** to **${event.title}**.`);
 }
 
 async function showRewards(interaction: ButtonInteraction) {
@@ -138,6 +139,6 @@ async function showProfile(interaction: ButtonInteraction) {
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Sigils", `${REALM_PREFIX}:sigils`), button("🏅 Achievements", `${REALM_PREFIX}:achievements`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
-async function showUnknown(interaction: ButtonInteraction, section: string) { await interaction.reply({ content: `❌ Unknown Realm section: ${section}`, ephemeral: true }); }
+async function showUnknown(interaction: ButtonInteraction, section: string) { await interaction.update({ content: `❌ Unknown Realm section: ${section}`, embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏠 Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); }
 
 function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
