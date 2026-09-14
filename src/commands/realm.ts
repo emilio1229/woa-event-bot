@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { buildRealmPanel } from "../panels/realmPanel.js";
 import type { CommandModule } from "../utils/commandLoader.js";
 
@@ -7,7 +7,7 @@ const command: CommandModule = {
     .setName("realm")
     .setDescription("Open the Wizards of Ark Realm panel."),
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.reply({ ...buildRealmPanel() });
+    await interaction.reply({ ...buildRealmPanel(), flags: MessageFlags.Ephemeral });
   }
 };
 
