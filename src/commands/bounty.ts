@@ -11,7 +11,7 @@ import {
   StringSelectMenuBuilder,
   type ChatInputCommandInteraction
 } from "discord.js";
-import { bountyWeeklyImage } from "../utils/bountyStore.js";
+import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import type { CommandModule } from "../utils/commandLoader.js";
 
 const STAT_CHOICES = [
@@ -166,6 +166,15 @@ const command: CommandModule = {
           components: []
         });
 
+        const record = await bountyStore.create({
+          guildId: interaction.guildId!,
+          channelId: interaction.channelId,
+          tagRoleId: tagRole.id,
+          dinos: [dinoNames.d1, dinoNames.d2, dinoNames.d3, dinoNames.d4],
+          stats: [stats.d1, stats.d2, stats.d3, stats.d4],
+          bonus
+        });
+        await bountyStore.setMessageId(record.id, panelMessage.id);
         collector.stop();
       }
     });
