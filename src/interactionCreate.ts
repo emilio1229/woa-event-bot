@@ -139,7 +139,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
           currentRaffle.boundUsers = raffle.boundUsers;
           await raffleStore.save(currentRaffle);
         }
-        await interaction.editReply({ embeds: [buildRedeemSuccessEmbed(entryCount, raffle.name)] });
+        await interaction.editReply({ embeds: [buildRedeemSuccessEmbed(raffle, entryCount, redemption.sigilCost, redemption.user.balance)] });
       } catch (error) {
         console.error("sigil redemption error:", error);
         await interaction.editReply({ content: `❌ ${getErrorMessage(error)}` });
