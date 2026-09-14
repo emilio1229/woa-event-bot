@@ -23,7 +23,7 @@ const command: CommandModule = {
 
     await interaction.reply({
       embeds: [buildShopEmbed(activeRaffles, balance)],
-      components: buildShopComponents(activeRaffles.length === 0),
+      components: buildShopComponents(activeRaffles),
       flags: MessageFlags.Ephemeral
     });
   }
