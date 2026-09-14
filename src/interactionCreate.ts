@@ -17,6 +17,7 @@ import { buildActiveRaffleEmbed } from "./embedBuilder.js";
 import { raffleStore } from "./raffleStore.js";
 import { withRaffleEntryLock } from "./raffleEntryLock.js";
 import { closeRaffleThread, getRaffleMessageChannelId } from "./services/raffleThreadService.js";
+import { isUserEligibleForRaffle } from "./services/raffleEligibilityService.js";
 import { sigilStore } from "./sigilStore.js";
 import { buildRedeemSuccessEmbed } from "./sigilUtils.js";
 import type { BotClient } from "./index.js";
@@ -82,6 +83,10 @@ async function handleSigilShopSelection(interaction: StringSelectMenuInteraction
   if (raffleId === "none") { await interaction.reply({ content: "❌ There are no active giveaways to enter.", flags: MessageFlags.Ephemeral }); return; }
   const raffle = await raffleStore.getById(raffleId);
   if (!raffle || raffle.ended || raffle.endsAt <= Date.now()) { await interaction.reply({ content: "❌ That giveaway is no longer active.", flags: MessageFlags.Ephemeral }); return; }
+  if (interaction.guild && !(await isUserEligibleForRaffle(interaction.guild, raffle, interaction.user.id))) {
+    await interaction.reply({ content: `⛔ You cannot enter **${raffle.name}**. Only members with <@&${raffle.tagRole}> may enter.`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+    return;
+  }
   const modal = new ModalBuilder().setCustomId(`sigil_redeem_modal:${raffle.id}`).setTitle("Redeem Sigils for Entries");
   const entryCountInput = new TextInputBuilder().setCustomId("sigil_entry_count").setLabel("How many raffle entries?").setPlaceholder("1").setStyle(TextInputStyle.Short).setRequired(true);
   modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(entryCountInput));
@@ -113,6 +118,10 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const entryCount = Number.parseInt(entryCountRaw, 10);
       const raffle = await raffleStore.getById(raffleId);
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) { await interaction.editReply({ content: "❌ That giveaway is not active right now." }); return; }
+      if (!(await isUserEligibleForRaffle(guild, raffle, interaction.user.id))) {
+        await interaction.editReply({ content: `⛔ You cannot redeem Sigils for **${raffle.name}**. Only members with <@&${raffle.tagRole}> may enter.`, allowedMentions: { parse: [] } });
+        return;
+      }
       if (!Number.isInteger(entryCount) || entryCount <= 0) { await interaction.editReply({ content: "❌ Enter a valid positive number of raffle entries." }); return; }
       try {
         const redemption = await withRaffleEntryLock(raffle.id, async () => {
