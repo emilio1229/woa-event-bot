@@ -50,8 +50,8 @@ model DiscordSyncState {
   memberCount         Int      @default(0)
   roleCount           Int      @default(0)
   lastError           String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([status])
 }
@@ -62,6 +62,7 @@ model Event {
   channelId    String
   messageId    String?
   title        String
+  description  String
   notes        String?
   hostId       String
   creatorId    String
