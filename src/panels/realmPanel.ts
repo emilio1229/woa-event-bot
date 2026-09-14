@@ -48,7 +48,6 @@ export async function handleRealmPanel(interaction: Interaction) {
   if (!interaction.isButton() || !interaction.customId.startsWith(`${REALM_PREFIX}:`)) return false;
 
   const section = interaction.customId.slice(`${REALM_PREFIX}:`.length);
-
   if (section === "home") {
     await interaction.update(buildRealmPanel());
     return true;
@@ -75,14 +74,20 @@ export async function handleRealmPanel(interaction: Interaction) {
     await showRaffles(interaction);
     return true;
   }
+  if (section === "leaderboard") {
+    await showLeaderboard(interaction);
+    return true;
+  }
+  if (section === "profile") {
+    await showProfile(interaction);
+    return true;
+  }
 
   const names: Record<string, string> = {
     bounties: "📜 Bounties",
     events: "🏆 Events",
     rewards: "🎁 Rewards",
-    achievements: "🏅 Achievements",
-    leaderboard: "📊 Leaderboard",
-    profile: "👤 Profile"
+    achievements: "🏅 Achievements"
   };
 
   const embed = new EmbedBuilder()
@@ -93,7 +98,6 @@ export async function handleRealmPanel(interaction: Interaction) {
   const back = new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("◀ Back to Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)
   );
-
   await interaction.update({ embeds: [embed], components: [back] });
   return true;
 }
@@ -103,9 +107,7 @@ async function showSigils(interaction: Interaction & { isButton(): true }) {
   const user = await sigilStore.getUser(interaction.guild.id, interaction.user.id);
   const stats = await sigilStore.getGuildStats(interaction.guild.id);
   const transactions = user.transactions.slice(0, 5);
-  const history = transactions.length === 0
-    ? "No transactions yet."
-    : transactions.map(tx => `${tx.amount > 0 ? "+" : ""}${tx.amount} — ${tx.reason}`).join("\n");
+  const history = transactions.length === 0 ? "No transactions yet." : transactions.map(tx => `${tx.amount > 0 ? "+" : ""}${tx.amount} — ${tx.reason}`).join("\n");
 
   const embed = new EmbedBuilder()
     .setTitle("💎 SIGIL CHAMBER")
@@ -150,10 +152,7 @@ async function claimDaily(interaction: Interaction & { isButton(): true }) {
 async function showSigilHistory(interaction: Interaction & { isButton(): true }) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const transactions = await sigilStore.getTransactions(interaction.guild.id, interaction.user.id, 10);
-  const description = transactions.length === 0
-    ? "No Sigil transactions yet."
-    : transactions.map((tx, index) => `**${index + 1}.** ${tx.amount > 0 ? "+" : ""}${tx.amount} • ${tx.reason}\n<t:${Math.floor(new Date(tx.timestamp).getTime() / 1000)}:R>`).join("\n\n");
-
+  const description = transactions.length === 0 ? "No Sigil transactions yet." : transactions.map((tx, index) => `**${index + 1}.** ${tx.amount > 0 ? "+" : ""}${tx.amount} • ${tx.reason}\n<t:${Math.floor(new Date(tx.timestamp).getTime() / 1000)}:R>`).join("\n\n");
   const embed = new EmbedBuilder().setTitle("📜 SIGIL LEDGER").setDescription(description.slice(0, 4000)).setFooter({ text: "The Wizards of Ark • Your Sigil History" });
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("◀ Sigils", `${REALM_PREFIX}:sigils`, ButtonStyle.Secondary),
@@ -166,14 +165,46 @@ async function showRaffles(interaction: Interaction & { isButton(): true }) {
   if (!interaction.inGuild() || !interaction.guild) return;
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
   const embed = new EmbedBuilder().setTitle("🎟️ ACTIVE RITUAL RAFFLES").setFooter({ text: "The Wizards of Ark • Raffle Chamber" });
-
   if (raffles.length === 0) {
     embed.setDescription("There are no active raffles right now. Check back when the Council opens the next ritual.");
   } else {
     embed.setDescription(raffles.slice(0, 10).map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Raffle"}**\n🎁 ${raffle.prize}\n🎟️ ${raffle.entries.length} entries • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n"));
   }
-
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary));
+  await interaction.update({ embeds: [embed], components: [row] });
+}
+
+async function showLeaderboard(interaction: Interaction & { isButton(): true }) {
+  if (!interaction.inGuild() || !interaction.guild) return;
+  const leaderboard = await sigilStore.getLeaderboard(interaction.guild.id, 10);
+  const lines = await Promise.all(leaderboard.map(async (user, index) => {
+    const member = await interaction.guild!.members.fetch(user.userId).catch(() => null);
+    return `**${index + 1}.** ${member?.displayName ?? `<@${user.userId}>`} — **${user.balance} Sigils**`;
+  }));
+  const embed = new EmbedBuilder().setTitle("📊 SIGIL LEADERBOARD").setDescription(lines.length ? lines.join("\n") : "No Sigil accounts exist yet.").setFooter({ text: "The Wizards of Ark • Realm Rankings" });
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary));
+  await interaction.update({ embeds: [embed], components: [row] });
+}
+
+async function showProfile(interaction: Interaction & { isButton(): true }) {
+  if (!interaction.inGuild() || !interaction.guild) return;
+  const user = await sigilStore.getUser(interaction.guild.id, interaction.user.id);
+  const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+  const dailyReady = !user.lastDaily || Date.now() - user.lastDaily >= 24 * 60 * 60 * 1000;
+  const embed = new EmbedBuilder()
+    .setTitle("👤 WIZARD PROFILE")
+    .setDescription(`**${member?.displayName ?? interaction.user.username}**\n<@${interaction.user.id}>`)
+    .addFields(
+      { name: "💎 Sigils", value: `${user.balance}`, inline: true },
+      { name: "📜 Transactions", value: `${user.transactions.length}`, inline: true },
+      { name: "🎁 Daily Reward", value: dailyReady ? "Ready to claim" : "Already claimed today", inline: true }
+    )
+    .setFooter({ text: "The Wizards of Ark • Wizard Profile" });
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    button("💎 Sigils", `${REALM_PREFIX}:sigils`),
+    button("📊 Leaderboard", `${REALM_PREFIX}:leaderboard`),
+    button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)
+  );
   await interaction.update({ embeds: [embed], components: [row] });
 }
 
