@@ -1,11 +1,8 @@
 import { EmbedBuilder } from "discord.js";
 import type { Raffle } from "./types/legacy.js";
 
-export function buildActiveRaffleEmbed(raffle: Raffle, participantNames: string[] = []) {
-  const uniqueNames = [...new Set(participantNames.filter(Boolean))];
-  const participantList = uniqueNames.length > 0
-    ? uniqueNames.slice(0, 20).map(name => `• ${name}`).join("\n") + (uniqueNames.length > 20 ? `\n• +${uniqueNames.length - 20} more` : "")
-    : "No Wizards have joined yet.";
+export function buildActiveRaffleEmbed(raffle: Raffle, _participantNames: string[] = []) {
+  const entryCount = (raffle.entries ?? []).length;
 
   return new EmbedBuilder()
     .setTitle(`🔮 ${raffle.name}`)
@@ -25,8 +22,7 @@ export function buildActiveRaffleEmbed(raffle: Raffle, participantNames: string[
       ].join("\n")
     )
     .addFields(
-      { name: `💠 Entries (${(raffle.entries ?? []).length})`, value: `${(raffle.entries ?? []).length}`, inline: true },
-      { name: `🧙 Participants (${uniqueNames.length || (raffle.boundUsers ?? []).length})`, value: participantList, inline: false }
+      { name: "💠 Entries", value: `${entryCount}`, inline: true }
     )
     .setImage("attachment://woa_ritual_bg.png");
 }
