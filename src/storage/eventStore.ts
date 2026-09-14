@@ -9,6 +9,7 @@ function toEventRecord(event: {
   channelId: string;
   messageId: string | null;
   title: string;
+  description: string;
   notes: string | null;
   hostId: string;
   creatorId: string;
@@ -21,14 +22,8 @@ function toEventRecord(event: {
   const rawRsvps = event.rsvps && typeof event.rsvps === "object" && !Array.isArray(event.rsvps)
     ? event.rsvps as Record<string, unknown>
     : {};
-  const goingRsvps = Object.fromEntries(
-    Object.entries(rawRsvps).filter(([, state]) => state === "going")
-  ) as Record<string, RsvpState>;
-
-  return {
-    ...event,
-    rsvps: goingRsvps
-  };
+  const goingRsvps = Object.fromEntries(Object.entries(rawRsvps).filter(([, state]) => state === "going")) as Record<string, RsvpState>;
+  return { ...event, rsvps: goingRsvps };
 }
 
 class EventStore {
@@ -39,6 +34,7 @@ class EventStore {
       channelId: input.channelId,
       messageId: null,
       title: input.title,
+      description: input.description,
       notes: input.notes ?? null,
       hostId: input.hostId,
       creatorId: input.creatorId,
@@ -48,78 +44,46 @@ class EventStore {
       createdAtIso: new Date().toISOString(),
       rsvps: {}
     };
-
-    await prisma.event.create({
-      data: {
-        ...event,
-        rsvps: event.rsvps as Prisma.InputJsonValue
-      }
-    });
-
+    await prisma.event.create({ data: { ...event, rsvps: event.rsvps as Prisma.InputJsonValue } });
     return event;
   }
 
   async getById(eventId: string): Promise<EventRecord | undefined> {
-    const event = await prisma.event.findUnique({
-      where: { id: eventId }
-    });
-
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     return event ? toEventRecord(event) : undefined;
   }
 
   async getUpcoming(guildId: string, limit = 10): Promise<EventRecord[]> {
     const events = await prisma.event.findMany({
-      where: {
-        guildId,
-        startAtUnix: { gt: Math.floor(Date.now() / 1000) }
-      },
+      where: { guildId, startAtUnix: { gt: Math.floor(Date.now() / 1000) } },
       orderBy: { startAtUnix: "asc" },
       take: limit
     });
-
     return events.map(toEventRecord);
   }
 
   async updateMessageId(eventId: string, messageId: string): Promise<EventRecord | undefined> {
-    const event = await prisma.event.update({
-      where: { id: eventId },
-      data: { messageId }
-    }).catch(() => null);
-
+    const event = await prisma.event.update({ where: { id: eventId }, data: { messageId } }).catch(() => null);
     return event ? toEventRecord(event) : undefined;
   }
 
   async save(event: EventRecord): Promise<EventRecord> {
     await prisma.event.upsert({
       where: { id: event.id },
-      create: {
-        ...event,
-        rsvps: event.rsvps as Prisma.InputJsonValue
-      },
-      update: {
-        ...event,
-        rsvps: event.rsvps as Prisma.InputJsonValue
-      }
+      create: { ...event, rsvps: event.rsvps as Prisma.InputJsonValue },
+      update: { ...event, rsvps: event.rsvps as Prisma.InputJsonValue }
     });
-
     return event;
   }
 
   async delete(eventId: string): Promise<boolean> {
-    const result = await prisma.event.deleteMany({
-      where: { id: eventId }
-    });
-
+    const result = await prisma.event.deleteMany({ where: { id: eventId } });
     return result.count > 0;
   }
 
   async updateRsvp(eventId: string, userId: string, state: RsvpState = "going"): Promise<EventRecord | undefined> {
     const event = await this.getById(eventId);
-
-    if (!event) {
-      return undefined;
-    }
-
+    if (!event) return undefined;
     event.rsvps[userId] = state;
     return this.save(event);
   }
