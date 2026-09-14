@@ -28,7 +28,6 @@ import { attachEventMessageId, createEvent, getEventRsvpSummary, getUpcomingEven
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { createRaffleThreadFromMessage } from "../services/raffleThreadService.js";
-import { SIGILS_PER_RAFFLE_ENTRY } from "../sigilStore.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 
@@ -264,7 +263,7 @@ function inputRow(id: string, label: string, placeholder: string, style: TextInp
 }
 
 async function showEconomy(interaction: ButtonInteraction) {
-  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "");
   const active = users.filter(user => user.joinedAt).length;
   await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`)), backButtonRow()] });
 }
@@ -291,39 +290,27 @@ async function showRewards(interaction: ButtonInteraction) {
   const raffle = await raffleStore.getActive(interaction.guildId ?? "");
   const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id);
   const components = buildShopComponents();
-  await interaction.update({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0xD4AF37)
-        .setTitle("🛍️ Sigil Shop")
-        .setDescription([
-          "Trade your hard-earned sigils for weighted raffle entries.",
-          `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`,
-          `Current balance: **${user.balance} sigils**.`
-        ].join("\n"))
-        .addFields({
-          name: "🔮 Active Rituals",
-          value: raffle
-            ? `• **${raffle.name}** — Prize: ${raffle.prize}\n  ID: \`${raffle.id}\` • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`
-            : "No active raffles are available for redemption right now.",
-          inline: false
-        })
-        .setFooter({ text: "Press the button below to open the redemption modal." })
-        .setTimestamp()
-    ],
-    components: [...components, backButtonRow()]
-  });
+  components[0].addComponents(backButton());
+  const activeRaffleText = raffle
+    ? `🎟️ **${raffle.name}** — ${raffle.prize}\nID: \`${raffle.id}\` • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`
+    : "No active community giveaway is available for redemption right now.";
+  const embed = new EmbedBuilder()
+    .setTitle("🛍️ Sigil Shop")
+    .setDescription(["Trade your Sigils for community giveaway entries.", `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`, `Current balance: **${user.balance} sigils**.`].join("\n"))
+    .addFields({ name: "🎟️ Active Giveaway", value: activeRaffleText, inline: false })
+    .setTimestamp();
+  await interaction.update({ embeds: [embed], components });
 }
 
 async function showMembers(interaction: ButtonInteraction) {
-  const members = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const members = await discordDirectoryService.listMembers(interaction.guildId ?? "");
   const council = env.councilRoleIds.length ? members.filter(member => member.roleIds.some(roleId => env.councilRoleIds.includes(roleId))) : [];
   const description = council.length ? council.slice(0, 25).map(member => `🏛️ <@${member.userId}>`).join("\n") : "No Council members found in the configured roles.";
   await interaction.update({ embeds: [new EmbedBuilder().setTitle("👥 Members").setDescription(description)], components: [backButtonRow()] });
 }
 
 async function showStatistics(interaction: ButtonInteraction) {
-  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "");
   const activeRaffle = await raffleStore.getActive(interaction.guildId ?? "");
   const activeRaffles = activeRaffle ? 1 : 0;
   const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length;
