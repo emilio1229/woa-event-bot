@@ -1,7 +1,5 @@
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   EmbedBuilder,
   MessageFlags,
   PermissionsBitField,
@@ -119,12 +117,14 @@ export function buildShopComponents(activeRaffles: Raffle[] = []): ActionRowBuil
     .setMinValues(1)
     .setMaxValues(1);
 
-  for (const raffle of activeRaffles.slice(0, 25)) {
-    menu.addOptions({
+  if (activeRaffles.length > 0) {
+    menu.addOptions(activeRaffles.slice(0, 25).map(raffle => ({
       label: (raffle.name || "WoA Community Giveaway").slice(0, 100),
       value: raffle.id,
       description: `${raffle.prize} • Ends ${new Date(raffle.endsAt).toLocaleString()}`.slice(0, 100)
-    });
+    })));
+  } else {
+    menu.addOptions({ label: "No active giveaways", value: "none", description: "There are no giveaways available right now." });
   }
 
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
