@@ -30,7 +30,7 @@ import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { buildBalanceEmbed, buildShopComponents } from "../sigilUtils.js";
 import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import { parseTime } from "../utils/timeParser.js";
-import { getTimezoneForLocale } from "../utils/localeTimezone.js";
+import { getAdminTimezone, setAdminTimezone, COMMON_TIMEZONES, isValidIanaTimezone } from "../services/adminTimezoneService.js";
 import { discordDirectoryService } from "../services/discordDirectoryService.js";
 import { attachEventMessageId, createEvent, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
@@ -110,6 +110,8 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "rewards") await showRewards(interaction);
   else if (section === "statistics") await showStatistics(interaction);
   else if (section === "configuration") await showConfiguration(interaction);
+  else if (section === "configuration:timezone") await startTimezonePicker(interaction);
+  else if (section === "configuration:timezone:custom") await startCustomTimezoneModal(interaction);
   else if (section === "cleanup") await showCleanup(interaction);
   else if (section.startsWith("cleanup:bot:")) await runCleanup(interaction, section.slice("cleanup:bot:".length));
   else if (section === "bounty:post") await postBounty(interaction, interaction.user.id);
@@ -174,6 +176,16 @@ async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
 
 async function handleCouncilStringSelect(interaction: StringSelectMenuInteraction) {
   if (interaction.customId === `${COUNCIL_PREFIX}:raffle:end:select`) { await endRaffleForCouncil(interaction, interaction.values[0]); return; }
+  if (interaction.customId === `${COUNCIL_PREFIX}:configuration:timezone:select`) {
+    const timezone = interaction.values[0];
+    try {
+      await setAdminTimezone(interaction.guildId ?? "", interaction.user.id, timezone);
+      await showConfiguration(interaction, `✅ Your timezone is now **${timezone}**. All future times you enter will use this timezone.`);
+    } catch (error) {
+      await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(`❌ ${error instanceof Error ? error.message : "Unable to save your timezone."}`)], components: [backButtonRow()] });
+    }
+    return;
+  }
   if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:bounty:stat:`)) {
     const index = Number(interaction.customId.split(":").at(-1)); const draft = bountyDrafts.get(interaction.user.id);
     if (!draft || !Number.isInteger(index) || index < 0 || index > 3) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounty").setDescription("❌ That bounty draft has expired. Start the bounty again.")], components: [backButtonRow()] }); return; }
@@ -183,6 +195,20 @@ async function handleCouncilStringSelect(interaction: StringSelectMenuInteractio
 
 async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   const id = interaction.customId; const guild = interaction.guild; if (!guild) return;
+  if (id === `${COUNCIL_PREFIX}:configuration:timezone:custom:${interaction.user.id}`) {
+    const timezone = interaction.fields.getTextInputValue("timezone").trim();
+    if (!timezone || !isValidIanaTimezone(timezone)) {
+      await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🌎 My Timezone").setDescription("❌ That timezone is not valid. Use an IANA timezone such as **America/Phoenix**, **Europe/London**, or **Africa/Johannesburg**.")], components: [backButtonRow()] });
+      return;
+    }
+    try {
+      await setAdminTimezone(guild.id, interaction.user.id, timezone);
+      await showConfiguration(interaction, `✅ Your timezone is now **${timezone}**. All future times you enter will use this timezone.`);
+    } catch (error) {
+      await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🌎 My Timezone").setDescription(`❌ ${error instanceof Error ? error.message : "Unable to save your timezone."}`)], components: [backButtonRow()] });
+    }
+    return;
+  }
   if (id.startsWith(`${COUNCIL_PREFIX}:sigil:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:sigil:modal:`.length); const amount = Number.parseInt(interaction.fields.getTextInputValue("amount").trim(), 10); const reason = interaction.fields.getTextInputValue("reason").trim();
     if (!Number.isInteger(amount) || amount === 0 || !reason) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription("❌ Enter a non-zero whole-number amount and a reason.")], components: [backButtonRow()] }); return; }
@@ -199,7 +225,9 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
     if (!channel || !channel.isSendable()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ The selected posting channel is unavailable or the bot cannot send there.")], components: [backButtonRow()] }); return; }
     const title = interaction.fields.getTextInputValue("title").trim(); const time = interaction.fields.getTextInputValue("time").trim(); const description = interaction.fields.getTextInputValue("description").trim(); const notes = interaction.fields.getTextInputValue("notes").trim() || null;
-    const timezone = getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id); const millis = parseTime(time, timezone);
+    const timezone = await getAdminTimezone(guild.id, interaction.user.id);
+    if (!timezone) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🌎 My Timezone").setDescription("⚠️ Your timezone is not set. Choose it once below before creating scheduled events.")], components: timezonePickerComponents() }); return; }
+    const millis = parseTime(time, timezone);
     if (!title || !description || millis === null || Number.isNaN(millis) || millis <= Date.now()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ Please provide a title, description, and valid future event time.")], components: [backButtonRow()] }); return; }
     const event = await createEvent({ guildId: guild.id, channelId: draft.channelId, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
     const announcement = await channel.send({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } }); await attachEventMessageId(event.id, announcement.id);
@@ -211,7 +239,10 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     if (!draft || draft.kind !== "raffle" || !draft.roleId) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ That giveaway setup expired or has no notification role. Start it again.")], components: [backButtonRow()] }); return; }
     const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
     if (!channel || !channel.isSendable()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ The selected posting channel is unavailable or the bot cannot send there.")], components: [backButtonRow()] }); return; }
-    const prize = interaction.fields.getTextInputValue("prize").trim(); const duration = interaction.fields.getTextInputValue("duration").trim(); const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway"; const endsAt = parseTime(duration, getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id));
+    const prize = interaction.fields.getTextInputValue("prize").trim(); const duration = interaction.fields.getTextInputValue("duration").trim(); const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway";
+    const timezone = await getAdminTimezone(guild.id, interaction.user.id);
+    if (!timezone) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🌎 My Timezone").setDescription("⚠️ Your timezone is not set. Choose it once below before creating scheduled giveaways.")], components: timezonePickerComponents() }); return; }
+    const endsAt = parseTime(duration, timezone);
     if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ Provide a prize and a valid future end time.")], components: [backButtonRow()] }); return; }
     const raffle = await raffleStore.create({ guildId: guild.id, channelId: draft.channelId, name, prize, endsAt, tagRole: draft.roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
     const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${draft.roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [draft.roleId] } });
@@ -221,7 +252,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   }
   if (id.startsWith(`${COUNCIL_PREFIX}:bounty:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:bounty:modal:`.length); const draft = postingDrafts.get(userId);
-    if (!draft || draft.kind !== "bounty" || !draft.roleId) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ That bounty setup expired or has no notification role. Start the bounty again.")], components: [backButtonRow()] }); return; }
+    if (!draft || draft.kind !== "bounty" || !draft.roleId) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ That bounty setup expired or has no notification role. Start it again.")], components: [backButtonRow()] }); return; }
     const dinos = interaction.fields.getTextInputValue("dinos").split(",").map(value => value.trim()).filter(Boolean); const bonus = interaction.fields.getTextInputValue("bonus").trim() || null;
     if (dinos.length !== 4 || dinos.some(dino => dino.length < 1)) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription("❌ Enter exactly four dino names separated by commas.")], components: [backButtonRow()] }); return; }
     bountyDrafts.set(userId, { guildId: guild.id, channelId: draft.channelId, roleId: draft.roleId, dinos, bonus, stats: ["Melee", "Melee", "Melee", "Melee"] }); postingDrafts.delete(userId); await showBountyStatPicker(interaction, userId);
@@ -231,6 +262,25 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
 function buildEventModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:event:modal:${userId}`).setTitle("Create WoA Event"); modal.addComponents(inputRow("title", "Event title", "e.g. Shoulder Pet Battle", TextInputStyle.Short), inputRow("time", "Start time", "e.g. Friday 7pm or tomorrow 6pm", TextInputStyle.Short), inputRow("description", "Description", "What is happening? Include the important details.", TextInputStyle.Paragraph), inputRow("notes", "Notes", "Optional extra notes for players", TextInputStyle.Paragraph, false)); return modal; }
 function buildRaffleModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:modal:${userId}`).setTitle("Create Community Giveaway"); modal.addComponents(inputRow("prize", "Prize", "What is being given away?", TextInputStyle.Short), inputRow("duration", "End time", "e.g. 2h or tomorrow 7pm", TextInputStyle.Short), inputRow("name", "Giveaway name", "Optional", TextInputStyle.Short, false)); return modal; }
 function buildBountyModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal:${userId}`).setTitle("Start Weekly Bounty"); modal.addComponents(inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph), inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false)); return modal; }
+function buildCustomTimezoneModal(userId: string) { const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:configuration:timezone:custom:${userId}`).setTitle("Set My Timezone"); modal.addComponents(inputRow("timezone", "IANA timezone", "e.g. America/Phoenix", TextInputStyle.Short)); return modal; }
+
+function timezonePickerComponents() {
+  const menu = new StringSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:configuration:timezone:select`).setPlaceholder("Select your timezone").setMinValues(1).setMaxValues(1).addOptions(COMMON_TIMEZONES.map(([label, value]) => ({ label, value })));
+  return [
+    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("✏️ Other Timezone", `${COUNCIL_PREFIX}:configuration:timezone:custom`), backButton())
+  ];
+}
+
+async function startTimezonePicker(interaction: ButtonInteraction) {
+  const current = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
+  const currentText = current ? `\n\nCurrent timezone: **${current}**` : "\n\nNo timezone is saved yet.";
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🌎 MY TIMEZONE").setDescription(`Choose the timezone you use when entering event and giveaway times.${currentText}\n\nOnce saved, you will enter normal local times and the bot will handle UTC conversion automatically.`)], components: timezonePickerComponents() });
+}
+
+async function startCustomTimezoneModal(interaction: ButtonInteraction) {
+  await interaction.showModal(buildCustomTimezoneModal(interaction.user.id));
+}
 
 async function showBountyStatPicker(interaction: ModalSubmitInteraction | StringSelectMenuInteraction, userId: string) {
   const draft = bountyDrafts.get(userId); if (!draft) return; const rows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
@@ -253,9 +303,23 @@ async function postBounty(interaction: ButtonInteraction, userId: string) {
 async function randomizeAndPostBounty(interaction: ButtonInteraction, userId: string) { const draft = bountyDrafts.get(userId); if (!draft) { await interaction.update({ content: "❌ That bounty draft has expired. Start the bounty again.", embeds: [], components: [backButtonRow()] }); return; } draft.stats = draft.dinos.map(() => BOUNTY_STATS[Math.floor(Math.random() * BOUNTY_STATS.length)]); await postBounty(interaction, userId); }
 async function startSigilAssignment(interaction: ButtonInteraction) { const menu = new UserSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:user`).setPlaceholder("Select a player").setMinValues(1).setMaxValues(1); await interaction.update({ content: "💎 Select the player whose Sigils you want to adjust.", embeds: [], components: [new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 async function openSigilAdjustment(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:modal:${userId}`).setTitle("Adjust Player Sigils"); modal.addComponents(inputRow("amount", "Sigil amount", "25 to award, -25 to remove", TextInputStyle.Short), inputRow("reason", "Reason", "Event reward, correction, etc.", TextInputStyle.Paragraph)); await interaction.showModal(modal); }
-async function startEventModal(interaction: ButtonInteraction) { const menu = postingChannelMenu("event"); await interaction.update({ content: "📍 Choose the channel where the event announcement should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
+async function startEventModal(interaction: ButtonInteraction) {
+  const timezone = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
+  if (!timezone) {
+    await interaction.update({ embeds: [new EmbedBuilder().setTitle("🌎 MY TIMEZONE").setDescription("Before creating scheduled events, choose the timezone you use for entering times. You only need to do this once.")], components: timezonePickerComponents() });
+    return;
+  }
+  const menu = postingChannelMenu("event"); await interaction.update({ content: "📍 Choose the channel where the event announcement should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
+}
 async function handleEventNoRole(interaction: ButtonInteraction) { const draft = postingDrafts.get(interaction.user.id); if (!draft || draft.kind !== "event") { await interaction.update({ content: "❌ That event setup expired. Start the event again.", embeds: [], components: [backButtonRow()] }); return; } draft.roleId = null; await interaction.showModal(buildEventModal(interaction.user.id)); }
-async function startRaffleModal(interaction: ButtonInteraction) { const menu = postingChannelMenu("raffle"); await interaction.update({ content: "📍 Choose the channel where the giveaway should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
+async function startRaffleModal(interaction: ButtonInteraction) {
+  const timezone = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
+  if (!timezone) {
+    await interaction.update({ embeds: [new EmbedBuilder().setTitle("🌎 MY TIMEZONE").setDescription("Before creating scheduled giveaways, choose the timezone you use for entering times. You only need to do this once.")], components: timezonePickerComponents() });
+    return;
+  }
+  const menu = postingChannelMenu("raffle"); await interaction.update({ content: "📍 Choose the channel where the giveaway should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
+}
 async function startRaffleEndPicker(interaction: ButtonInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()).slice(0, 25); if (!raffles.length) { await interaction.update({ content: "❌ There are no active giveaways to end." }); return; } const menu = new StringSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:end:select`).setPlaceholder("Choose the active giveaway to end"); menu.addOptions(raffles.map(raffle => ({ label: (raffle.name || "WoA Community Giveaway").slice(0, 100), value: raffle.id, description: `Prize: ${raffle.prize}`.slice(0, 100) }))); await interaction.update({ content: "🔮 **End a Giveaway**\nChoose the active ritual you want to conclude. The winner will be chosen from the entries.", embeds: [], components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raffleId: string) {
   const raffle = await raffleStore.getById(raffleId); if (!raffle || raffle.guildId !== interaction.guildId || raffle.ended || raffle.endsAt <= Date.now()) { await interaction.update({ content: "❌ That giveaway is no longer active.", components: [backButtonRow()], embeds: [] }); return; }
@@ -276,7 +340,12 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
 async function showBounties(interaction: ButtonInteraction) { const bounties = await bountyStore.getActive(interaction.guildId ?? ""); const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\n") : "No active bounties."; await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButtonRow()] }); }
 async function showRewards(interaction: ButtonInteraction) { const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && Date.now() < raffle.endsAt && !raffle.ended); const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id); const components = buildShopComponents(activeRaffles); components.push(backButtonRow() as never); const activeText = activeRaffles.length ? activeRaffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize} • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "No active community giveaway is available for redemption right now."; const embed = new EmbedBuilder().setTitle("🛍️ Sigil Shop").setDescription(["Trade your Sigils for community giveaway entries.", `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`, `Current balance: **${user.balance} sigils**.`].join("\n")).addFields({ name: "🎟️ Active Giveaways", value: activeText, inline: false }).setTimestamp(); await interaction.update({ embeds: [embed], components }); }
 async function showStatistics(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()).length; const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length; const events = await getUpcomingEvents(interaction.guildId ?? "", 1000); await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButtonRow()] }); }
-async function showConfiguration(interaction: ButtonInteraction) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(`Default event timezone: **${env.defaultEventTimezone}**\nGiveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}\nThread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`)], components: [backButtonRow()] }); }
+async function showConfiguration(interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction, notice?: string) {
+  const timezone = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
+  const timezoneText = timezone ? `**${timezone}**` : "⚠️ **Not set**";
+  const description = [notice ?? null, `🌎 **My timezone:** ${timezoneText}`, "", "Set your timezone once. After that, every event or giveaway time you enter is interpreted in your own local timezone and converted automatically for Discord.", "", `Giveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}**`, `Thread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`].filter(Boolean).join("\n");
+  await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌎 My Timezone", `${COUNCIL_PREFIX}:configuration:timezone`)), backButtonRow()] });
+}
 function backButton() { return button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary); }
 function backButtonRow() { return new ActionRowBuilder<ButtonBuilder>().addComponents(backButton()); }
 function backRow() { return backButtonRow(); }
