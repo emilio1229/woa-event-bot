@@ -7,12 +7,14 @@ import {
   ModalBuilder,
   PermissionFlagsBits,
   PermissionsBitField,
+  RoleSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
   UserSelectMenuBuilder,
   type ButtonInteraction,
   type Interaction,
   type ModalSubmitInteraction,
+  type RoleSelectMenuInteraction,
   type UserSelectMenuInteraction
 } from "discord.js";
 import { env } from "../config/env.js";
@@ -76,7 +78,7 @@ export function buildCouncilPanel() {
 }
 
 export async function handleCouncilPanel(interaction: Interaction) {
-  const supported = interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit();
+  const supported = interaction.isButton() || interaction.isUserSelectMenu() || interaction.isRoleSelectMenu() || interaction.isModalSubmit();
   if (!supported || !interaction.customId.startsWith(`${COUNCIL_PREFIX}:`)) return false;
 
   if (!isCouncilMember(interaction)) {
@@ -94,6 +96,11 @@ export async function handleCouncilPanel(interaction: Interaction) {
     return true;
   }
 
+  if (interaction.isRoleSelectMenu()) {
+    await handleCouncilRoleSelect(interaction);
+    return true;
+  }
+
   const section = interaction.customId.slice(`${COUNCIL_PREFIX}:`.length);
   if (section === "home") await interaction.update(buildCouncilPanel());
   else if (section === "economy") await showEconomy(interaction);
@@ -102,6 +109,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "raffles:start") await startRaffleModal(interaction);
   else if (section === "events") await showEvents(interaction);
   else if (section === "events:start") await startEventModal(interaction);
+  else if (section === "events:no-role") await startEventModal(interaction, null);
   else if (section === "bounties") await showBounties(interaction);
   else if (section === "bounties:start") await startBountyModal(interaction);
   else if (section === "rewards") await showRewards(interaction);
@@ -110,6 +118,21 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "configuration") await showConfiguration(interaction);
   else await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏛️ Council").setDescription("Unknown Council panel.")], components: [backRow()] });
   return true;
+}
+
+async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
+  const roleId = interaction.values[0] ?? null;
+  if (interaction.customId === `${COUNCIL_PREFIX}:raffle:role`) {
+    await interaction.showModal(buildRaffleModal(roleId));
+    return;
+  }
+  if (interaction.customId === `${COUNCIL_PREFIX}:bounty:role`) {
+    await interaction.showModal(buildBountyModal(roleId));
+    return;
+  }
+  if (interaction.customId === `${COUNCIL_PREFIX}:event:role`) {
+    await interaction.showModal(buildEventModal(roleId));
+  }
 }
 
 async function handleCouncilModal(interaction: ModalSubmitInteraction) {
@@ -136,7 +159,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     return;
   }
 
-  if (id === `${COUNCIL_PREFIX}:event:modal`) {
+  if (id.startsWith(`${COUNCIL_PREFIX}:event:modal`)) {
     const channel = interaction.channel;
     if (!channel || !channel.isSendable()) {
       await interaction.reply({ content: "❌ This control must be used in a channel where the bot can send messages.", ephemeral: true });
@@ -144,8 +167,8 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     }
     const title = interaction.fields.getTextInputValue("title").trim();
     const time = interaction.fields.getTextInputValue("time").trim();
-    const timezone = interaction.fields.getTextInputValue("timezone").trim() || env.defaultEventTimezone;
-    const roleId = interaction.fields.getTextInputValue("role").trim();
+    const roleId = id.split(":").at(-1) || null;
+    const timezone = getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id);
     const millis = parseTime(time, timezone);
     if (!title || millis === null || Number.isNaN(millis) || millis <= Date.now()) {
       await interaction.reply({ content: "❌ Please provide a title and a valid future event time.", ephemeral: true });
@@ -155,7 +178,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     await interaction.reply({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } });
     const message = await interaction.fetchReply();
     await attachEventMessageId(event.id, message.id);
-    if (/^\d{17,20}$/.test(roleId)) await message.edit({ content: `<@&${roleId}>`, allowedMentions: { roles: [roleId] } });
+    if (roleId && /^\d{17,20}$/.test(roleId)) await message.edit({ content: `<@&${roleId}>`, allowedMentions: { roles: [roleId] } });
     return;
   }
 
@@ -165,14 +188,14 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     return;
   }
 
-  if (id === `${COUNCIL_PREFIX}:raffle:modal`) {
+  if (id.startsWith(`${COUNCIL_PREFIX}:raffle:modal:`)) {
     const prize = interaction.fields.getTextInputValue("prize").trim();
     const duration = interaction.fields.getTextInputValue("duration").trim();
     const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway";
-    const roleId = interaction.fields.getTextInputValue("role").trim();
+    const roleId = id.split(":").at(-1) ?? "";
     const endsAt = parseTime(duration, getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id));
     if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now() || !/^\d{17,20}$/.test(roleId)) {
-      await interaction.reply({ content: "❌ Provide a prize, valid future end time, and Discord role ID.", ephemeral: true });
+      await interaction.reply({ content: "❌ Provide a prize and a valid future end time.", ephemeral: true });
       return;
     }
     const raffle = await raffleStore.create({ guildId: guild.id, channelId: channel.id, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
@@ -186,12 +209,12 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     return;
   }
 
-  if (id === `${COUNCIL_PREFIX}:bounty:modal`) {
+  if (id.startsWith(`${COUNCIL_PREFIX}:bounty:modal:`)) {
     const dinos = interaction.fields.getTextInputValue("dinos").split(",").map(value => value.trim()).filter(Boolean);
-    const roleId = interaction.fields.getTextInputValue("role").trim();
+    const roleId = id.split(":").at(-1) ?? "";
     const bonus = interaction.fields.getTextInputValue("bonus").trim() || null;
     if (dinos.length !== 4 || dinos.some(dino => dino.length < 1) || !/^\d{17,20}$/.test(roleId)) {
-      await interaction.reply({ content: "❌ Enter exactly four dino names separated by commas and a valid Discord role ID.", ephemeral: true });
+      await interaction.reply({ content: "❌ Enter exactly four dino names separated by commas and select a valid Discord role.", ephemeral: true });
       return;
     }
     const record = await bountyStore.create({ guildId: guild.id, channelId: channel.id, tagRoleId: roleId, dinos, stats: ["Melee", "Melee", "Melee", "Melee"], bonus });
@@ -201,6 +224,24 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     await bountyStore.setMessageId(record.id, message.id);
     await interaction.reply({ content: "✅ Weekly bounty posted.", ephemeral: true });
   }
+}
+
+function buildEventModal(roleId: string | null) {
+  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:event:modal:${roleId ?? "none"}`).setTitle("Create WoA Event");
+  modal.addComponents(inputRow("title", "Event title", "e.g. Shoulder Pet Battle", TextInputStyle.Short), inputRow("time", "Start time", "e.g. Friday 7pm or tomorrow 6pm", TextInputStyle.Short));
+  return modal;
+}
+
+function buildRaffleModal(roleId: string) {
+  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:modal:${roleId}`).setTitle("Create Community Giveaway");
+  modal.addComponents(inputRow("prize", "Prize", "What is being given away?", TextInputStyle.Short), inputRow("duration", "End time", "e.g. 2h or tomorrow 7pm", TextInputStyle.Short), inputRow("name", "Giveaway name", "Optional", TextInputStyle.Short, false));
+  return modal;
+}
+
+function buildBountyModal(roleId: string) {
+  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal:${roleId}`).setTitle("Start Weekly Bounty");
+  modal.addComponents(inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph), inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false));
+  return modal;
 }
 
 async function startSigilAssignment(interaction: ButtonInteraction) {
@@ -215,22 +256,26 @@ async function openSigilAdjustment(interaction: UserSelectMenuInteraction) {
   await interaction.showModal(modal);
 }
 
-async function startEventModal(interaction: ButtonInteraction) {
-  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:event:modal`).setTitle("Create WoA Event");
-  modal.addComponents(inputRow("title", "Event title", "e.g. Shoulder Pet Battle", TextInputStyle.Short), inputRow("time", "Start time", "e.g. Friday 7pm or tomorrow 6pm", TextInputStyle.Short), inputRow("timezone", "Timezone", env.defaultEventTimezone, TextInputStyle.Short, false), inputRow("role", "Role ID", "Optional Discord role ID", TextInputStyle.Short, false));
-  await interaction.showModal(modal);
+async function startEventModal(interaction: ButtonInteraction, roleId: string | null | undefined = undefined) {
+  if (roleId !== undefined) {
+    await interaction.showModal(buildEventModal(roleId));
+    return;
+  }
+  const roleMenu = new RoleSelectMenuBuilder()
+    .setCustomId(`${COUNCIL_PREFIX}:event:role`)
+    .setPlaceholder("Choose the role to notify");
+  const skip = button("No role to tag", `${COUNCIL_PREFIX}:events:no-role`, ButtonStyle.Secondary);
+  await interaction.reply({ content: "🔔 Choose the Discord role to notify. You can also skip the role tag.", components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(skip)], ephemeral: true });
 }
 
 async function startRaffleModal(interaction: ButtonInteraction) {
-  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:modal`).setTitle("Create Community Giveaway");
-  modal.addComponents(inputRow("prize", "Prize", "What is being given away?", TextInputStyle.Short), inputRow("duration", "End time", "e.g. 2h or tomorrow 7pm", TextInputStyle.Short), inputRow("name", "Giveaway name", "Optional", TextInputStyle.Short, false), inputRow("role", "Role ID", "Discord role ID to notify", TextInputStyle.Short));
-  await interaction.showModal(modal);
+  const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:raffle:role`).setPlaceholder("Choose the role to notify").setMinValues(1).setMaxValues(1);
+  await interaction.reply({ content: "🔔 Choose the Discord role to notify for this giveaway.", components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu)], ephemeral: true });
 }
 
 async function startBountyModal(interaction: ButtonInteraction) {
-  const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal`).setTitle("Start Weekly Bounty");
-  modal.addComponents(inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph), inputRow("role", "Role ID", "Discord role ID to notify", TextInputStyle.Short), inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false));
-  await interaction.showModal(modal);
+  const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:role`).setPlaceholder("Choose the role to notify").setMinValues(1).setMaxValues(1);
+  await interaction.reply({ content: "🔔 Choose the Discord role to notify for this bounty.", components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu)], ephemeral: true });
 }
 
 function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) {
