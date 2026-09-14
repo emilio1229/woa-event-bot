@@ -10,7 +10,6 @@ import {
 } from "discord.js";
 import { bountyStore } from "../utils/bountyStore.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
-import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { endEvent, getEventById, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 
 const PREFIX = "woa:council:management";
@@ -19,45 +18,30 @@ function backButton() {
   return new ButtonBuilder().setCustomId("woa:council:home").setLabel("◀ Back to Council").setStyle(ButtonStyle.Secondary);
 }
 
-function panelButtons(kind: "events" | "bounties") {
-  const title = kind === "events" ? "🏆 Events" : "📜 Bounties";
-  const endId = `${PREFIX}:${kind}:end`;
-  return [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(endId).setLabel(`🛑 End ${title.slice(2, -1)}`).setStyle(ButtonStyle.Danger),
-      backButton()
-    )
-  ];
-}
-
 export async function handleEventBountyManagement(interaction: Interaction): Promise<boolean> {
   if (!interaction.inGuild()) return false;
   if (!(interaction.isButton() || interaction.isStringSelectMenu())) return false;
+
+  // Take over the existing Council Events/Bounties buttons so those panels
+  // always expose the matching Start + End management controls.
+  if (interaction.isButton() && interaction.customId === "woa:council:events") {
+    await showEvents(interaction);
+    return true;
+  }
+  if (interaction.isButton() && interaction.customId === "woa:council:bounties") {
+    await showBounties(interaction);
+    return true;
+  }
+
   if (!interaction.customId.startsWith(`${PREFIX}:`)) return false;
 
   if (interaction.isButton()) {
-    if (interaction.customId === `${PREFIX}:events`) {
-      await showEvents(interaction);
-      return true;
-    }
-    if (interaction.customId === `${PREFIX}:bounties`) {
-      await showBounties(interaction);
-      return true;
-    }
     if (interaction.customId === `${PREFIX}:events:end`) {
       await showEventPicker(interaction);
       return true;
     }
     if (interaction.customId === `${PREFIX}:bounties:end`) {
       await showBountyPicker(interaction);
-      return true;
-    }
-    if (interaction.customId === `${PREFIX}:events:back`) {
-      await showEvents(interaction);
-      return true;
-    }
-    if (interaction.customId === `${PREFIX}:bounties:back`) {
-      await showBounties(interaction);
       return true;
     }
   }
@@ -74,14 +58,6 @@ export async function handleEventBountyManagement(interaction: Interaction): Pro
   }
 
   return false;
-}
-
-export async function showManagedEvents(interaction: ButtonInteraction) {
-  await showEvents(interaction);
-}
-
-export async function showManagedBounties(interaction: ButtonInteraction) {
-  await showBounties(interaction);
 }
 
 async function showEvents(interaction: ButtonInteraction) {
