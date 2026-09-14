@@ -11,7 +11,7 @@ model DiscordMember {
   guildId       String
   discordUserId String
   username      String
-  displayName    String
+  displayName   String
   avatarUrl     String?
   roleIds       String[]  @default([])
   joinedAt      DateTime?
@@ -51,6 +51,16 @@ model DiscordSyncState {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   @@index([status])
+}
+
+model AdminTimezone {
+  guildId       String
+  discordUserId String
+  timezone      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@id([guildId, discordUserId])
+  @@index([discordUserId])
 }
 
 model Event {
