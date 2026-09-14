@@ -19,7 +19,6 @@ model DiscordMember {
   lastSyncedAt  DateTime
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
   @@id([guildId, discordUserId])
   @@index([discordUserId])
   @@index([guildId, displayName, username])
@@ -34,7 +33,6 @@ model DiscordRole {
   lastSyncedAt  DateTime
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
   @@id([guildId, discordRoleId])
   @@index([discordRoleId])
   @@index([guildId, position])
@@ -52,7 +50,6 @@ model DiscordSyncState {
   lastError           String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-
   @@index([status])
 }
 
@@ -62,7 +59,7 @@ model Event {
   channelId    String
   messageId    String?
   title        String
-  description  String
+  description  String?
   notes        String?
   hostId       String
   creatorId    String
@@ -73,7 +70,6 @@ model Event {
   rsvps        Json
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   @@index([guildId, startAtUnix])
   @@index([guildId, messageId])
 }
@@ -96,7 +92,6 @@ model Raffle {
   boundUsers     String[] @default([])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
   @@index([guildId, endsAt, ended])
   @@index([guildId, messageId])
 }
@@ -109,7 +104,6 @@ model SigilAccount {
   transactions  Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
   @@id([guildId, discordUserId])
   @@index([guildId, balance])
 }
