@@ -3,6 +3,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../database/prisma.js";
 import type { CreateEventInput, EventRecord, RsvpState } from "../services/eventTypes.js";
 
+const ENDED_MARKER = "[ENDED]";
+
 function toEventRecord(event: {
   id: string;
   guildId: string;
@@ -22,8 +24,12 @@ function toEventRecord(event: {
   const rawRsvps = event.rsvps && typeof event.rsvps === "object" && !Array.isArray(event.rsvps)
     ? event.rsvps as Record<string, unknown>
     : {};
-  const goingRsvps = Object.fromEntries(Object.entries(rawRsvps).filter(([, state]) => state === "going")) as Record<string, RsvpState>;
+  const goingRsvps = Object.fromEntries(Object.entries(rawRsvps).filter(([key, state]) => key !== "__endedAt" && state === "going")) as Record<string, RsvpState>;
   return { ...event, rsvps: goingRsvps };
+}
+
+function isEndedRsvps(value: Prisma.JsonValue): boolean {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && "__endedAt" in value);
 }
 
 class EventStore {
@@ -57,9 +63,9 @@ class EventStore {
     const events = await prisma.event.findMany({
       where: { guildId, startAtUnix: { gt: Math.floor(Date.now() / 1000) } },
       orderBy: { startAtUnix: "asc" },
-      take: limit
+      take: Math.max(limit * 3, limit)
     });
-    return events.map(toEventRecord);
+    return events.filter(event => !isEndedRsvps(event.rsvps)).slice(0, limit).map(toEventRecord);
   }
 
   async updateMessageId(eventId: string, messageId: string): Promise<EventRecord | undefined> {
@@ -76,16 +82,29 @@ class EventStore {
     return event;
   }
 
+  async end(eventId: string): Promise<EventRecord | undefined> {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return undefined;
+    const raw = event.rsvps && typeof event.rsvps === "object" && !Array.isArray(event.rsvps)
+      ? event.rsvps as Record<string, Prisma.JsonValue>
+      : {};
+    if ("__endedAt" in raw) return toEventRecord(event);
+    raw.__endedAt = new Date().toISOString();
+    const updated = await prisma.event.update({ where: { id: eventId }, data: { rsvps: raw as Prisma.InputJsonValue } });
+    return toEventRecord(updated);
+  }
+
   async delete(eventId: string): Promise<boolean> {
     const result = await prisma.event.deleteMany({ where: { id: eventId } });
     return result.count > 0;
   }
 
   async updateRsvp(eventId: string, userId: string, state: RsvpState = "going"): Promise<EventRecord | undefined> {
-    const event = await this.getById(eventId);
-    if (!event) return undefined;
-    event.rsvps[userId] = state;
-    return this.save(event);
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event || isEndedRsvps(event.rsvps)) return undefined;
+    const record = toEventRecord(event);
+    record.rsvps[userId] = state;
+    return this.save(record);
   }
 }
 
