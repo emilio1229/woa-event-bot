@@ -41,14 +41,14 @@ export function buildAdminPanelEmbed(stats: SigilGuildStats, activeRaffles: Raff
   ).setTimestamp();
 }
 export function buildShopEmbed(activeRaffles: Raffle[], balance: number) {
-  return new EmbedBuilder().setColor(COLORS.gold).setTitle("🛍️ Sigil Shop").setDescription(["Trade your hard-earned sigils for weighted community giveaway entries.", `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`, `Current balance: **${balance} sigils**.`].join("\n")).addFields({
-    name: "🔮 Active Rituals", value: activeRaffles.length > 0 ? activeRaffles.slice(0, 25).map(raffle => `• **${raffle.name}** — ${raffle.prize}\n  Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "No active raffles are available for redemption right now.", inline: false
-  }).setFooter({ text: "Choose an active giveaway below — no raffle ID needed." }).setTimestamp();
+  return new EmbedBuilder().setColor(COLORS.gold).setTitle("🔮 THE SIGIL EMPORIUM").setDescription(["Offer your hard-earned Sigils to the Realm and claim your place among its active rituals.", `Exchange Rate: **${SIGILS_PER_RAFFLE_ENTRY} Sigils → 1 Ritual Entry**`, `Your Balance: **${balance} Sigils**`, "", "*Choose a ritual below and seal your entry. May the arcane favor you.*"].join("\n")).addFields({
+    name: "✨ RITUALS AWAITING WIZARDS", value: activeRaffles.length > 0 ? activeRaffles.slice(0, 25).map(raffle => `• **${raffle.name}** — ${raffle.prize}\n  Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "The ritual circle is quiet... for now.", inline: false
+  }).setFooter({ text: "Choose an active ritual below — no raffle ID needed." }).setTimestamp();
 }
 export function buildShopComponents(activeRaffles: Raffle[] = []): ActionRowBuilder<StringSelectMenuBuilder>[] {
-  const menu = new StringSelectMenuBuilder().setCustomId("sigil_shop_select").setPlaceholder(activeRaffles.length > 0 ? "Choose the giveaway to enter" : "No active giveaways").setDisabled(activeRaffles.length === 0).setMinValues(1).setMaxValues(1);
-  if (activeRaffles.length > 0) menu.addOptions(activeRaffles.slice(0, 25).map(raffle => ({ label: (raffle.name || "WoA Community Giveaway").slice(0, 100), value: raffle.id, description: `${raffle.prize} • Ends ${new Date(raffle.endsAt).toLocaleString()}`.slice(0, 100) })));
-  else menu.addOptions({ label: "No active giveaways", value: "none", description: "There are no giveaways available right now." });
+  const menu = new StringSelectMenuBuilder().setCustomId("sigil_shop_select").setPlaceholder(activeRaffles.length > 0 ? "Choose a ritual to join" : "The ritual circle is quiet...").setDisabled(activeRaffles.length === 0).setMinValues(1).setMaxValues(1);
+  if (activeRaffles.length > 0) menu.addOptions(activeRaffles.slice(0, 25).map(raffle => ({ label: (raffle.name || "WoA Community Ritual").slice(0, 100), value: raffle.id, description: `${raffle.prize} • Ends ${new Date(raffle.endsAt).toLocaleString()}`.slice(0, 100) })));
+  else menu.addOptions({ label: "The circle is quiet", value: "none", description: "No active ritual awaits your Sigils right now." });
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)];
 }
 
@@ -57,8 +57,10 @@ export function buildRedeemSuccessEmbed(raffleOrEntryCount: Raffle | number, ent
   const entryCount = typeof raffleOrEntryCount === "number" ? raffleOrEntryCount : entryCountOrName as number;
   const cost = sigilCost ?? entryCount * SIGILS_PER_RAFFLE_ENTRY;
   const remaining = balance === undefined ? "Updated" : `${balance}`;
-  return new EmbedBuilder().setColor(COLORS.green).setTitle("✨ Sigils Redeemed").setDescription("The raffle circle accepts your sigil offering.").addFields(
-    { name: "🔮 Ritual", value: raffleName, inline: false }, { name: "🎫 Entries Added", value: `${entryCount}`, inline: true },
-    { name: "💠 Sigils Spent", value: `${cost}`, inline: true }, { name: "🪙 Remaining Balance", value: remaining, inline: true }
+  return new EmbedBuilder().setColor(COLORS.green).setTitle("✨ THE SIGILS HAVE BEEN OFFERED").setDescription("The ritual circle accepts your Sigil offering. Your entries have been sealed.").addFields(
+    { name: "🔮 Ritual", value: raffleName, inline: false },
+    { name: "🎟️ Ritual Entries", value: `${entryCount}`, inline: true },
+    { name: "💠 Sigils Offered", value: `${cost}`, inline: true },
+    { name: "🪙 Sigils Remaining", value: remaining, inline: true }
   ).setTimestamp();
 }
