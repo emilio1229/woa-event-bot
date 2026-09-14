@@ -143,6 +143,11 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   }
 
   if (id === `${COUNCIL_PREFIX}:event:modal`) {
+    const channel = interaction.channel;
+    if (!channel || !channel.isSendable()) {
+      await interaction.reply({ content: "❌ This control must be used in a channel where the bot can send messages.", ephemeral: true });
+      return;
+    }
     const title = interaction.fields.getTextInputValue("title").trim();
     const time = interaction.fields.getTextInputValue("time").trim();
     const timezone = interaction.fields.getTextInputValue("timezone").trim() || env.defaultEventTimezone;
@@ -152,7 +157,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       await interaction.reply({ content: "❌ Please provide a title and a valid future event time.", ephemeral: true });
       return;
     }
-    const event = await createEvent({ guildId: guild.id, channelId: interaction.channelId, title, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
+    const event = await createEvent({ guildId: guild.id, channelId: channel.id, title, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
     await interaction.reply({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } });
     const message = await interaction.fetchReply();
     await attachEventMessageId(event.id, message.id);
@@ -176,7 +181,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       await interaction.reply({ content: "❌ Provide a prize, valid future end time, and Discord role ID.", ephemeral: true });
       return;
     }
-    const raffle = await raffleStore.create({ guildId: guild.id, channelId: interaction.channelId, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
+    const raffle = await raffleStore.create({ guildId: guild.id, channelId: channel.id, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
     const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [roleId] } });
     const thread = await createRaffleThreadFromMessage(announcement, raffle);
     const destination = thread ?? channel;
@@ -195,7 +200,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       await interaction.reply({ content: "❌ Enter exactly four dino names separated by commas and a valid Discord role ID.", ephemeral: true });
       return;
     }
-    const record = await bountyStore.create({ guildId: guild.id, channelId: interaction.channelId, tagRoleId: roleId, dinos, stats: ["Melee", "Melee", "Melee", "Melee"], bonus });
+    const record = await bountyStore.create({ guildId: guild.id, channelId: channel.id, tagRoleId: roleId, dinos, stats: ["Melee", "Melee", "Melee", "Melee"], bonus });
     const attachment = new AttachmentBuilder(bountyWeeklyImage, { name: "bounty.png" });
     const embed = new EmbedBuilder().setColor("#2b2d31").setImage("attachment://bounty.png").setTitle("🜁 THE WEEKLY HUNT 🜁").setDescription(`⚔️ **Targets of the Week**\n• ${dinos[0]} — Melee ▸ 40–50\n• ${dinos[1]} — Melee ▸ 40–50\n• ${dinos[2]} — Melee ▸ 40–50\n• ${dinos[3]} — Melee ▸ 40–50\n\n${bonus ? `⚡ **Bonus Bounty:** ${bonus}\n\n` : ""}🜁 **Summoned Order:** <@&${roleId}>\n\n⚡ Present your offerings, Witchers.`);
     const message = await channel.send({ embeds: [embed], files: [attachment], allowedMentions: { roles: [roleId] } });
@@ -245,107 +250,67 @@ async function startBountyModal(interaction: ButtonInteraction) {
   const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:bounty:modal`).setTitle("Start Weekly Bounty");
   modal.addComponents(
     inputRow("dinos", "Four dinos", "Dino 1, Dino 2, Dino 3, Dino 4", TextInputStyle.Paragraph),
-    inputRow("role", "Role ID", "Discord role ID to tag", TextInputStyle.Short),
-    inputRow("bonus", "Bonus bounty", "Optional", TextInputStyle.Paragraph, false)
+    inputRow("role", "Role ID", "Discord role ID to notify", TextInputStyle.Short),
+    inputRow("bonus", "Bonus", "Optional bonus", TextInputStyle.Short, false)
   );
   await interaction.showModal(modal);
 }
 
-async function showEconomy(interaction: ButtonInteraction) {
-  const stats = await sigilStore.getGuildStats(interaction.guild!.id);
-  const raffles = await getActiveRaffles(interaction.guild!.id);
-  const bounties = await bountyStore.getActive(interaction.guild!.id);
-  const events = await getUpcomingEvents(interaction.guild!.id, 10);
-  const embed = new EmbedBuilder().setTitle("💎 SIGIL ECONOMY").setDescription("Live economy overview for the High Council.").addFields(
-    { name: "👥 Sigil Bearers", value: `${stats.totalUsers}`, inline: true },
-    { name: "💠 In Circulation", value: `${stats.totalBalance}`, inline: true },
-    { name: "✨ Total Awarded", value: `${stats.totalAwarded}`, inline: true },
-    { name: "🜂 Total Removed", value: `${stats.totalRemoved}`, inline: true },
-    { name: "🎫 Redeemed", value: `${stats.totalRedeemed}`, inline: true },
-    { name: "📚 Ledger Entries", value: `${stats.totalTransactions}`, inline: true },
-    { name: "🎟️ Active Giveaways", value: `${raffles.length}`, inline: true },
-    { name: "📜 Active Bounties", value: `${bounties.length}`, inline: true },
-    { name: "🏆 Upcoming Events", value: `${events.length}`, inline: true }
+function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) {
+  return new ActionRowBuilder<TextInputBuilder>().addComponents(
+    new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required)
   );
-  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+}
+
+async function showEconomy(interaction: ButtonInteraction) {
+  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const active = users.filter(user => user.joinedAt).length;
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`)), backButton()] });
 }
 
 async function showRaffles(interaction: ButtonInteraction) {
-  const raffles = await getActiveRaffles(interaction.guild!.id);
-  const description = raffles.length ? raffles.map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Giveaway"}**\n🎁 ${raffle.prize}\n👥 ${raffle.entries.length} entries\n⏳ Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n") : "No active community giveaways are currently running.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ COMMUNITY GIVEAWAY CONTROL").setDescription(description).setFooter({ text: "The Wizards of Ark • Council Giveaways" })], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🔄 Refresh", `${COUNCIL_PREFIX}:raffles`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const raffles = await raffleStore.getActive(interaction.guildId ?? "");
+  const description = raffles.length ? raffles.map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}`).join("\n") : "No active community giveaways.";
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`)), backButton()] });
 }
 
 async function showEvents(interaction: ButtonInteraction) {
-  const events = await getUpcomingEvents(interaction.guild!.id, 10);
-  const description = events.length ? events.map((event, index) => { const summary = getEventRsvpSummary(event); return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n👥 ${summary.going} going • ${summary.maybe} maybe • ${summary.no} unavailable\n👤 Host: <@${event.hostId}>`; }).join("\n\n").slice(0, 4000) : "No upcoming events are currently recorded.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 EVENT CONTROL").setDescription(description).setFooter({ text: "The Wizards of Ark • Council Events" })], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Event", `${COUNCIL_PREFIX}:events:start`), button("🔄 Refresh", `${COUNCIL_PREFIX}:events`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
+  const description = events.length ? events.map(event => `🏆 **${event.title}** — <t:${event.startAtUnix}:F>\nRSVP: ${getEventRsvpSummary(event).going} going`).join("\n\n") : "No upcoming events.";
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Event", `${COUNCIL_PREFIX}:events:start`)), backButton()] });
 }
 
 async function showBounties(interaction: ButtonInteraction) {
-  const bounties = await bountyStore.getActive(interaction.guild!.id);
-  const description = bounties.length ? bounties.map((bounty, index) => `**${index + 1}. Weekly Hunt**\n${bounty.dinos.map((dino, i) => `• **${dino}** — ${bounty.stats[i] ?? "Any stat"} ▸ 40–50`).join("\n")}${bounty.bonus ? `\n⚡ Bonus: ${bounty.bonus}` : ""}\n🗓️ Posted <t:${Math.floor(bounty.createdAt / 1000)}:R>`).join("\n\n") : "No active bounties are currently posted.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 BOUNTY CONTROL").setDescription(description).setFooter({ text: "The Wizards of Ark • Council Bounties" })], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`), button("🔄 Refresh", `${COUNCIL_PREFIX}:bounties`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const bounties = await bountyStore.getActive(interaction.guildId ?? "");
+  const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — <@&${bounty.tagRoleId}>`).join("\n") : "No active bounties.";
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButton()] });
 }
 
 async function showRewards(interaction: ButtonInteraction) {
-  const activeRaffles = await getActiveRaffles(interaction.guild!.id);
-  const balance = await sigilStore.getBalance(interaction.guild!.id, interaction.user.id);
-  await interaction.update({ embeds: [buildShopEmbed(activeRaffles, balance)], components: [...buildShopComponents(activeRaffles.length === 0), backRow()] });
+  await interaction.update({ embeds: [buildShopEmbed()], components: [...buildShopComponents(), backButton()] });
 }
 
 async function showMembers(interaction: ButtonInteraction) {
-  const guild = interaction.guild!;
-  const members = await discordDirectoryService.listMembers(guild.id);
-  const councilMembers = members.filter(member => env.councilRoleIds.some(roleId => member.roleIds.includes(roleId)));
-  const regularMembers = guild.members.cache.filter(member => !member.user.bot).size;
-  const bots = guild.members.cache.filter(member => member.user.bot).size;
-  const councilText = councilMembers.length ? councilMembers.slice(0, 25).map(member => `• **${member.displayName}** — <@${member.discordUserId}>`).join("\n") : "No Council members are configured.";
-  const embed = new EmbedBuilder().setTitle("👥 MEMBER HALL").setDescription(`**Cached Members:** ${regularMembers}\n**Cached Bots:** ${bots}\n**Configured Council:** ${councilMembers.length}\n\n### High Council\n${councilText}`).setFooter({ text: "The Wizards of Ark • Member Directory" });
-  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh", `${COUNCIL_PREFIX}:members`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const members = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const council = env.councilRoleIds.length ? members.filter(member => member.roleIds.some(roleId => env.councilRoleIds.includes(roleId))) : [];
+  const description = council.length ? council.slice(0, 25).map(member => `🏛️ <@${member.userId}>`).join("\n") : "No Council members found in the configured roles.";
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("👥 Members").setDescription(description)], components: [backButton()] });
 }
 
 async function showStatistics(interaction: ButtonInteraction) {
-  const guild = interaction.guild!;
-  const sigils = await sigilStore.getGuildStats(guild.id);
-  const raffles = await getActiveRaffles(guild.id);
-  const bounties = await bountyStore.getActive(guild.id);
-  const events = await getUpcomingEvents(guild.id, 50);
-  const bots = guild.members.cache.filter(member => member.user.bot).size;
-  const embed = new EmbedBuilder().setTitle("📊 REALM STATISTICS").setDescription("Current operational snapshot for the High Council.").addFields(
-    { name: "👥 Server Members", value: `${guild.memberCount}`, inline: true },
-    { name: "🤖 Bots", value: `${bots}`, inline: true },
-    { name: "💎 Sigil Bearers", value: `${sigils.totalUsers}`, inline: true },
-    { name: "💠 Sigils in Circulation", value: `${sigils.totalBalance}`, inline: true },
-    { name: "✨ Sigils Awarded", value: `${sigils.totalAwarded}`, inline: true },
-    { name: "🜂 Sigils Removed", value: `${sigils.totalRemoved}`, inline: true },
-    { name: "📚 Transactions", value: `${sigils.totalTransactions}`, inline: true },
-    { name: "🎟️ Active Giveaways", value: `${raffles.length}`, inline: true },
-    { name: "📜 Active Bounties", value: `${bounties.length}`, inline: true },
-    { name: "🏆 Upcoming Events", value: `${events.length}`, inline: true }
-  );
-  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh", `${COUNCIL_PREFIX}:statistics`), button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
+  const activeRaffles = (await raffleStore.getActive(interaction.guildId ?? "")).length;
+  const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length;
+  const events = await getUpcomingEvents(interaction.guildId ?? "", 1000);
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButton()] });
 }
 
 async function showConfiguration(interaction: ButtonInteraction) {
-  const embed = new EmbedBuilder().setTitle("⚙️ REALM CONFIGURATION").setDescription("Runtime configuration currently loaded by the bot. Secrets are intentionally never displayed.").addFields(
-    { name: "🏛️ Council Roles", value: env.councilRoleIds.length ? env.councilRoleIds.map(id => `<@&${id}>`).join(" ") : "None configured", inline: false },
-    { name: "🌎 Default Event Timezone", value: env.defaultEventTimezone, inline: true },
-    { name: "🧵 Giveaway Threads", value: env.raffleThreadsEnabled ? "Enabled" : "Disabled", inline: true },
-    { name: "📦 Thread Archive", value: `${env.raffleThreadAutoArchiveMinutes} minutes`, inline: true },
-    { name: "🌌 Astral Channel", value: env.astralChannelId ? `<#${env.astralChannelId}>` : "Not configured", inline: true },
-    { name: "🌐 API", value: `${env.apiHost}:${env.apiPort}`, inline: true },
-    { name: "🏰 Allowed Guilds", value: `${env.allowedGuildIds.length}`, inline: true }
-  );
-  await interaction.update({ embeds: [embed], components: [backRow()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(`Default event timezone: **${env.defaultEventTimezone}**\nGiveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}**\nThread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`)], components: [backButton()] });
 }
 
-function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) {
-  return new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required));
-}
-
-function getActiveRaffles(guildId: string) {
-  return raffleStore.all().then(raffles => raffles.filter(raffle => raffle.guildId === guildId && !raffle.ended && raffle.endsAt > Date.now()));
+function backButton() {
+  return button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary);
 }
 
 function backRow() {
