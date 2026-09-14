@@ -265,37 +265,40 @@ function inputRow(id: string, label: string, placeholder: string, style: TextInp
 async function showEconomy(interaction: ButtonInteraction) {
   const users = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
   const active = users.filter(user => user.joinedAt).length;
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`)), backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`)), backButtonRow()] });
 }
 
 async function showRaffles(interaction: ButtonInteraction) {
   const raffles = await raffleStore.getActive(interaction.guildId ?? "");
   const description = raffles.length ? raffles.map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}`).join("\n") : "No active community giveaways.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`)), backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`)), backButtonRow()] });
 }
 
 async function showEvents(interaction: ButtonInteraction) {
   const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
   const description = events.length ? events.map(event => `🏆 **${event.title}** — <t:${event.startAtUnix}:F>\nRSVP: ${getEventRsvpSummary(event).going} going`).join("\n\n") : "No upcoming events.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Event", `${COUNCIL_PREFIX}:events:start`)), backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Event", `${COUNCIL_PREFIX}:events:start`)), backButtonRow()] });
 }
 
 async function showBounties(interaction: ButtonInteraction) {
   const bounties = await bountyStore.getActive(interaction.guildId ?? "");
   const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — <@&${bounty.tagRoleId}>`).join("\n") : "No active bounties.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButtonRow()] });
 }
 
 async function showRewards(interaction: ButtonInteraction) {
   const raffles = await raffleStore.getActive(interaction.guildId ?? "");
-  await interaction.update({ embeds: [buildShopEmbed(raffles, 0)], components: [...buildShopComponents(), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
+  const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id);
+  const components = buildShopComponents();
+  components[0].addComponents(backButton());
+  await interaction.update({ embeds: [buildShopEmbed(raffles, user.balance)], components });
 }
 
 async function showMembers(interaction: ButtonInteraction) {
   const members = await discordDirectoryService.listMembers(interaction.guildId ?? "", 1000);
   const council = env.councilRoleIds.length ? members.filter(member => member.roleIds.some(roleId => env.councilRoleIds.includes(roleId))) : [];
   const description = council.length ? council.slice(0, 25).map(member => `🏛️ <@${member.userId}>`).join("\n") : "No Council members found in the configured roles.";
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("👥 Members").setDescription(description)], components: [backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("👥 Members").setDescription(description)], components: [backButtonRow()] });
 }
 
 async function showStatistics(interaction: ButtonInteraction) {
@@ -303,19 +306,23 @@ async function showStatistics(interaction: ButtonInteraction) {
   const activeRaffles = (await raffleStore.getActive(interaction.guildId ?? "")).length;
   const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length;
   const events = await getUpcomingEvents(interaction.guildId ?? "", 1000);
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButtonRow()] });
 }
 
 async function showConfiguration(interaction: ButtonInteraction) {
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(`Default event timezone: **${env.defaultEventTimezone}**\nGiveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}**\nThread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`)], components: [backButton()] });
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(`Default event timezone: **${env.defaultEventTimezone}**\nGiveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}**\nThread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`)], components: [backButtonRow()] });
 }
 
 function backButton() {
   return button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary);
 }
 
+function backButtonRow() {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(backButton());
+}
+
 function backRow() {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary));
+  return backButtonRow();
 }
 
 function button(label: string, customId: string, style = ButtonStyle.Primary) {
