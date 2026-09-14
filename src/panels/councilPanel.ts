@@ -45,13 +45,13 @@ type PostingDraft = { kind: "event" | "raffle" | "bounty"; channelId: string; ro
 const bountyDrafts = new Map<string, BountyDraft>();
 const postingDrafts = new Map<string, PostingDraft>();
 
-type CouncilUpdate = Parameters<ButtonInteraction["update"]>[0];
+type CouncilUpdate = Exclude<NonNullable<Parameters<ButtonInteraction["update"]>[0]>, string>;
 
-async function updateCouncilPanel(interaction: ButtonInteraction | ModalSubmitInteraction, payload: CouncilUpdate) {
+async function updateCouncilPanel(interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction, payload: CouncilUpdate) {
   if (interaction.isModalSubmit()) {
     if (interaction.isFromMessage()) {
       await interaction.deferUpdate();
-      await interaction.message.edit(payload);
+      await interaction.message.edit(payload as Parameters<typeof interaction.message.edit>[0]);
       return;
     }
     if (!interaction.replied && !interaction.deferred) {
