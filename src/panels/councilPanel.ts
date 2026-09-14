@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
@@ -42,16 +43,16 @@ export function isCouncilMember(interaction: Interaction) {
 export function buildCouncilPanel() {
   const embed = new EmbedBuilder()
     .setTitle("🏛️ THE HIGH COUNCIL")
-    .setDescription("Welcome, Council.\n\nThis is the WoA staff command center. Every system is organized behind this panel so staff do not need a command list.")
+    .setDescription("Welcome, Council.\n\nThis is the WoA staff command center. Manage the Realm from one place.")
     .addFields(
-      { name: "💎 Economy", value: "Manage Sigils and view economy", inline: true },
-      { name: "🎟️ Raffles", value: "Start and manage giveaways", inline: true },
-      { name: "🏆 Events", value: "Create and manage events", inline: true },
-      { name: "📜 Bounties", value: "Start and manage weekly hunts", inline: true },
-      { name: "🎁 Rewards", value: "Reward shop and prizes", inline: true },
-      { name: "👥 Members", value: "Council and member directory", inline: true },
-      { name: "📊 Statistics", value: "Realm activity and counts", inline: true },
-      { name: "⚙️ Configuration", value: "Runtime configuration status", inline: true }
+      { name: "💎 Economy", value: "Assign/remove Sigils", inline: true },
+      { name: "🎟️ Raffles", value: "Start community giveaways", inline: true },
+      { name: "🏆 Events", value: "Create scheduled events", inline: true },
+      { name: "📜 Bounties", value: "Start weekly hunts", inline: true },
+      { name: "🎁 Rewards", value: "View the reward shop", inline: true },
+      { name: "👥 Members", value: "Council/member directory", inline: true },
+      { name: "📊 Statistics", value: "Realm activity", inline: true },
+      { name: "⚙️ Configuration", value: "Runtime settings", inline: true }
     )
     .setFooter({ text: "The Wizards of Ark • High Council" });
 
@@ -113,6 +114,8 @@ export async function handleCouncilPanel(interaction: Interaction) {
 
 async function handleCouncilModal(interaction: ModalSubmitInteraction) {
   const id = interaction.customId;
+  const guild = interaction.guild;
+  if (!guild) return;
 
   if (id.startsWith(`${COUNCIL_PREFIX}:sigil:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:sigil:modal:`.length);
@@ -123,14 +126,14 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       return;
     }
     try {
-      const updated = await sigilStore.award(interaction.guild!.id, userId, amount, reason, interaction.user.id);
-      const target = await interaction.guild!.members.fetch(userId).catch(() => null);
+      const updated = await sigilStore.award(guild.id, userId, amount, reason, interaction.user.id);
+      const target = await guild.members.fetch(userId).catch(() => null);
       const embed = buildBalanceEmbed(
         target?.user ?? interaction.user,
         updated.balance,
         updated.transactions.slice(0, 5),
         amount > 0 ? "✨ Sigils Awarded" : "🜂 Sigils Removed",
-        `${target ?? `<@${userId}>`} has been ${amount > 0 ? "granted" : "charged"} **${Math.abs(amount)}** sigils.`
+        `${target ? target.toString() : `<@${userId}>`} has been ${amount > 0 ? "granted" : "charged"} **${Math.abs(amount)}** sigils.`
       );
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
@@ -145,15 +148,21 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     const timezone = interaction.fields.getTextInputValue("timezone").trim() || env.defaultEventTimezone;
     const roleId = interaction.fields.getTextInputValue("role").trim();
     const millis = parseTime(time, timezone);
-    if (!title || !millis || Number.isNaN(millis) || millis <= Date.now()) {
+    if (!title || millis === null || Number.isNaN(millis) || millis <= Date.now()) {
       await interaction.reply({ content: "❌ Please provide a title and a valid future event time.", ephemeral: true });
       return;
     }
-    const event = await createEvent({ guildId: interaction.guild!.id, channelId: interaction.channelId, title, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
+    const event = await createEvent({ guildId: guild.id, channelId: interaction.channelId, title, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
     await interaction.reply({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } });
     const message = await interaction.fetchReply();
     await attachEventMessageId(event.id, message.id);
     if (/^\d{17,20}$/.test(roleId)) await message.edit({ content: `<@&${roleId}>`, allowedMentions: { roles: [roleId] } });
+    return;
+  }
+
+  const channel = interaction.channel;
+  if (!channel || !channel.isSendable()) {
+    await interaction.reply({ content: "❌ This control must be used in a channel where the bot can send messages.", ephemeral: true });
     return;
   }
 
@@ -163,14 +172,14 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     const name = interaction.fields.getTextInputValue("name").trim() || "WoA Community Giveaway";
     const roleId = interaction.fields.getTextInputValue("role").trim();
     const endsAt = parseTime(duration, getTimezoneForLocale(interaction.locale ?? "en-US", interaction.user.id));
-    if (!prize || !endsAt || Number.isNaN(endsAt) || endsAt <= Date.now() || !/^\d{17,20}$/.test(roleId)) {
+    if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now() || !/^\d{17,20}$/.test(roleId)) {
       await interaction.reply({ content: "❌ Provide a prize, valid future end time, and Discord role ID.", ephemeral: true });
       return;
     }
-    const raffle = await raffleStore.create({ guildId: interaction.guild!.id, channelId: interaction.channelId, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
-    const announcement = await interaction.channel!.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [roleId] } });
+    const raffle = await raffleStore.create({ guildId: guild.id, channelId: interaction.channelId, name, prize, endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
+    const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [roleId] } });
     const thread = await createRaffleThreadFromMessage(announcement, raffle);
-    const destination = thread ?? interaction.channel!;
+    const destination = thread ?? channel;
     if (thread) await raffleStore.setThreadId(raffle.id, thread.id);
     const message = await destination.send({ embeds: [buildActiveRaffleEmbed(raffle)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Join Giveaway", "bindSoul"), button("⚫ Leave Giveaway", "unbindSoul", ButtonStyle.Secondary))], files: ["./assets/woa_ritual_bg.png"] });
     await raffleStore.setMessageId(raffle.id, message.id);
@@ -186,11 +195,10 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       await interaction.reply({ content: "❌ Enter exactly four dino names separated by commas and a valid Discord role ID.", ephemeral: true });
       return;
     }
-    const stats = ["Melee", "Melee", "Melee", "Melee"];
-    const record = await bountyStore.create({ guildId: interaction.guild!.id, channelId: interaction.channelId, tagRoleId: roleId, dinos, stats, bonus });
+    const record = await bountyStore.create({ guildId: guild.id, channelId: interaction.channelId, tagRoleId: roleId, dinos, stats: ["Melee", "Melee", "Melee", "Melee"], bonus });
     const attachment = new AttachmentBuilder(bountyWeeklyImage, { name: "bounty.png" });
     const embed = new EmbedBuilder().setColor("#2b2d31").setImage("attachment://bounty.png").setTitle("🜁 THE WEEKLY HUNT 🜁").setDescription(`⚔️ **Targets of the Week**\n• ${dinos[0]} — Melee ▸ 40–50\n• ${dinos[1]} — Melee ▸ 40–50\n• ${dinos[2]} — Melee ▸ 40–50\n• ${dinos[3]} — Melee ▸ 40–50\n\n${bonus ? `⚡ **Bonus Bounty:** ${bonus}\n\n` : ""}🜁 **Summoned Order:** <@&${roleId}>\n\n⚡ Present your offerings, Witchers.`);
-    const message = await interaction.channel!.send({ embeds: [embed], files: [attachment], allowedMentions: { roles: [roleId] } });
+    const message = await channel.send({ embeds: [embed], files: [attachment], allowedMentions: { roles: [roleId] } });
     await bountyStore.setMessageId(record.id, message.id);
     await interaction.reply({ content: "✅ Weekly bounty posted.", ephemeral: true });
   }
