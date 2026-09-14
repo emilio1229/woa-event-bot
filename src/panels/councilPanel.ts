@@ -287,7 +287,8 @@ async function showBounties(interaction: ButtonInteraction) {
 }
 
 async function showRewards(interaction: ButtonInteraction) {
-  await interaction.update({ embeds: [buildShopEmbed()], components: [...buildShopComponents(), backButton()] });
+  const raffles = await raffleStore.getActive(interaction.guildId ?? "");
+  await interaction.update({ embeds: [buildShopEmbed(raffles, 0)], components: [...buildShopComponents(), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] });
 }
 
 async function showMembers(interaction: ButtonInteraction) {
