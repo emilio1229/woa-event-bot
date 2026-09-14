@@ -60,7 +60,7 @@ Only the two main hubs are intended to be publicly registered as the primary use
 | `/realm` | Everyone | Player/community hub |
 | `/council` | Council / staff | Staff control center |
 
-Older commands and modules remain in the codebase where they are still used by the existing systems. They are being treated as internal functionality during the panel migration rather than unnecessarily rewriting working features.
+Older commands and modules remain in the codebase where they are still used by the existing systems. They are treated as internal functionality during the panel migration rather than unnecessarily rewriting working features.
 
 ---
 
@@ -87,7 +87,7 @@ The existing giveaway mechanics are preserved; the Realm panel simply provides a
 
 ### 📜 Bounties
 
-Players can view currently active bounty hunts, including the target creatures/stat objectives and available bonus information.
+Players can view currently active bounty hunts, including target creatures/stat objectives and available bonus information.
 
 ### 🏆 Events
 
@@ -111,12 +111,7 @@ The Realm leaderboard displays the guild's leading Sigil holders with Discord di
 
 ### 👤 Profile
 
-The profile panel combines useful player information into one view, including:
-
-- current Sigil balance
-- recent activity
-- achievement progress
-- daily reward status
+The profile panel combines useful player information into one view, including balance, recent activity, achievement progress, and daily reward status.
 
 ---
 
@@ -124,62 +119,81 @@ The profile panel combines useful player information into one view, including:
 
 `/council` opens the staff-facing management panel.
 
-Council access is controlled by the configured council role permissions.
+Council access is controlled by the configured Council role permissions or administrator permission.
 
 ### 💎 Economy
 
-Provides a quick guild-wide economy overview, including:
+Provides a guild-wide economy overview and staff controls.
 
-- total Sigils
-- active users
-- active giveaways
-- active bounties
-- upcoming events
+**Management controls include:**
+
+- Select a player from Discord
+- Award Sigils
+- Remove Sigils
+- Enter a required ledger reason
+- Immediately record the adjustment with the staff member as the actor
+
+This uses the existing Sigil ledger, so staff adjustments remain part of the same transaction history and economy statistics.
 
 ### 🎟️ Giveaways
 
-Staff can review the currently active community giveaways and their status from one place while preserving the existing giveaway system.
+Staff can review active community giveaways and start a new giveaway directly from the Council panel.
+
+**Start Giveaway flow:**
+
+1. Enter the prize
+2. Enter the end time/duration
+3. Optionally name the giveaway
+4. Enter the notification role ID
+5. The bot creates the existing giveaway record
+6. The announcement/thread and existing giveaway interaction controls are created
+
+The existing giveaway mechanics are preserved rather than creating a second giveaway system.
 
 ### 🏆 Events
 
-Staff can review upcoming events, hosts, RSVP totals, and refresh event information.
+Staff can review upcoming events and create new events directly from Council.
+
+**Start Event flow:**
+
+1. Enter the event title
+2. Enter a natural-language start time
+3. Enter an optional timezone
+4. Optionally provide a notification role ID
+5. The event is persisted
+6. The event embed and RSVP controls are posted
 
 ### 📜 Bounties
 
-Staff can review active bounty hunts and their current configuration.
+Staff can review active weekly hunts and start a new bounty directly from Council.
+
+**Start Bounty flow:**
+
+1. Enter four dino names separated by commas
+2. Enter the notification role ID
+3. Optionally enter a bonus bounty
+4. The weekly bounty record is persisted
+5. The WoA bounty image/embed is posted
+
+The current panel start flow uses the existing bounty store and posting format.
 
 ### 🎁 Rewards
 
-Council can access the existing Sigil Shop/reward components and review the current economy context.
+Council can access the existing Sigil Shop/reward components and review current economy context.
 
 ### 👥 Members
 
-The member panel provides a staff-oriented Discord membership overview, including member/bot counts and synchronized directory information where available.
+The member panel provides a staff-oriented Discord membership overview, including cached member/bot counts and synchronized Council directory information.
 
 ### 📊 Statistics
 
-The statistics panel combines useful operational numbers such as:
-
-- guild member count
-- bot count
-- Sigil economy totals
-- active giveaways
-- active bounties
-- upcoming events
+The statistics panel combines operational numbers such as member count, bot count, Sigil circulation, active giveaways, active bounties, transactions, and upcoming events.
 
 ### ⚙️ Configuration
 
 The configuration panel exposes safe runtime configuration useful to Council without displaying secrets.
 
-Examples include:
-
-- configured Council roles
-- default event timezone
-- giveaway thread settings
-- giveaway thread auto-archive duration
-- Astral channel configuration
-- API host/port
-- allowed guild configuration
+Examples include configured Council roles, default event timezone, giveaway thread settings, Astral channel, API host/port, and allowed guild count.
 
 Sensitive values such as bot tokens and API keys are never displayed.
 
@@ -193,21 +207,24 @@ Sensitive values such as bot tokens and API keys are never displayed.
 - Transaction history
 - Daily reward with cooldown
 - Player balance and ledger views
-- Staff economy statistics
+- Staff award/remove controls
 - Leaderboard support
+- Economy statistics
 - Achievement progress
 
 ### Community Giveaways
 
 - Existing WoA giveaway system preserved
 - Active giveaway tracking
+- Council start flow
 - Giveaway status visibility through Realm and Council
 - Automatic/manual ending support from the existing system
 - Discord-linked giveaway messages/threads where configured
 
 ### Event System
 
-- Event creation and persistence
+- Council event creation flow
+- Event persistence
 - UTC-backed event storage
 - Discord-local timestamp rendering
 - Going / Maybe / No RSVP support
@@ -216,9 +233,10 @@ Sensitive values such as bot tokens and API keys are never displayed.
 
 ### Bounty System
 
+- Council bounty start flow
 - Persistent active bounty records
 - Weekly hunt support
-- Dino/stat objectives
+- Four-dino/stat objectives
 - Optional bonus information
 - Player-facing bounty board
 - Staff-facing bounty overview
@@ -243,12 +261,7 @@ Sensitive values such as bot tokens and API keys are never displayed.
 
 The bot also exposes a Fastify API for the WoA website and other trusted consumers.
 
-Examples include:
-
-- `/health`
-- `/api/discord/members`
-- `/api/discord/council`
-- `/api/discord/roles`
+Examples include `/health`, `/api/discord/members`, `/api/discord/council`, and `/api/discord/roles`.
 
 API routes are protected by the configured API key.
 
@@ -283,21 +296,13 @@ src/
 
 ### Important Design Rule
 
-New player/staff functionality should normally be added to the appropriate **Realm or Council panel** and backed by a service, rather than creating another public slash command.
+New player/staff functionality should normally be added to the appropriate **Realm or Council panel** and backed by the existing service/store layer rather than creating another public slash command.
 
 ---
 
 ## Data & Persistence
 
-### PostgreSQL
-
-PostgreSQL is the primary runtime database for the migrated systems.
-
-The database is used for synchronized Discord data and application state including economy and event-related information.
-
-### Legacy JSON
-
-Some legacy JSON-backed modules remain in the repository for compatibility and migration support. A fresh Railway deployment can use PostgreSQL as the primary runtime store without requiring the old JSON state.
+PostgreSQL is the primary runtime database for the migrated systems. Legacy JSON-backed modules remain where needed for compatibility, but new panel actions should use the existing persistent stores/services.
 
 ---
 
@@ -319,7 +324,7 @@ npm start
 npm run deploy
 ```
 
-The deploy script builds the project and registers the configured slash commands.
+The deploy script builds the project and registers the configured public slash commands.
 
 ### Database
 
@@ -333,14 +338,7 @@ This applies the Prisma schema to PostgreSQL.
 
 Railway provides the `PORT` environment variable automatically. The runtime uses `PORT` first and falls back to `API_PORT` outside Railway.
 
-The repository includes:
-
-- `railway.json`
-- `Dockerfile`
-- `Procfile`
-- Fastify `/health` endpoint
-
-For a fresh PostgreSQL deployment, the old `data/` directory does not need a Railway volume.
+The repository includes `railway.json`, `Dockerfile`, `Procfile`, and a Fastify `/health` endpoint.
 
 ---
 
@@ -363,47 +361,17 @@ For a fresh PostgreSQL deployment, the old `data/` directory does not need a Rai
 | `RAFFLE_THREADS_ENABLED` | No | `true` | Enables linked giveaway threads |
 | `RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES` | No | `1440` | Giveaway thread auto-archive duration |
 
-### Example
-
-```env
-TOKEN=your_discord_bot_token
-CLIENT_ID=123456789012345678
-GUILD_IDS=123456789012345678
-ALLOWED_GUILD_IDS=123456789012345678
-DATABASE_URL=postgresql://...
-API_KEY=your_api_key
-API_HOST=0.0.0.0
-API_PORT=3000
-COUNCIL_ROLE_IDS=123456789012345678
-DEFAULT_EVENT_TIMEZONE=UTC
-ASTRAL_CHANNEL_ID=
-RAFFLE_THREADS_ENABLED=true
-RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES=1440
-```
-
 Never commit real tokens, API keys, database passwords, or other secrets to the repository.
 
 ---
 
 ## Startup Flow
 
-At startup the application is designed to:
-
-1. initialize the application/runtime
-2. connect to PostgreSQL
-3. apply/verify the Prisma schema as configured
-4. log into Discord
-5. wait for the Discord client to become ready
-6. reconcile Discord directory data with PostgreSQL
-7. start the Fastify API
-8. begin background routines such as giveaway auto-ending
-9. listen for Discord interactions
+At startup the application initializes the runtime, connects to PostgreSQL, logs into Discord, reconciles directory data, starts the Fastify API, begins background routines such as giveaway auto-ending, and listens for Discord interactions.
 
 ---
 
 ## Interaction Flow
-
-Discord interactions pass through a central router.
 
 ```text
 Slash Command
@@ -411,18 +379,18 @@ Slash Command
      ▼
 Interaction Router
      │
-     ├── /realm ──────► Realm Panel Router
-     │                      └── Services
+     ├── /realm ──────► Realm Panel Router ──► Player Services
      │
-     ├── /council ────► Council Panel Router
-     │                      └── Services
-     │
-     ├── Event RSVP ──► Event Service
+     ├── /council ────► Council Panel Router ─► Staff Services
+     │                                      ├─► Sigil ledger
+     │                                      ├─► Event service
+     │                                      ├─► Giveaway store
+     │                                      └─► Bounty store
      │
      └── Legacy flows ► Existing handlers
 ```
 
-This allows the user experience to stay simple while the underlying systems remain modular.
+This keeps the Discord surface simple while preserving the existing systems underneath.
 
 ---
 
@@ -434,11 +402,11 @@ Realm features are intended for regular server members and are protected as guil
 
 ### Council
 
-Council features require the configured Council/staff permissions.
+Council features require a configured Council role or Administrator permission.
 
 ### Sensitive Operations
 
-Administrative economy and management actions should remain restricted to trusted staff roles/permissions.
+Sigil adjustments and community-management controls are restricted to Council/staff access.
 
 ---
 
@@ -475,45 +443,9 @@ A clean TypeScript build should be treated as the first gate before deploying to
 
 ---
 
-## Troubleshooting
-
-### `/realm` or `/council` does not appear
-
-Run the command deployment step and verify:
-
-- `CLIENT_ID` is correct
-- `GUILD_IDS` contains the intended server IDs
-- the bot was invited with the `applications.commands` scope
-
-### Council panel denies access
-
-Check that the user has one of the configured `COUNCIL_ROLE_IDS` or the required staff permission used by the panel.
-
-### Events are showing the wrong time
-
-Events are stored in UTC and displayed using Discord timestamps. Check the source event timezone and `DEFAULT_EVENT_TIMEZONE` rather than manually changing stored UTC values.
-
-### Giveaways are not appearing in the panel
-
-Verify that the existing giveaway record is active and belongs to the current guild. The Realm/Council panels read the existing giveaway store rather than creating a second giveaway system.
-
-### PostgreSQL connection fails
-
-Check `DATABASE_URL` and confirm the Railway PostgreSQL service is reachable.
-
-### API health check fails
-
-Confirm that the service is binding to the Railway-provided `PORT` and that the `/health` endpoint is available.
-
----
-
 ## Repository Philosophy
 
-WoA Event Bot is being developed around a simple principle:
-
 > **Keep the player experience simple while keeping the backend modular.**
-
-The public Discord surface should feel like one cohesive WoA system rather than a collection of unrelated commands.
 
 **Realm = Players.**
 
