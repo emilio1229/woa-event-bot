@@ -21,11 +21,18 @@ function countEntriesForUser(entries: string[], userId: string): number {
   return entries.filter(id => id === userId).length;
 }
 
+function getParticipantNames(interaction: ButtonInteraction, userIds: string[]): string[] {
+  return userIds.map(userId => {
+    const member = interaction.guild?.members.cache.get(userId);
+    return member?.displayName ?? interaction.client.users.cache.get(userId)?.globalName ?? interaction.client.users.cache.get(userId)?.username ?? `Wizard ${userId.slice(-4)}`;
+  });
+}
+
 export async function handleBindSoul(interaction: ButtonInteraction, raffleId: string): Promise<void> {
   await withRaffleEntryLock(raffleId, async () => {
     const raffle = await raffleStore.getById(raffleId);
 
-    if (!raffle || raffle.ended) {
+    if (!raffle || raffle.ended || raffle.endsAt <= Date.now()) {
       try {
         await interaction.reply({ content: "❌ This ritual has already ended.", flags: MessageFlags.Ephemeral });
         return;
@@ -72,7 +79,12 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
       const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
       if (!isMessageCapableChannel(channel) || !raffle.messageId) throw new Error("The ritual display could not be updated. You were not joined.");
       const message = await channel.messages.fetch(raffle.messageId);
-      await message.edit({ embeds: [buildActiveRaffleEmbed(raffle)], components: message.components, files: ["./assets/woa_ritual_bg.png"] });
+      await message.edit({
+        embeds: [buildActiveRaffleEmbed(raffle, getParticipantNames(interaction, raffle.boundUsers))],
+        components: message.components,
+        files: ["./assets/woa_ritual_bg.png"],
+        allowedMentions: { parse: [] }
+      });
     } catch {
       raffle.entries = originalEntries;
       raffle.boundUsers = originalBoundUsers;
@@ -82,15 +94,6 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
     }
 
     await raffleStore.save(raffle);
-
-    // Announce the participant without a Discord mention so the thread stays quiet.
-    try {
-      const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null);
-      if (isMessageCapableChannel(messageChannel)) {
-        const displayName = interaction.guild?.members.cache.get(userId)?.displayName ?? interaction.user.globalName ?? interaction.user.username;
-        await messageChannel.send(`🔮 **${displayName}** has joined the giveaway.`);
-      }
-    } catch {}
 
     const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
     const glowSymbol = glow[Math.floor(Math.random() * glow.length)];
