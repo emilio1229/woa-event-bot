@@ -105,7 +105,7 @@ async function showCleanup(interaction: ButtonInteraction) {
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
   if (interaction.customId !== `${COUNCIL_PREFIX}:cleanup:channel`) return;
   const channelId = interaction.values[0];
-  await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription(`Selected channel: <#${channelId}>\n\nThis cleanup can **only delete messages authored by WoA-Event-BOT**.\n\n🔒 **Nothing in the database is deleted or changed.**`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Clean Bot Messages", `${COUNCIL_PREFIX}:cleanup:bot:${channelId}`, ButtonStyle.Danger), button("◀ Choose Another", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary), button("✖ Cancel", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary))] });
+  await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription(`Selected channel: <#${channelId}>\n\nThis cleanup can **only delete messages authored by WoA-Event-BOT**.\n\n🔒 **Nothing in the database is deleted or changed.**`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Clean Bot Messages", `${COUNCIL_PREFIX}:cleanup:bot:${channelId}`, ButtonStyle.Danger), button("◀ Choose Another", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary), button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
 async function runCleanup(interaction: ButtonInteraction, channelId: string) {
