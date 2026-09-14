@@ -11,7 +11,7 @@ export interface CommandModule {
   execute: (interaction: ChatInputCommandInteraction) => Promise<unknown> | unknown;
 }
 
-const PUBLIC_COMMANDS = new Set(["realm", "council", "bounty-end"]);
+const PUBLIC_COMMANDS = new Set(["realm", "council"]);
 
 export function getCommandFiles(directory: string): string[] {
   let results: string[] = [];
@@ -46,8 +46,9 @@ export async function loadCommandModules(commandsPath: string): Promise<CommandM
       continue;
     }
 
-    // The new WoA UI intentionally exposes only /realm, /council, and the safe bounty manager.
-    // Existing command modules remain available internally while they are migrated behind the panel system.
+    // The new WoA UI intentionally exposes only /realm and /council.
+    // Existing command modules remain available internally while they are migrated
+    // behind the new panel system.
     if (!PUBLIC_COMMANDS.has(command.data.name)) {
       continue;
     }
