@@ -16,15 +16,15 @@ import { getEventRsvpSummary, getUpcomingEvents, updateEventRsvp } from "../serv
 export const REALM_PREFIX = "woa:realm";
 
 export function buildRealmPanel() {
-  const embed = new EmbedBuilder().setTitle("🔮 THE REALM OF WIZARDS").setDescription("Welcome, Wizard.\n\nChoose a realm below to explore the WoA community. Your buttons are your spellbook — no command memorization required.").addFields(
-    { name: "💎 Sigils", value: "Balance, daily reward & history", inline: true },
-    { name: "🎟️ Raffles", value: "View active community giveaways", inline: true },
-    { name: "📜 Bounties", value: "Discover active community bounties", inline: true },
-    { name: "🏆 Events", value: "Upcoming events and RSVPs", inline: true },
-    { name: "🎁 Rewards", value: "Explore rewards and prizes", inline: true },
-    { name: "🏅 Achievements", value: "Track your WoA accomplishments", inline: true },
-    { name: "📊 Leaderboard", value: "See the Realm rankings", inline: true },
-    { name: "👤 Profile", value: "View your Wizard profile", inline: true }
+  const embed = new EmbedBuilder().setTitle("🔮 THE REALM OF WIZARDS").setDescription("✨ **Welcome, Wanderer.**\n\nYou have crossed the veil and entered the **Realm of Wizards**, where Sigils are earned, bounties are inscribed, gatherings are summoned, and forgotten magic still stirs beneath the surface.\n\n🔮 **Choose your path below and let the Realm reveal what awaits.**").addFields(
+    { name: "💎 Sigils", value: "Consult your sigils, daily blessing & ledger", inline: true },
+    { name: "🎟️ Raffles", value: "Discover the rituals currently calling for Wizards", inline: true },
+    { name: "📜 Bounties", value: "Seek out the hunts inscribed by the Council", inline: true },
+    { name: "🏆 Events", value: "Answer the call of upcoming gatherings", inline: true },
+    { name: "🎁 Rewards", value: "Explore what the Realm has placed within reach", inline: true },
+    { name: "🏅 Achievements", value: "Record the feats you have carved into WoA", inline: true },
+    { name: "📊 Leaderboard", value: "See which Wizards lead the Realm", inline: true },
+    { name: "👤 Profile", value: "View your personal arcane record", inline: true }
   ).setFooter({ text: "The Wizards of Ark • The Realm" });
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Sigils", `${REALM_PREFIX}:sigils`), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`), button("🏆 Events", `${REALM_PREFIX}:events`)),
@@ -138,8 +138,6 @@ async function showProfile(interaction: ButtonInteraction) {
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Sigils", `${REALM_PREFIX}:sigils`), button("🏅 Achievements", `${REALM_PREFIX}:achievements`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
-async function showUnknown(interaction: ButtonInteraction, section: string) {
-  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🔮 Realm").setDescription(`The **${section}** panel is not available.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
-}
+async function showUnknown(interaction: ButtonInteraction, section: string) { await interaction.reply({ content: `❌ Unknown Realm section: ${section}`, ephemeral: true }); }
 
-function button(label: string, customId: string, style = ButtonStyle.Primary) { return new ButtonBuilder().setCustomId(customId).setLabel(label).setStyle(style); }
+function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
