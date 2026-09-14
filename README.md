@@ -7,87 +7,181 @@
 </p>
 
 <p align="center">
-  <b>Arcane Events • Ritual Raffles • Sigil Economy • Admin Ledger</b>
+  <b>The Wizards of Ark • Realm • Council • Sigils • Events • Bounties • Giveaways</b>
 </p>
 
 ---
 
 ## Overview
 
-WoA Event Bot is a Discord bot for managing guild events, ritual raffles, sigil rewards, and moderator-led ledger actions.
-It now uses a TypeScript-first `src/` → `dist/` architecture for the main runtime and deploy flow while preserving the existing raffle systems where possible.
-Discord directory data is synchronized into PostgreSQL and served from a Fastify REST API rather than being queried live from Discord for website reads.
+**WoA Event Bot** is the community-management bot for **The Wizards of Ark** Discord and ARK: Survival Ascended community.
 
-The bot is currently designed around four command groups:
+The bot is built around two primary interactive hubs:
 
-- **Event commands** for Sesh-like scheduling and RSVP flows
-- **User commands** for everyday members
-- **Admin commands** for staff and moderators
-- **Raffle commands** for creating, tracking, and ending rituals/raffles
+- **`/realm` — Player Hub**: the public home for members to view their Sigils, community giveaways, bounties, events, rewards, achievements, leaderboard, and profile.
+- **`/council` — Staff Hub**: the staff control center for economy, giveaways, events, bounties, rewards, members, statistics, and configuration.
 
-## Migration Notes
+The goal is simple: keep Discord clean and make the important community systems accessible through panels, buttons, menus, and modals instead of filling the server with dozens of slash commands.
 
-- Main runtime entry is now `src/index.ts`, compiled to `dist/index.js`
-- Slash command deployment entry is now `src/deploy-commands.ts`, compiled to `dist/deploy-commands.js`
-- The TypeScript migration is now complete: no runtime `.js` source files remain under `src/`
-- Legacy raffle, sigil, bounty, and interaction modules now live as typed `.ts` source files and compile into a fully runnable `dist/` output
-- Discord member, role, and sync-state data now live in PostgreSQL via Prisma
-- Event, raffle, and sigil application data now live in PostgreSQL as the primary runtime store
-- Old JSON-backed state can be discarded when starting fresh; no migration step is required for a clean Railway setup
-- New event modules live under:
-  - `src/config/`
-  - `src/commands/event/`
-  - `src/events/`
-  - `src/interactions/buttons/`
-  - `src/services/`
-  - `src/storage/`
-  - `src/ui/`
-  - `src/utils/`
-- Event times are stored in UTC and rendered with Discord timestamp tags (`<t:UNIX:F>` and `<t:UNIX:R>`), so every viewer sees the event in their local timezone automatically
+### Core Architecture
 
-## Deployment
+```text
+Discord
+   │
+   ▼
+Interaction Router
+   │
+   ├── Realm Panel ──► Player Services
+   │
+   └── Council Panel ► Staff Services
+             │
+             ▼
+          Services
+             │
+             ▼
+       Repositories / Stores
+             │
+             ▼
+        PostgreSQL
 
-- Always run `npm run build` before `npm start`
-- `npm start` launches the compiled bot from `dist/index.js`
-- `npm run deploy` rebuilds the project and registers slash commands via `dist/deploy-commands.js`
-- `npm run db:push` applies the Prisma schema to PostgreSQL
-- Runtime now requires `DATABASE_URL` in addition to the Discord token settings
-- The Fastify API reads synchronized Discord data from PostgreSQL and defaults to `API_HOST=0.0.0.0` and `API_PORT=3000`
-- The repository includes a `Dockerfile` that installs dependencies, builds the bot, and starts it from `dist/`
-- A fallback `Procfile` is also included for hosts that expect one
+Website ──► Fastify API ──► Services / PostgreSQL
+```
 
-## PostgreSQL Sync Architecture
+**Panels are the UI. Services are the brain. PostgreSQL is the memory.**
 
-- Startup order is: connect PostgreSQL, apply the Prisma schema, log into Discord, wait for the client ready event, run a full Discord-to-database reconciliation, then start the Fastify API
-- Reconciliation sync uses PostgreSQL upserts for members and roles and removes stale records that were missed while the bot was offline
-- Real-time Discord events update only the affected PostgreSQL records for member and role changes
-- API reads come from PostgreSQL for routes such as `/api/discord/members`, `/api/discord/council`, and `/api/discord/roles`
-- Council queries can be configured with `COUNCIL_ROLE_IDS` as a comma-separated list of Discord role IDs
+---
 
-## Environment Variables
+## Current Command Philosophy
 
-- `TOKEN` — Discord bot token
-- `CLIENT_ID` — Discord application client ID
-- `GUILD_IDS` — comma-separated guild IDs for slash command deployment
-- `ALLOWED_GUILD_IDS` — optional comma-separated Discord server IDs the bot is allowed to stay in; the bot automatically leaves any other server at startup and whenever it's invited to one. Leave unset to allow any server.
-- `DATABASE_URL` — PostgreSQL connection string
-- `PORT` — Railway-provided HTTP port; takes precedence over `API_PORT` when present
-- `API_HOST` — Fastify bind host, default `0.0.0.0`
-- `API_PORT` — Fastify bind port, default `3000`
-- `API_KEY` — required secret; callers must send it as the `x-api-key` header on all `/api/*` routes
-- `COUNCIL_ROLE_IDS` — optional comma-separated Discord role IDs for the council endpoint
-- `RAFFLE_THREADS_ENABLED` — when `true` (default), each raffle gets a linked Discord thread for entries; the thread is locked and archived when the raffle ends
-- `RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES` — thread auto-archive duration; must be one of `60`, `1440`, `4320`, `10080` (default `1440`)
+Only the two main hubs are intended to be publicly registered as the primary user experience:
 
-## Railway Setup
+| Command | Audience | Purpose |
+| --- | --- | --- |
+| `/realm` | Everyone | Player/community hub |
+| `/council` | Council / staff | Staff control center |
 
-- This app should be deployed to Railway as a web service because the process exposes the Fastify API and Railway health checks rely on the HTTP listener
-- Railway injects `PORT`; the runtime now uses `PORT` first and falls back to `API_PORT` outside Railway
-- Set these Railway environment variables: `TOKEN`, `CLIENT_ID`, `DATABASE_URL`
-- Set `GUILD_IDS` only if you plan to run the slash-command deploy script from the same environment
-- Optionally set `COUNCIL_ROLE_IDS`, `DEFAULT_EVENT_TIMEZONE`, `SIGILS_PER_RAFFLE_ENTRY`, and `ASTRAL_CHANNEL_ID`
-- The repository includes `railway.json` with `npm run db:push && npm start` and a `/health` health check
-- If you are starting fresh, do not attach a Railway volume for the old `data/` directory
+Older commands and modules remain in the codebase where they are still used by the existing systems. They are being treated as internal functionality during the panel migration rather than unnecessarily rewriting working features.
+
+---
+
+# 🔮 Realm — Player Hub
+
+`/realm` opens the player-facing community panel.
+
+### 💎 Sigils
+
+Players can view their current Sigil balance, recent ledger activity, guild economy totals, and daily reward status.
+
+The panel also provides the daily claim flow and transaction history without requiring a separate public command.
+
+### 🎟️ Giveaways
+
+The Realm panel shows the server's active community giveaways and their current entry counts/end times.
+
+WoA normally has two active community giveaway tracks:
+
+- **Server Member**
+- **Server Supporter**
+
+The existing giveaway mechanics are preserved; the Realm panel simply provides a cleaner way for players to view them.
+
+### 📜 Bounties
+
+Players can view currently active bounty hunts, including the target creatures/stat objectives and available bonus information.
+
+### 🏆 Events
+
+The event panel shows upcoming community events, host information, start times, and RSVP totals.
+
+Players can RSVP through the interactive event controls.
+
+Event times are stored in UTC and rendered with Discord timestamps so Discord can display the appropriate local time to each viewer.
+
+### 🎁 Rewards
+
+The existing Sigil Shop is surfaced through the Realm panel so players can access available rewards without needing a separate command.
+
+### 🏅 Achievements
+
+Players can view their achievement progress and unlocked accomplishments.
+
+### 📊 Leaderboard
+
+The Realm leaderboard displays the guild's leading Sigil holders with Discord display names where available.
+
+### 👤 Profile
+
+The profile panel combines useful player information into one view, including:
+
+- current Sigil balance
+- recent activity
+- achievement progress
+- daily reward status
+
+---
+
+# 🏛️ Council — Staff Control Center
+
+`/council` opens the staff-facing management panel.
+
+Council access is controlled by the configured council role permissions.
+
+### 💎 Economy
+
+Provides a quick guild-wide economy overview, including:
+
+- total Sigils
+- active users
+- active giveaways
+- active bounties
+- upcoming events
+
+### 🎟️ Giveaways
+
+Staff can review the currently active community giveaways and their status from one place while preserving the existing giveaway system.
+
+### 🏆 Events
+
+Staff can review upcoming events, hosts, RSVP totals, and refresh event information.
+
+### 📜 Bounties
+
+Staff can review active bounty hunts and their current configuration.
+
+### 🎁 Rewards
+
+Council can access the existing Sigil Shop/reward components and review the current economy context.
+
+### 👥 Members
+
+The member panel provides a staff-oriented Discord membership overview, including member/bot counts and synchronized directory information where available.
+
+### 📊 Statistics
+
+The statistics panel combines useful operational numbers such as:
+
+- guild member count
+- bot count
+- Sigil economy totals
+- active giveaways
+- active bounties
+- upcoming events
+
+### ⚙️ Configuration
+
+The configuration panel exposes safe runtime configuration useful to Council without displaying secrets.
+
+Examples include:
+
+- configured Council roles
+- default event timezone
+- giveaway thread settings
+- giveaway thread auto-archive duration
+- Astral channel configuration
+- API host/port
+- allowed guild configuration
+
+Sensitive values such as bot tokens and API keys are never displayed.
 
 ---
 
@@ -95,454 +189,350 @@ The bot is currently designed around four command groups:
 
 ### Sigil Economy
 
-- Persistent per-guild sigil balances in PostgreSQL
-- Transaction history for awards, removals, redemptions, and daily claims
-- Daily reward command with 24-hour cooldown
-- User balance and ledger views
-- Admin balance auditing and economy statistics
+- Persistent per-guild Sigil balances
+- Transaction history
+- Daily reward with cooldown
+- Player balance and ledger views
+- Staff economy statistics
+- Leaderboard support
+- Achievement progress
 
-### Raffle System
+### Community Giveaways
 
-- Start raffles with a prize and duration
-- Optional raffle naming
-- View raffle status
-- End raffles manually or automatically
-- Weighted sigil redemption into raffle entries
-- Winner announcement flow
-- PostgreSQL-backed raffle state
+- Existing WoA giveaway system preserved
+- Active giveaway tracking
+- Giveaway status visibility through Realm and Council
+- Automatic/manual ending support from the existing system
+- Discord-linked giveaway messages/threads where configured
 
 ### Event System
 
-- `/event create` slash command with date, time, and optional timezone input
-- UTC-backed event persistence in PostgreSQL
-- Arcane-themed event embeds with local-time Discord timestamps
-- RSVP buttons for Going / Maybe / No
-- Modular interaction handlers for future scheduling features
+- Event creation and persistence
+- UTC-backed event storage
+- Discord-local timestamp rendering
+- Going / Maybe / No RSVP support
+- Upcoming event panel
+- RSVP summaries
 
-### Admin Tools
+### Bounty System
 
-- Award or remove sigils from users
-- Inspect user balances
-- Inspect transaction logs
-- View guild-wide leaderboard and economy summary
-- Review active raffle state
+- Persistent active bounty records
+- Weekly hunt support
+- Dino/stat objectives
+- Optional bonus information
+- Player-facing bounty board
+- Staff-facing bounty overview
 
-### Bot Behavior
+### Achievements
 
-- Recursive slash command loading from `src/commands/`
-- Global interaction router for commands, buttons, and modals
-- Background raffle auto-end loop
-- Guild-only protection on user-facing features
-- Administrator checks for sensitive actions
+- Player achievement records
+- Progress indicators
+- Sigil and activity-based milestones
+- Realm profile/achievement views
 
----
+### PostgreSQL + Prisma
 
-## Command Reference
+- Discord member synchronization
+- Discord role synchronization
+- Sigil/economy persistence
+- Event persistence
+- Giveaway persistence
+- API-backed directory reads
 
-## User Commands
+### Fastify API
 
-These commands are available to regular users inside a server.
+The bot also exposes a Fastify API for the WoA website and other trusted consumers.
 
-## Event Commands
+Examples include:
 
-### `/event create title date time [timezone] [notes]`
+- `/health`
+- `/api/discord/members`
+- `/api/discord/council`
+- `/api/discord/roles`
 
-Create a new event embed with timezone-safe display.
-
-**Options**
-
-- `title` — event name
-- `date` — `YYYY-MM-DD`
-- `time` — `19:30` or `7:30 PM`
-- `timezone` — optional IANA timezone such as `America/New_York` (defaults to `UTC`)
-- `notes` — optional preparation details
-
-**Behavior**
-
-- Parses the supplied date/time in the requested timezone
-- Converts the start time to UTC for storage
-- Renders local-time display using Discord timestamps
-- Posts an arcane event embed with Going / Maybe / No RSVP buttons
-- Persists the event state to PostgreSQL
-
-## User Commands
-
-### `/my-sigils`
-
-View your current sigil balance and recent ledger activity.
-
-**Details**
-
-- Shows your personal balance
-- Displays recent transactions
-- Uses the sigil ledger for the current guild
-- Guild-only command
-
-### `/sigil-shop`
-
-Redeem sigils for weighted raffle entries.
-
-**Details**
-
-- Lists active raffles in the server
-- Displays your current sigil balance
-- Opens the shop flow for raffle entry redemption
-- Guild-only command
-
-### `/daily`
-
-Claim your daily sigil reward.
-
-**Details**
-
-- Grants `+1 sigil`
-- Enforces a 24-hour cooldown per user
-- Shows a remaining cooldown timer when unavailable
-- Persists the last claim timestamp immediately
+API routes are protected by the configured API key.
 
 ---
 
-## Admin Commands
+## Project Structure
 
-These commands are intended for authorized administrators only.
+```text
+src/
+├── commands/
+│   ├── council.ts
+│   ├── realm.ts
+│   ├── event/
+│   └── ...legacy/internal commands
+│
+├── config/
+├── events/
+├── interactions/
+│   └── buttons/
+├── models/
+├── panels/
+│   ├── realmPanel.ts
+│   └── councilPanel.ts
+├── repositories/
+├── services/
+├── storage/
+├── ui/
+├── utils/
+├── deploy-commands.ts
+└── index.ts
+```
 
-### `/award-sigils <user> <amount> <reason>`
+### Important Design Rule
 
-Award or remove sigils from a user.
-
-**Options**
-
-- `user` — the target member
-- `amount` — positive to award, negative to remove
-- `reason` — required ledger reason
-
-**Behavior**
-
-- Updates the target user's sigil balance
-- Records the action in transaction history
-- Logs who performed the adjustment
-- Returns an updated balance embed
-
-### `/sigil-balance <user>`
-
-Inspect another user's sigil balance.
-
-**Behavior**
-
-- Displays current balance
-- Shows recent transaction activity
-- Intended for moderation and support
-
-### `/sigil-transactions <user>`
-
-Inspect a user's transaction history.
-
-**Behavior**
-
-- Shows a longer ledger view
-- Useful for auditing adjustments and redemptions
-- Administrator-only
-
-### `/sigil-leaderboard`
-
-View the top sigil earners in the guild.
-
-**Behavior**
-
-- Sorts users by balance
-- Fetches display names when possible
-- Returns a formatted leaderboard embed
-
-### `/sigil-admin-panel`
-
-View guild-wide economy statistics.
-
-**Behavior**
-
-- Summarizes circulation and economy data
-- Shows active raffle context
-- Provides a moderation overview for the server
+New player/staff functionality should normally be added to the appropriate **Realm or Council panel** and backed by a service, rather than creating another public slash command.
 
 ---
 
-## Raffle Commands
+## Data & Persistence
 
-These commands control raffle creation and resolution.
+### PostgreSQL
 
-### `/raffle-start <prize> <duration> [name]`
+PostgreSQL is the primary runtime database for the migrated systems.
 
-Start a new raffle.
+The database is used for synchronized Discord data and application state including economy and event-related information.
 
-**Options**
+### Legacy JSON
 
-- `prize` — required prize text
-- `duration` — required end time or duration input
-- `name` — optional custom raffle title
-
-**Behavior**
-
-- Parses a human-readable time value
-- Rejects invalid or past durations
-- Generates a themed default name if none is provided
-- Prompts the user to select a role during setup
-- Continues the raffle creation flow interactively
-
-### `/raffle-status`
-
-Show the current raffle status.
-
-**Behavior**
-
-- Displays details for a single active raffle
-- Shows a selection menu if multiple raffles are active
-- Includes prize, ending time, invocation text, and bound entry count
-
-### `/raffle-end`
-
-Force-end the current raffle.
-
-**Behavior**
-
-- Ends the active raffle manually
-- Selects a winner from the entries when available
-- Removes interactive components from the original raffle message
-- Posts a winner announcement when applicable
+Some legacy JSON-backed modules remain in the repository for compatibility and migration support. A fresh Railway deployment can use PostgreSQL as the primary runtime store without requiring the old JSON state.
 
 ---
 
-## How It Works
+## Deployment
 
-### Startup Flow
+The project is designed to run as a Railway web service because the process also exposes the Fastify API.
 
-When the bot starts, it:
-
-1. creates a Discord client
-2. loads command files recursively from `src/commands/`
-3. registers them in memory
-4. starts the raffle auto-end loop
-5. optionally starts additional background routines
-6. listens for interactions from Discord
-
-### Interaction Routing
-
-The bot uses a central interaction handler for:
-
-- slash commands
-- buttons
-- modal submissions
-
-This keeps command logic organized while still supporting richer interactive workflows.
-
-### Sigil Ledger
-
-Sigil balances are stored per guild and per user.
-The ledger tracks:
-
-- current balance
-- transaction history
-- daily claim timestamps
-- awarded, removed, and redeemed amounts
-
-### Raffle Flow
-
-Raffles can be started, monitored, and ended.
-The raffle system supports:
-
-- active raffle tracking
-- manual ending
-- automatic ending
-- entry redemption through the sigil shop
-- winner selection based on raffle entries
-
----
-
-## Installation
-
-### Requirements
-
-- Node.js 16+ or newer
-- npm
-- a Discord application and bot token
-- permission to invite the bot to a server
-
-### Setup
+### Build
 
 ```bash
-git clone https://github.com/emilio1229/woa-raffle-bot.git
-cd woa-raffle-bot
 npm install
+npm run build
+npm start
 ```
 
-Create a `.env` file in the project root:
-
-```env
-TOKEN=your_discord_bot_token_here
-CLIENT_ID=your_application_client_id_here
-SIGILS_PER_RAFFLE_ENTRY=100
-```
-
-Deploy the slash commands:
+### Slash Command Deployment
 
 ```bash
-npm run build
 npm run deploy
 ```
 
-Start the bot:
+The deploy script builds the project and registers the configured slash commands.
+
+### Database
 
 ```bash
-npm run start
+npm run db:push
 ```
 
-For local development with auto-reload:
+This applies the Prisma schema to PostgreSQL.
 
-```bash
-npm run dev
-```
+### Railway
+
+Railway provides the `PORT` environment variable automatically. The runtime uses `PORT` first and falls back to `API_PORT` outside Railway.
+
+The repository includes:
+
+- `railway.json`
+- `Dockerfile`
+- `Procfile`
+- Fastify `/health` endpoint
+
+For a fresh PostgreSQL deployment, the old `data/` directory does not need a Railway volume.
 
 ---
 
-## Configuration
+## Environment Variables
 
-| Variable                  | Required         | Default | Description                                                 |
-| ------------------------- | ---------------- | ------: | ----------------------------------------------------------- |
-| `TOKEN`                   | Yes              |       — | Discord bot token                                           |
-| `CLIENT_ID`               | Yes              |       — | Discord application client ID                               |
-| `GUILD_IDS`               | Yes (for deploy) |       — | Comma-separated guild IDs for slash command deployment      |
-| `DEFAULT_EVENT_TIMEZONE`  | No               |   `UTC` | Default timezone used when `/event create` omits a timezone |
-| `SIGILS_PER_RAFFLE_ENTRY` | No               |   `100` | Sigil cost per raffle entry                                 |
-| `ASTRAL_CHANNEL_ID`       | No               |       — | Channel ID for the optional astral selection routine        |
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `TOKEN` | Yes | — | Discord bot token |
+| `CLIENT_ID` | Yes | — | Discord application client ID |
+| `GUILD_IDS` | Deploy | — | Comma-separated guild IDs for command deployment |
+| `ALLOWED_GUILD_IDS` | No | — | Guilds the bot is allowed to remain in |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
+| `API_KEY` | Yes for API | — | Secret used by `/api/*` requests |
+| `API_HOST` | No | `0.0.0.0` | Fastify bind host |
+| `PORT` | No | Railway | HTTP port supplied by Railway |
+| `API_PORT` | No | `3000` | Local/default API port |
+| `COUNCIL_ROLE_IDS` | No | — | Council role IDs, comma-separated |
+| `DEFAULT_EVENT_TIMEZONE` | No | `UTC` | Default event timezone |
+| `ASTRAL_CHANNEL_ID` | No | — | Optional Astral channel |
+| `RAFFLE_THREADS_ENABLED` | No | `true` | Enables linked giveaway threads |
+| `RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES` | No | `1440` | Giveaway thread auto-archive duration |
 
-### Example `.env`
+### Example
 
 ```env
-TOKEN=your_discord_bot_token_here
+TOKEN=your_discord_bot_token
 CLIENT_ID=123456789012345678
-GUILD_IDS=1498579289166188604,1428105944373526610
+GUILD_IDS=123456789012345678
+ALLOWED_GUILD_IDS=123456789012345678
+DATABASE_URL=postgresql://...
+API_KEY=your_api_key
+API_HOST=0.0.0.0
+API_PORT=3000
+COUNCIL_ROLE_IDS=123456789012345678
 DEFAULT_EVENT_TIMEZONE=UTC
-SIGILS_PER_RAFFLE_ENTRY=100
 ASTRAL_CHANNEL_ID=
+RAFFLE_THREADS_ENABLED=true
+RAFFLE_THREAD_AUTO_ARCHIVE_MINUTES=1440
 ```
+
+Never commit real tokens, API keys, database passwords, or other secrets to the repository.
 
 ---
 
-## Data Storage
+## Startup Flow
 
-### Sigil Data
+At startup the application is designed to:
 
-The bot uses a persistent sigil ledger to keep balances and transaction history.
+1. initialize the application/runtime
+2. connect to PostgreSQL
+3. apply/verify the Prisma schema as configured
+4. log into Discord
+5. wait for the Discord client to become ready
+6. reconcile Discord directory data with PostgreSQL
+7. start the Fastify API
+8. begin background routines such as giveaway auto-ending
+9. listen for Discord interactions
 
-Typical information stored includes:
+---
 
-- guild ID
-- user ID
-- sigil balance
-- transaction records
-- daily reward timestamp
+## Interaction Flow
 
-### Raffle Data
+Discord interactions pass through a central router.
 
-Raffle state includes:
+```text
+Slash Command
+     │
+     ▼
+Interaction Router
+     │
+     ├── /realm ──────► Realm Panel Router
+     │                      └── Services
+     │
+     ├── /council ────► Council Panel Router
+     │                      └── Services
+     │
+     ├── Event RSVP ──► Event Service
+     │
+     └── Legacy flows ► Existing handlers
+```
 
-- raffle ID
-- guild ID
-- channel ID
-- message ID
-- prize
-- end time
-- entries
-- ended state
-
-### Event Data
-
-Event state includes:
-
-- event ID
-- guild ID
-- channel ID
-- message ID
-- host and creator IDs
-- `startAtIso` in UTC
-- `startAtUnix` for Discord timestamp rendering
-- RSVP state per user
+This allows the user experience to stay simple while the underlying systems remain modular.
 
 ---
 
 ## Permissions
 
-### OAuth2 Scopes
+### Realm
 
-- `applications.commands` — registers slash commands
-- `bot` — adds the bot to the server
+Realm features are intended for regular server members and are protected as guild-only interactions where appropriate.
 
-### Bot Permissions
+### Council
 
-- `SEND_MESSAGES` — reply to commands
-- `MANAGE_MESSAGES` — update raffle content and remove components
-- `EMBED_LINKS` — send rich embeds
-- `READ_MESSAGE_HISTORY` — fetch existing raffle messages
+Council features require the configured Council/staff permissions.
 
-### Command Restrictions
+### Sensitive Operations
 
-- user commands are guild-only
-- admin commands require administrator privileges
-- raffle management should be used only by trusted staff
+Administrative economy and management actions should remain restricted to trusted staff roles/permissions.
+
+---
+
+## Development
+
+### Requirements
+
+- Node.js 16+ (newer supported Node versions are recommended)
+- npm
+- Discord application/bot
+- PostgreSQL database for the current runtime architecture
+
+### Recommended Workflow
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+For development with the repository's configured watcher:
+
+```bash
+npm run dev
+```
+
+Before pushing changes:
+
+```bash
+npm run build
+```
+
+A clean TypeScript build should be treated as the first gate before deploying to Railway.
 
 ---
 
 ## Troubleshooting
 
-### Commands do not appear
+### `/realm` or `/council` does not appear
 
-Check that:
+Run the command deployment step and verify:
 
-- the bot was invited with `applications.commands`
-- slash commands were deployed successfully
-- the bot has permission to view the server and channels
-- the correct application `CLIENT_ID` is set
+- `CLIENT_ID` is correct
+- `GUILD_IDS` contains the intended server IDs
+- the bot was invited with the `applications.commands` scope
 
-### `/my-sigils` or `/sigil-shop` does not work in DMs
+### Council panel denies access
 
-That is expected.
-These commands are intentionally server-only.
+Check that the user has one of the configured `COUNCIL_ROLE_IDS` or the required staff permission used by the panel.
 
-### Daily reward says it is still on cooldown
+### Events are showing the wrong time
 
-The command can only be used once every 24 hours.
-Wait until the displayed cooldown expires.
+Events are stored in UTC and displayed using Discord timestamps. Check the source event timezone and `DEFAULT_EVENT_TIMEZONE` rather than manually changing stored UTC values.
 
-### Raffle creation fails
+### Giveaways are not appearing in the panel
 
-Possible causes:
+Verify that the existing giveaway record is active and belongs to the current guild. The Realm/Council panels read the existing giveaway store rather than creating a second giveaway system.
 
-- invalid duration format
-- end time in the past
-- missing permissions
-- setup interaction timed out
+### PostgreSQL connection fails
 
-### Admin command fails
+Check `DATABASE_URL` and confirm the Railway PostgreSQL service is reachable.
 
-Verify that:
+### API health check fails
 
-- you have administrator permissions
-- you are using the command in a server
-- the bot can reply in the channel
+Confirm that the service is binding to the Railway-provided `PORT` and that the `/health` endpoint is available.
 
 ---
 
-## Contributing
+## Repository Philosophy
 
-Contributions are welcome.
-If you add new slash commands under `src/commands/`, they will be discovered automatically by the recursive loader.
+WoA Event Bot is being developed around a simple principle:
 
----
+> **Keep the player experience simple while keeping the backend modular.**
 
-## License
+The public Discord surface should feel like one cohesive WoA system rather than a collection of unrelated commands.
 
-Unlicensed. Use freely.
+**Realm = Players.**
+
+**Council = Staff.**
+
+**Panels = UI.**
+
+**Services = Brain.**
+
+**PostgreSQL = Memory.**
 
 ---
 
 ## Support
 
-If you need help, open an issue in the repository or contact the maintainer.
+For project issues, open an issue in the repository or contact the maintainer through the WoA community.
+
+---
+
+## License
+
+Unlicensed.
