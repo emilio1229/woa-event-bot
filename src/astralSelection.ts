@@ -42,12 +42,18 @@ export function startAstralSelection(client: Client): void {
           continue;
         }
 
+        const mention = `<@${member.id}>`;
+
         const embed = new EmbedBuilder()
           .setColor("#5599ff")
           .setTitle("Astral Selection")
-          .setDescription(`${member} has been chosen by the astral currents and received **${amount} sigils**.`);
+          .setDescription(`✨ ${mention} has been chosen by the astral currents and received **${amount} sigils**.`);
 
-        await channel.send({ embeds: [embed] });
+        await channel.send({
+          embeds: [embed],
+          allowedMentions: { users: [member.id] }
+        });
+
         console.log(`[AstralSelection] Awarded ${amount} sigils to ${randomUserId}`);
       }
     } catch (err) {
