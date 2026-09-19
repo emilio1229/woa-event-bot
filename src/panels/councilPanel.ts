@@ -32,7 +32,7 @@ import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import { parseTime } from "../utils/timeParser.js";
 import { getAdminTimezone, setAdminTimezone, COMMON_TIMEZONES, isValidIanaTimezone } from "../services/adminTimezoneService.js";
 import { discordDirectoryService } from "../services/discordDirectoryService.js";
-import { attachEventMessageId, createEvent, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
+import { attachEventMessageId, createEvent, deleteEvent, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { createRaffleThreadFromMessage, closeRaffleThread, getRaffleMessageChannelId } from "../services/raffleThreadService.js";
@@ -129,7 +129,20 @@ export async function handleCouncilPanel(interaction: Interaction) {
 }
 
 function postingChannelMenu(kind: PostingDraft["kind"]) {
-  return new ChannelSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:post:channel:${kind}`).setPlaceholder(`Choose where to post the ${kind}`).setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread);
+  const menu = new ChannelSelectMenuBuilder()
+    .setCustomId(`${COUNCIL_PREFIX}:post:channel:${kind}`)
+    .setPlaceholder(`Choose where to post the ${kind}`)
+    .setMinValues(1)
+    .setMaxValues(1);
+
+  // Events are public announcements. Exclude threads so a council member cannot
+  // select a thread the bot cannot access/send to, which otherwise causes 50001.
+  if (kind === "event") {
+    menu.setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
+  } else {
+    menu.setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread);
+  }
+  return menu;
 }
 
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
@@ -243,14 +256,31 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     const event = await createEvent({ guildId: guild.id, channelId: eventChannelId, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
 
     // The public event message always gets the single supported RSVP action: Going.
-    const announcement = await channel.send({
-      content: draft.roleId && /^\d{17,20}$/.test(draft.roleId) ? `<@&${draft.roleId}>` : undefined,
-      embeds: [buildEventEmbed(event)],
-      components: [buildEventRsvpButtons(event.id)],
-      allowedMentions: draft.roleId && /^\d{17,20}$/.test(draft.roleId)
-        ? { roles: [draft.roleId] }
-        : { parse: [] }
-    });
+    try {
+      const announcement = await channel.send({
+        content: draft.roleId && /^\\d{17,20}$/.test(draft.roleId) ? `<@&${draft.roleId}>` : undefined,
+        embeds: [buildEventEmbed(event)],
+        components: [buildEventRsvpButtons(event.id)],
+        allowedMentions: draft.roleId && /^\\d{17,20}$/.test(draft.roleId)
+          ? { roles: [draft.roleId] }
+          : { parse: [] }
+      });
+
+      await attachEventMessageId(event.id, announcement.id);
+    } catch (error) {
+      await deleteEvent(event.id).catch(() => undefined);
+      console.error("Council event post failed:", error);
+      const missingAccess = error && typeof error === "object" && "code" in error && (error as { code?: number }).code === 50001;
+      await updateCouncilPanel(interaction, {
+        embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription(
+          missingAccess
+            ? "❌ The bot does not have access to the selected event channel. Choose a normal text/announcement channel where WoA-Event-BOT has **View Channel** and **Send Messages** permission."
+            : `❌ The event could not be posted: ${error instanceof Error ? error.message : "Unknown Discord error."}`
+        )],
+        components: [backButtonRow()]
+      });
+      return;
+    }
 
     await attachEventMessageId(event.id, announcement.id);
     postingDrafts.delete(userId);
