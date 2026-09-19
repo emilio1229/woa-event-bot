@@ -282,7 +282,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       return;
     }
 
-    await attachEventMessageId(event.id, announcement.id);
+    // attachEventMessageId is handled immediately after the announcement is sent.
     postingDrafts.delete(userId);
     await showEvents(interaction, `✨ **Event created:** ${event.title} in <#${eventChannelId}>`);
     return;
