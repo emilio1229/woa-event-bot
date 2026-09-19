@@ -237,10 +237,25 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     if (!timezone) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🌎 My Timezone").setDescription("⚠️ Your timezone is not set. Choose it once below before creating scheduled events.")], components: timezonePickerComponents() }); return; }
     const millis = parseTime(time, timezone);
     if (!title || !description || millis === null || Number.isNaN(millis) || millis <= Date.now()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ Please provide a title, description, and valid future event time.")], components: [backButtonRow()] }); return; }
-    const event = await createEvent({ guildId: guild.id, channelId: draft.channelId, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
-    const announcement = await channel.send({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } }); await attachEventMessageId(event.id, announcement.id);
-    if (draft.roleId && /^\d{17,20}$/.test(draft.roleId)) await announcement.edit({ content: `<@&${draft.roleId}>`, allowedMentions: { roles: [draft.roleId] } });
-    postingDrafts.delete(userId); await showEvents(interaction, `✨ **Event created:** ${event.title} in <#${draft.channelId}>`); return;
+    // IMPORTANT: the selected posting channel lives in the draft. The modal interaction's
+    // channel is the Council panel channel and must never be used for the public announcement.
+    const eventChannelId = draft.channelId;
+    const event = await createEvent({ guildId: guild.id, channelId: eventChannelId, title, description, notes, hostId: interaction.user.id, creatorId: interaction.user.id, timezone, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
+
+    // The public event message always gets the single supported RSVP action: Going.
+    const announcement = await channel.send({
+      content: draft.roleId && /^\d{17,20}$/.test(draft.roleId) ? `<@&${draft.roleId}>` : undefined,
+      embeds: [buildEventEmbed(event)],
+      components: [buildEventRsvpButtons(event.id)],
+      allowedMentions: draft.roleId && /^\d{17,20}$/.test(draft.roleId)
+        ? { roles: [draft.roleId] }
+        : { parse: [] }
+    });
+
+    await attachEventMessageId(event.id, announcement.id);
+    postingDrafts.delete(userId);
+    await showEvents(interaction, `✨ **Event created:** ${event.title} in <#${eventChannelId}>`);
+    return;
   }
   if (id.startsWith(`${COUNCIL_PREFIX}:raffle:modal:`)) {
     const userId = id.slice(`${COUNCIL_PREFIX}:raffle:modal:`.length); const draft = postingDrafts.get(userId);
