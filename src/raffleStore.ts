@@ -7,7 +7,6 @@ function toRaffleRecord(raffle: {
   guildId: string;
   channelId: string;
   messageId: string | null;
-  threadId: string | null;
   name: string;
   prize: string;
   endsAt: bigint;
@@ -27,7 +26,6 @@ function toRaffleRecord(raffle: {
     ritualType: raffle.ritualType ?? undefined,
     winnerId: raffle.winnerId ?? undefined,
     messageId: raffle.messageId ?? undefined,
-    threadId: raffle.threadId ?? undefined,
     boundUsers: raffle.boundUsers.length > 0 ? raffle.boundUsers : []
   };
 }
@@ -55,7 +53,6 @@ class RaffleStore {
         ...raffle,
         endsAt: BigInt(raffle.endsAt),
         messageId: raffle.messageId ?? null,
-        threadId: raffle.threadId ?? null,
         tagRole: raffle.tagRole ?? null,
         invocationText: raffle.invocationText ?? null,
         ritualType: raffle.ritualType ?? null,
@@ -74,18 +71,16 @@ class RaffleStore {
         ...updated,
         endsAt: BigInt(updated.endsAt),
         messageId: updated.messageId ?? null,
-        threadId: updated.threadId ?? null,
         tagRole: updated.tagRole ?? null,
         invocationText: updated.invocationText ?? null,
         ritualType: updated.ritualType ?? null,
         winnerId: updated.winnerId ?? null,
         boundUsers: updated.boundUsers ?? []
-      }
-      ,update: {
+      },
+      update: {
         guildId: updated.guildId,
         channelId: updated.channelId,
         messageId: updated.messageId ?? null,
-        threadId: updated.threadId ?? null,
         name: updated.name,
         prize: updated.prize,
         endsAt: BigInt(updated.endsAt),
@@ -157,13 +152,6 @@ class RaffleStore {
     await prisma.raffle.updateMany({
       where: { id: raffleId },
       data: { messageId }
-    });
-  }
-
-  async setThreadId(raffleId: string, threadId: string): Promise<void> {
-    await prisma.raffle.updateMany({
-      where: { id: raffleId },
-      data: { threadId }
     });
   }
 
