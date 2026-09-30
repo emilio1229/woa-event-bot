@@ -10,7 +10,6 @@ import {
   type Message
 } from "discord.js";
 import { raffleStore } from "../../raffleStore.js";
-import { closeRaffleThread, getRaffleMessageChannelId } from "../../services/raffleThreadService.js";
 import type { Raffle } from "../../types/legacy.js";
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -89,7 +88,6 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     await raffleStore.save(raffle);
   }
 
-  await closeRaffleThread(interaction.client, raffle);
 
   const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
   const embed = new EmbedBuilder()
@@ -114,7 +112,7 @@ async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle
     }
 
     if (raffle.messageId) {
-      const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null);
+      const messageChannel = await interaction.client.channels.fetch(raffle.channelId).catch(() => null);
 
       if (isMessageCapableChannel(messageChannel)) {
         const message = await messageChannel.messages.fetch(raffle.messageId).catch(() => null);
