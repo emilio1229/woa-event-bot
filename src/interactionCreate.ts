@@ -16,7 +16,6 @@ import { handleUnbindSoul } from "./buttons/unbindSoul.js";
 import { buildActiveRaffleEmbed } from "./embedBuilder.js";
 import { raffleStore } from "./raffleStore.js";
 import { withRaffleEntryLock } from "./raffleEntryLock.js";
-import { closeRaffleThread, getRaffleMessageChannelId } from "./services/raffleThreadService.js";
 import { isUserEligibleForRaffle } from "./services/raffleEligibilityService.js";
 import { sigilStore } from "./sigilStore.js";
 import { buildRedeemSuccessEmbed } from "./sigilUtils.js";
@@ -60,7 +59,6 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
   try {
     const entries = raffle.entries ?? [];
     const winnerId = entries.length > 0 ? entries[Math.floor(Math.random() * entries.length)] : null;
-    await closeRaffleThread(interaction.client, raffle);
     if (winnerId) {
       const channel = await interaction.client.channels.fetch(raffle.channelId);
       if (isMessageCapableChannel(channel)) {
@@ -132,7 +130,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
           if (!raffle.boundUsers.includes(interaction.user.id)) raffle.boundUsers.push(interaction.user.id);
           for (let index = 0; index < entryCount; index += 1) raffle.entries.push(interaction.user.id);
           try {
-            const channel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle));
+            const channel = await interaction.client.channels.fetch(raffle.channelId);
             if (!isMessageCapableChannel(channel) || !raffle.messageId) throw new Error("The ritual display could not be updated. Your sigils were not spent.");
             const message = await channel.messages.fetch(raffle.messageId);
             await message.edit({ embeds: [buildActiveRaffleEmbed(raffle, getParticipantNames(interaction, raffle.boundUsers))], components: message.components, files: ["./assets/woa_ritual_bg.png"], allowedMentions: { parse: [] } });
