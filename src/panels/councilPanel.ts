@@ -37,6 +37,7 @@ import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
 import { buildRiddlePanel } from "./riddlePanel.js";
+import { handleArcaneCouncilPanel } from "../arcane/council.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
@@ -85,12 +86,12 @@ export function buildCouncilPanel() {
     { name: "💎 Economy", value: "Assign/remove Sigils", inline: true }, { name: "🎟️ Raffles", value: "Start or end community giveaways", inline: true },
     { name: "🏆 Events", value: "Create scheduled gatherings", inline: true }, { name: "📜 Bounties", value: "Create the weekly Hunt", inline: true },
     { name: "🎁 Rewards", value: "View the Sigil shop", inline: true }, { name: "📊 Statistics", value: "Realm activity", inline: true },
-    { name: "⚙️ Configuration", value: "Runtime settings", inline: true }, { name: "🧩 Riddles", value: "Create arcane community riddles", inline: true }, { name: "🧹 Channel Cleanup", value: "Remove only bot-owned Discord messages", inline: true }
+    { name: "⚙️ Configuration", value: "Runtime settings", inline: true }, { name: "🧩 Riddles", value: "Create arcane community riddles", inline: true }, { name: "🔮 Arcane Realm", value: "Manage Wizards, Trials and game progression", inline: true }, { name: "🧹 Channel Cleanup", value: "Remove only bot-owned Discord messages", inline: true }
   ).setFooter({ text: "The Wizards of Ark • High Council" });
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Economy", `${COUNCIL_PREFIX}:economy`), button("🎟️ Raffles", `${COUNCIL_PREFIX}:raffles`), button("🏆 Events", `${COUNCIL_PREFIX}:events`), button("📜 Bounties", `${COUNCIL_PREFIX}:bounties`)),
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`)),
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${COUNCIL_PREFIX}:arcane:home`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
   ] };
 }
 
@@ -98,6 +99,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   const supported = interaction.isButton() || interaction.isUserSelectMenu() || interaction.isRoleSelectMenu() || interaction.isStringSelectMenu() || interaction.isChannelSelectMenu() || interaction.isModalSubmit();
   if (!supported || !interaction.customId.startsWith(`${COUNCIL_PREFIX}:`)) return false;
   if (!isCouncilMember(interaction)) { await interaction.reply({ content: "⛔ Only the High Council may use this control.", flags: MessageFlags.Ephemeral }); return true; }
+  if (interaction.customId.startsWith("woa:council:arcane:")) { await handleArcaneCouncilPanel(interaction); return true; }
   if (interaction.isModalSubmit()) { await handleCouncilModal(interaction); return true; }
   if (interaction.isUserSelectMenu()) { if (interaction.customId === `${COUNCIL_PREFIX}:sigil:user`) await openSigilAdjustment(interaction); return true; }
   if (interaction.isRoleSelectMenu()) { await handleCouncilRoleSelect(interaction); return true; }
