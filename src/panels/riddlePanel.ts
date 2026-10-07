@@ -63,13 +63,32 @@ export function buildRiddlePanel() {
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isChannelSelectMenu() && !interaction.isModalSubmit()) return false;
   if (!interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
-  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":start") {
-    const menu = new ChannelSelectMenuBuilder().setCustomId(RIDDLE_PREFIX + ":channel").setPlaceholder("Choose the riddle channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
-    await interaction.update({ embeds: [new EmbedBuilder().setTitle("🧩 Riddle Channel").setDescription("Choose where to post the riddle.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), row(back())] });
+  if (interaction.isButton() && (interaction.customId === RIDDLE_PREFIX + ":start" || interaction.customId === RIDDLE_PREFIX + ":ai")) {
+    const mode = interaction.customId.endsWith(":ai") ? "ai" : "manual";
+    const menu = new ChannelSelectMenuBuilder().setCustomId(RIDDLE_PREFIX + ":channel:" + mode).setPlaceholder("Choose the riddle channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
+    await interaction.update({ embeds: [new EmbedBuilder().setTitle(mode === "ai" ? "🧠 AI Riddle Channel" : "🧩 Riddle Channel").setDescription(mode === "ai" ? "Choose where the approved riddle will eventually be posted. Nothing is posted yet." : "Choose where to post the riddle.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), row(back())] });
     return true;
   }
-  if (interaction.isChannelSelectMenu() && interaction.customId === RIDDLE_PREFIX + ":channel") {
-    drafts.set(interaction.user.id, { guildId: interaction.guildId ?? "", channelId: interaction.values[0] });
+  if (interaction.isChannelSelectMenu() && interaction.customId.startsWith(RIDDLE_PREFIX + ":channel:")) {
+    const mode = interaction.customId.endsWith(":ai") ? "ai" : "manual";
+    const guildId = interaction.guildId ?? "";
+    const channelId = interaction.values[0];
+    if (mode === "ai") {
+      if (!guildId) { await interaction.reply({ content: "❌ AI riddles can only be created inside a server.", ephemeral: true }); return true; }
+      if (await riddleStore.getActive(guildId)) { await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true }); return true; }
+      const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+      if (!channel || !channel.isSendable()) { await interaction.reply({ content: "❌ That channel cannot receive messages from the bot.", ephemeral: true }); return true; }
+      await interaction.update({ content: "🧠 The Arcane Scribe is weaving a riddle for review…", embeds: [], components: [] });
+      try {
+        const generated = await generateArcaneRiddle();
+        aiDrafts.set(interaction.user.id, { guildId, channelId, ...generated });
+        await interaction.editReply(buildAiReview(generated));
+      } catch (error) {
+        await interaction.editReply({ content: "❌ The Arcane Scribe failed to create a riddle: " + (error instanceof Error ? error.message : "Unknown error"), embeds: [], components: [row(back())] });
+      }
+      return true;
+    }
+    drafts.set(interaction.user.id, { guildId, channelId });
     const modal = new ModalBuilder().setCustomId(RIDDLE_PREFIX + ":modal:" + interaction.user.id).setTitle("Inscribe Arcane Riddle");
     modal.addComponents(input("question","Riddle","Write the riddle",TextInputStyle.Paragraph), input("answer","Answer","Correct answer",TextInputStyle.Short), input("reward","Sigil reward","Example: 10",TextInputStyle.Short), input("hint","Optional hint","Leave blank if none",TextInputStyle.Paragraph,false));
     await interaction.showModal(modal); return true;
