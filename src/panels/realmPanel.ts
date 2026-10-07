@@ -140,7 +140,41 @@ function realmCodexSection(section: string) {
   return { embeds: [new EmbedBuilder().setColor(0x6A0DAD).setTitle(item.title).setDescription(item.description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("📚 Codex", `${REALM_PREFIX}:codex`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] };
 }
 
-export function buildRealmPanel() { const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); return { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`), button("📚 Codex", `${REALM_PREFIX}:codex`))] }; }
+export async function buildRealmPanel(guildId?: string) {
+  const activeBounties = guildId ? await bountyStore.getActive(guildId) : [];
+  const bountySummary = activeBounties.length
+    ? activeBounties.slice(0, 3).map(bounty =>
+        `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`
+      ).join("\n")
+    : "No active bounties right now.";
+
+  const embed = new EmbedBuilder()
+    .setColor(0x4B0082)
+    .setTitle("🌌 THE WIZARDS OF ARK REALM")
+    .setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*")
+    .addFields(
+      { name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false },
+      { name: "🎟️ Raffles", value: "Active community giveaways", inline: true },
+      { name: "📜 ACTIVE BOUNTY BOARD", value: bountySummary, inline: true },
+      { name: "🏆 Events", value: "Upcoming gatherings", inline: true }
+    )
+    .setFooter({ text: "The Wizards of Ark • Realm Portal" });
+
+  return {
+    embeds: [embed],
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        button("🌌 Arcane Realm", "woa:arcane:open"),
+        button("🎟️ Raffles", `${REALM_PREFIX}:raffles`),
+        button("📜 Bounty Board", `${REALM_PREFIX}:bounties`)
+      ),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        button("🏆 Events", `${REALM_PREFIX}:events`),
+        button("📚 Codex", `${REALM_PREFIX}:codex`)
+      )
+    ]
+  };
+}
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
