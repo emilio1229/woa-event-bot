@@ -36,6 +36,7 @@ import { attachEventMessageId, createEvent, deleteEvent, getEventRsvpSummary, ge
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
+import { buildRiddlePanel } from "./riddlePanel.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
@@ -84,11 +85,11 @@ export function buildCouncilPanel() {
     { name: "💎 Economy", value: "Assign/remove Sigils", inline: true }, { name: "🎟️ Raffles", value: "Start or end community giveaways", inline: true },
     { name: "🏆 Events", value: "Create scheduled gatherings", inline: true }, { name: "📜 Bounties", value: "Create the weekly Hunt", inline: true },
     { name: "🎁 Rewards", value: "View the Sigil shop", inline: true }, { name: "📊 Statistics", value: "Realm activity", inline: true },
-    { name: "⚙️ Configuration", value: "Runtime settings", inline: true }, { name: "🧹 Channel Cleanup", value: "Remove only bot-owned Discord messages", inline: true }
+    { name: "⚙️ Configuration", value: "Runtime settings", inline: true }, { name: "🧩 Riddles", value: "Create arcane community riddles", inline: true }, { name: "🧹 Channel Cleanup", value: "Remove only bot-owned Discord messages", inline: true }
   ).setFooter({ text: "The Wizards of Ark • High Council" });
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Economy", `${COUNCIL_PREFIX}:economy`), button("🎟️ Raffles", `${COUNCIL_PREFIX}:raffles`), button("🏆 Events", `${COUNCIL_PREFIX}:events`), button("📜 Bounties", `${COUNCIL_PREFIX}:bounties`)),
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`))
   ] };
 }
 
@@ -115,6 +116,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "bounties") await showBounties(interaction);
   else if (section === "bounties:start") await startBountyModal(interaction);
   else if (section === "rewards") await showRewards(interaction);
+  else if (section === "riddles") await interaction.update(buildRiddlePanel());
   else if (section === "statistics") await showStatistics(interaction);
   else if (section === "configuration") await showConfiguration(interaction);
   else if (section === "configuration:timezone") await startTimezonePicker(interaction);
