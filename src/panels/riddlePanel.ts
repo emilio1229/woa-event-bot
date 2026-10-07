@@ -1,9 +1,11 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Interaction, type ModalSubmitInteraction } from "discord.js";
 import { riddleStore } from "../riddleStore.js";
 import { sigilStore } from "../sigilStore.js";
+import { generateArcaneRiddle } from "../services/riddleAiService.js";
 
 export const RIDDLE_PREFIX = "woa:riddle";
 const drafts = new Map<string, { guildId: string; channelId: string }>();
+const aiDrafts = new Map<string, { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number; notes: string }>();
 const button = (label: string, id: string, style = ButtonStyle.Primary) => new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row = (...b: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 const back = () => button("◀ Council", "woa:council:home", ButtonStyle.Secondary);
@@ -55,7 +57,7 @@ function solvedEmbed(riddle: Awaited<ReturnType<typeof riddleStore.getById>>, wi
 }
 
 export function buildRiddlePanel() {
-  return { embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")], components: [row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start")), row(back())] };
+  return { embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")], components: [row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")), row(back())] };
 }
 
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
