@@ -116,8 +116,18 @@ async function postRiddle(interaction: Interaction, draft: { guildId: string; ch
     if (!active.messageId) {
       await riddleStore.end(active.id);
     } else {
+      const activeRiddles = await riddleStore.getActiveRiddles(draft.guildId);
+      const managerRows = activeRiddles.slice(0, 5).map(riddle =>
+        row(button("🛑 End " + riddle.id.slice(0, 8), RIDDLE_PREFIX + ":active:end:" + riddle.id, ButtonStyle.Danger))
+      );
+
       await interaction.reply({
-        content: "❌ There is already an active riddle. Solve it first, or end that riddle before posting another.",
+        content: "❌ There is already an active riddle. You can close it directly below.",
+        embeds: [buildActiveRiddlesEmbed(activeRiddles)],
+        components: [
+          ...managerRows,
+          row(button("🔄 Refresh Active Riddles", RIDDLE_PREFIX + ":active"), back())
+        ],
         ephemeral: true
       });
       return false;
