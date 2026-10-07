@@ -37,7 +37,7 @@ import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
 import { buildRiddlePanel } from "./riddlePanel.js";
-import { buildArcaneCouncilPanel, handleArcaneCouncilPanel } from "../arcane/council.js";
+import { handleArcaneCouncilPanel } from "../arcane/council.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
