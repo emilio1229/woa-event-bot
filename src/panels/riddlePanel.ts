@@ -143,7 +143,10 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const hint = interaction.fields.getTextInputValue("hint").trim();
     if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
     const posted = await postRiddle(interaction, { ...draft, question, answer, hint: hint || undefined, reward });
-    if (posted) drafts.delete(interaction.user.id);
+    if (posted) {
+      drafts.delete(interaction.user.id);
+      await interaction.reply({ content: "✅ The riddle has been inscribed in <#" + draft.channelId + ">.", ephemeral: true });
+    }
     return true;
   }
 
@@ -174,7 +177,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const draft = aiDrafts.get(interaction.user.id);
     if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
     const modal = new ModalBuilder().setCustomId(RIDDLE_PREFIX + ":ai:editModal:" + interaction.user.id).setTitle("Edit AI Riddle");
-    modal.addComponents(input("question","Riddle",draft.question,TextInputStyle.Paragraph), input("answer","Answer",draft.answer,TextInputStyle.Short), input("reward","Sigil reward",String(draft.reward),TextInputStyle.Short), input("hint","Optional hint",draft.hint || "",TextInputStyle.Paragraph,false));
+    modal.addComponents(input("question","Riddle","Edit the generated riddle",TextInputStyle.Paragraph), input("answer","Answer","Edit the correct answer",TextInputStyle.Short), input("reward","Sigil reward","5–50",TextInputStyle.Short), input("hint","Optional hint","Edit or leave blank",TextInputStyle.Paragraph,false));
     await interaction.showModal(modal);
     return true;
   }
