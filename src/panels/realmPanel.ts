@@ -56,26 +56,13 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
 }
 
-async function showHome(interaction: ButtonInteraction) {
-  const embed = new EmbedBuilder().setTitle("🗺️ THE REALM").setDescription("Explore the Wizards of Ark community, raffles, events, and bounties.").addFields({ name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" });
-  const components = [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`), button("🏆 Events", `${REALM_PREFIX}:events`))
-  ];
-  await interaction.update({ embeds: [embed], components });
-}
+async function showHome(interaction: ButtonInteraction){const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); const components = [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)),new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`))]; await interaction.update({ embeds: [embed], components });}
 
 async function showUnknown(interaction: ButtonInteraction, section: string) { await interaction.update({ content: `❌ Unknown Realm section: ${section}`, embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Home", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }); }
 
 function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
 
-export function buildRealmPanel() {
-  const embed = new EmbedBuilder().setTitle("🗺️ THE REALM").setDescription("Explore the Wizards of Ark community, raffles, events, and bounties.").addFields({ name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" });
-  return {
-    embeds: [embed], components: [
-      new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`), button("🏆 Events", `${REALM_PREFIX}:events`))
-    ]
-  };
-}
+export function buildRealmPanel() { const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); return { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`))] }; }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
