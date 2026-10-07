@@ -7,6 +7,7 @@ import { handleRealmPanel } from "../panels/realmPanel.js";
 import { handleRiddleAnswerModal, handleRiddleInteraction, handleRiddlePanel } from "../panels/riddlePanel.js";
 import { handleInteraction as handleLegacyInteraction } from "../interactionCreate.js";
 import { logError } from "../utils/logger.js";
+import { handleArcaneInteraction } from "../arcane/panel.js";
 
 export function registerInteractionCreateHandler(client: BotClient) {
   client.on(Events.InteractionCreate, async interaction => {
@@ -29,6 +30,8 @@ export function registerInteractionCreateHandler(client: BotClient) {
       // This runs before the main Council panel so the active-item selectors can
       // be used without adding any new slash commands.
       if (await handleEventBountyManagement(interaction)) return;
+
+      if (await handleArcaneInteraction(interaction)) return;
 
       if (await handleRiddlePanel(interaction)) return;
 
