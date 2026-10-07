@@ -105,6 +105,22 @@ model Raffle {
   @@index([guildId, messageId])
 }
 
+model Bounty {
+  id        String   @id
+  guildId   String
+  channelId String
+  messageId String?
+  tagRoleId String
+  dinos     String[] @default([])
+  stats     String[] @default([])
+  bonus     String?
+  createdAt DateTime @default(now())
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  @@index([guildId, active])
+  @@index([guildId, messageId])
+}
+
 model Riddle {
   id        String   @id
   guildId   String
