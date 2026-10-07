@@ -56,8 +56,33 @@ function solvedEmbed(riddle: Awaited<ReturnType<typeof riddleStore.getById>>, wi
     .setFooter({ text: "The arcane seal has closed." });
 }
 
+function buildActiveRiddlesEmbed(riddles: Awaited<ReturnType<typeof riddleStore.getActiveRiddles>>) {
+  const embed = new EmbedBuilder()
+    .setColor(0x4B0082)
+    .setTitle("📋 ACTIVE ARCANE RIDDLES")
+    .setDescription(riddles.length
+      ? "These riddles are currently live. End one here if it needs to be closed before posting another."
+      : "There are no active riddles in this server.");
+
+  for (const riddle of riddles.slice(0, 5)) {
+    embed.addFields({
+      name: "🧩 " + riddle.id.slice(0, 8) + " • " + riddle.reward + " Sigils",
+      value: "<#" + riddle.channelId + ">\n" + riddle.question.slice(0, 700) + (riddle.question.length > 700 ? "…" : ""),
+      inline: false
+    });
+  }
+
+  return embed;
+}
+
 export function buildRiddlePanel() {
-  return { embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")], components: [row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")), row(back())] };
+  return {
+    embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")],
+    components: [
+      row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")),
+      row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), back())
+    ]
+  };
 }
 
 function buildAiReview(draft: { question: string; answer: string; hint?: string; reward: number; notes: string }) {
@@ -121,6 +146,69 @@ async function postRiddle(interaction: Interaction, draft: { guildId: string; ch
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isChannelSelectMenu() && !interaction.isModalSubmit()) return false;
   if (!interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":active") {
+    const guildId = interaction.guildId;
+    if (!guildId) {
+      await interaction.reply({ content: "❌ Active riddles can only be managed inside a server.", ephemeral: true });
+      return true;
+    }
+
+    const riddles = await riddleStore.getActiveRiddles(guildId);
+    const components = riddles.slice(0, 5).map(riddle =>
+      row(button("🛑 End " + riddle.id.slice(0, 8), RIDDLE_PREFIX + ":active:end:" + riddle.id, ButtonStyle.Danger))
+    );
+
+    await interaction.update({
+      embeds: [buildActiveRiddlesEmbed(riddles)],
+      components: [
+        ...components,
+        row(button("🔄 Refresh", RIDDLE_PREFIX + ":active"), back())
+      ]
+    });
+    return true;
+  }
+
+  if (interaction.isButton() && interaction.customId.startsWith(RIDDLE_PREFIX + ":active:end:")) {
+    const guildId = interaction.guildId;
+    const id = interaction.customId.slice((RIDDLE_PREFIX + ":active:end:").length);
+    const riddle = await riddleStore.getById(id);
+
+    if (!guildId || !riddle || riddle.guildId !== guildId || !riddle.active) {
+      await interaction.reply({ content: "🕯️ That riddle is already closed or no longer exists.", ephemeral: true });
+      return true;
+    }
+
+    await riddleStore.end(id);
+
+    if (riddle.messageId) {
+      const channel = await interaction.client.channels.fetch(riddle.channelId).catch(() => null);
+      if (channel && "messages" in channel) {
+        const message = await channel.messages.fetch(riddle.messageId).catch(() => null);
+        if (message) {
+          const closedEmbed = new EmbedBuilder()
+            .setColor(0x666666)
+            .setTitle("🕯️ THE ARCANE RIDDLE HAS CLOSED")
+            .setDescription(riddle.question)
+            .addFields({ name: "🔮 Answer", value: "**" + riddle.answer + "**" })
+            .setFooter({ text: "This riddle was closed by the Council." });
+          await message.edit({ embeds: [closedEmbed], components: [] }).catch(() => undefined);
+        }
+      }
+    }
+
+    const remaining = await riddleStore.getActiveRiddles(guildId);
+    await interaction.update({
+      embeds: [buildActiveRiddlesEmbed(remaining)],
+      components: [
+        ...remaining.slice(0, 5).map(item =>
+          row(button("🛑 End " + item.id.slice(0, 8), RIDDLE_PREFIX + ":active:end:" + item.id, ButtonStyle.Danger))
+        ),
+        row(button("🔄 Refresh", RIDDLE_PREFIX + ":active"), back())
+      ]
+    });
+    return true;
+  }
+
   if (interaction.isButton() && (interaction.customId === RIDDLE_PREFIX + ":start" || interaction.customId === RIDDLE_PREFIX + ":ai")) {
     const mode = interaction.customId.endsWith(":ai") ? "ai" : "manual";
     const menu = new ChannelSelectMenuBuilder().setCustomId(RIDDLE_PREFIX + ":channel:" + mode).setPlaceholder("Choose the riddle channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
