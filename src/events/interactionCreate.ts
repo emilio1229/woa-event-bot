@@ -23,6 +23,16 @@ export function registerInteractionCreateHandler(client: BotClient) {
         return;
       }
 
+      // Riddle handlers must receive the interaction before any generic defer.
+      // They use update(), showModal(), reply(), and editReply() themselves.
+      // Pre-defering these interactions causes Discord to reject their response and
+      // can make the generic riddle fallback report that the riddle is no longer active.
+      if (interaction.isMessageComponent() && interaction.customId.startsWith("woa:riddle:")) {
+        if (await handleRiddlePanel(interaction)) return;
+        if (await handleRiddleInteraction(interaction)) return;
+        return;
+      }
+
       // Acknowledge Arcane component interactions immediately. Discord only gives
       // component interactions a short response window; database work happens after
       // this acknowledgement and the Arcane panel edits the original message.
