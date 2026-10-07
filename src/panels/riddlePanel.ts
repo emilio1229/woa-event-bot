@@ -117,7 +117,10 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const channelId = interaction.values[0];
     if (mode === "ai") {
       if (!guildId) { await interaction.reply({ content: "❌ AI riddles can only be created inside a server.", ephemeral: true }); return true; }
-      if (await riddleStore.getActive(guildId)) { await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true }); return true; }
+      // Generating an AI riddle is only a draft operation. Do not block the
+      // scribe here because an existing live riddle does not prevent an admin
+      // from preparing the next one. The active-riddle check belongs in
+      // postRiddle(), immediately before publishing.
       const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
       if (!channel || !channel.isSendable()) { await interaction.reply({ content: "❌ That channel cannot receive messages from the bot.", ephemeral: true }); return true; }
       await interaction.update({ content: "🧠 The Arcane Scribe is weaving a riddle for review…", embeds: [], components: [] });
