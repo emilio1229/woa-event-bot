@@ -60,6 +60,47 @@ export function buildRiddlePanel() {
   return { embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")], components: [row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")), row(back())] };
 }
 
+function buildAiReview(draft: { question: string; answer: string; hint?: string; reward: number; notes: string }) {
+  const embed = new EmbedBuilder()
+    .setColor(0x7B2CBF)
+    .setTitle("🧠 ARCANE SCRIBE — PRIVATE REVIEW")
+    .setDescription(draft.question)
+    .addFields(
+      { name: "🔮 Answer", value: "**" + draft.answer + "**", inline: true },
+      { name: "💠 Reward", value: draft.reward + " Sigils", inline: true },
+      { name: "💡 Hint", value: draft.hint || "None", inline: false },
+      { name: "🧙 Scribe Notes", value: draft.notes || "No notes." }
+    )
+    .setFooter({ text: "NOT POSTED • Review before publishing" });
+  return {
+    content: "🛡️ **Admin Review Only** — this riddle has not been posted.",
+    embeds: [embed],
+    components: [
+      row(button("✅ Approve & Post", RIDDLE_PREFIX + ":ai:approve"), button("🔄 Generate Another", RIDDLE_PREFIX + ":ai:regenerate"), button("✏️ Edit", RIDDLE_PREFIX + ":ai:edit", ButtonStyle.Secondary)),
+      row(button("❌ Cancel", RIDDLE_PREFIX + ":ai:cancel", ButtonStyle.Danger))
+    ]
+  };
+}
+
+async function postRiddle(interaction: Interaction, draft: { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number }) {
+  if (await riddleStore.getActive(draft.guildId)) {
+    await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true });
+    return false;
+  }
+  const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+  if (!channel || !channel.isSendable()) {
+    await interaction.reply({ content: "❌ The selected riddle channel cannot receive messages.", ephemeral: true });
+    return false;
+  }
+  const riddle = await riddleStore.create({ guildId: draft.guildId, channelId: draft.channelId, question: draft.question, answer: draft.answer, hint: draft.hint || undefined, reward: draft.reward });
+  const embed = await buildLiveRiddleEmbed(riddle.id);
+  const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
+  if (riddle.hint) buttons.push(button("💡 Reveal Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
+  const message = await channel.send({ embeds: [embed!], components: [row(...buttons)] });
+  await riddleStore.setMessageId(riddle.id, message.id);
+  return true;
+}
+
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isChannelSelectMenu() && !interaction.isModalSubmit()) return false;
   if (!interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
@@ -98,20 +139,62 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     if (!draft) { await interaction.reply({ content: "❌ That riddle draft expired.", ephemeral: true }); return true; }
     const question = interaction.fields.getTextInputValue("question").trim();
     const answer = interaction.fields.getTextInputValue("answer").trim();
-    const reward = Number.parseInt(interaction.fields.getTextInputValue("reward").trim(),10);
+    const reward = Number.parseInt(interaction.fields.getTextInputValue("reward").trim(), 10);
     const hint = interaction.fields.getTextInputValue("hint").trim();
     if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
-    if (await riddleStore.getActive(draft.guildId)) { await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true }); return true; }
-    const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
-    if (!channel || !channel.isSendable()) { await interaction.reply({ content: "❌ That channel cannot receive messages.", ephemeral: true }); return true; }
-    const riddle = await riddleStore.create({ guildId: draft.guildId, channelId: draft.channelId, question, answer, hint: hint || undefined, reward });
-    const embed = await buildLiveRiddleEmbed(riddle.id);
-    const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
-    if (hint) buttons.push(button("💡 Reveal Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
-    const message = await channel.send({ embeds:[embed!], components:[row(...buttons)] });
-    await riddleStore.setMessageId(riddle.id, message.id);
-    drafts.delete(interaction.user.id);
-    await interaction.reply({ content: "✅ The riddle has been inscribed in <#" + draft.channelId + ">.", ephemeral: true }); return true;
+    const posted = await postRiddle(interaction, { ...draft, question, answer, hint: hint || undefined, reward });
+    if (posted) drafts.delete(interaction.user.id);
+    return true;
+  }
+
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:approve") {
+    const draft = aiDrafts.get(interaction.user.id);
+    if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
+    const posted = await postRiddle(interaction, draft);
+    if (posted) {
+      aiDrafts.delete(interaction.user.id);
+      await interaction.update({ content: "✅ Approved and posted in <#" + draft.channelId + ">.", embeds: [], components: [] });
+    }
+    return true;
+  }
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:regenerate") {
+    const draft = aiDrafts.get(interaction.user.id);
+    if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
+    await interaction.update({ content: "🧠 The Arcane Scribe is weaving another riddle…", embeds: [], components: [] });
+    try {
+      const generated = await generateArcaneRiddle();
+      aiDrafts.set(interaction.user.id, { ...draft, ...generated });
+      await interaction.editReply(buildAiReview(generated));
+    } catch (error) {
+      await interaction.editReply({ content: "❌ The Arcane Scribe failed: " + (error instanceof Error ? error.message : "Unknown error"), embeds: [], components: [row(back())] });
+    }
+    return true;
+  }
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:edit") {
+    const draft = aiDrafts.get(interaction.user.id);
+    if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
+    const modal = new ModalBuilder().setCustomId(RIDDLE_PREFIX + ":ai:editModal:" + interaction.user.id).setTitle("Edit AI Riddle");
+    modal.addComponents(input("question","Riddle",draft.question,TextInputStyle.Paragraph), input("answer","Answer",draft.answer,TextInputStyle.Short), input("reward","Sigil reward",String(draft.reward),TextInputStyle.Short), input("hint","Optional hint",draft.hint || "",TextInputStyle.Paragraph,false));
+    await interaction.showModal(modal);
+    return true;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith(RIDDLE_PREFIX + ":ai:editModal:")) {
+    const draft = aiDrafts.get(interaction.user.id);
+    if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
+    const question = interaction.fields.getTextInputValue("question").trim();
+    const answer = interaction.fields.getTextInputValue("answer").trim();
+    const reward = Number.parseInt(interaction.fields.getTextInputValue("reward").trim(), 10);
+    const hint = interaction.fields.getTextInputValue("hint").trim();
+    if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
+    const updated = { ...draft, question, answer, reward, hint: hint || undefined };
+    aiDrafts.set(interaction.user.id, updated);
+    await interaction.update(buildAiReview(updated));
+    return true;
+  }
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:cancel") {
+    aiDrafts.delete(interaction.user.id);
+    await interaction.update({ content: "🕯️ AI riddle discarded. Nothing was posted.", embeds: [], components: [row(back())] });
+    return true;
   }
   return false;
 }
