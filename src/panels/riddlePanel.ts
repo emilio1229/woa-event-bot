@@ -9,6 +9,51 @@ const row = (...b: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().add
 const back = () => button("◀ Council", "woa:council:home", ButtonStyle.Secondary);
 const input = (id: string, label: string, placeholder: string, style: TextInputStyle, required = true) => new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required));
 
+function formatGuess(answer: string) {
+  const clean = answer.trim().replace(/\s+/g, " ");
+  return clean.length > 55 ? clean.slice(0, 52) + "..." : clean;
+}
+
+async function buildLiveRiddleEmbed(riddleId: string) {
+  const riddle = await riddleStore.getById(riddleId);
+  if (!riddle) return undefined;
+  const [guesses, stats] = await Promise.all([
+    riddleStore.getRecentGuesses(riddleId, 6),
+    riddleStore.getStats(riddleId)
+  ]);
+  const embed = new EmbedBuilder()
+    .setColor(0x4B0082)
+    .setTitle("🧩 THE ARCANE RIDDLE")
+    .setDescription(riddle.question)
+    .addFields(
+      { name: "💠 Reward", value: riddle.reward + " Sigils", inline: true },
+      { name: "📊 Hunt", value: stats.attempts + " guesses • " + stats.participants + " wizards", inline: true },
+      { name: "📜 Recent Guesses", value: guesses.length ? guesses.map(g => "🧙 <@" + g.userId + "> — *" + formatGuess(g.answer) + "* ❌").join("\n") : "No guesses yet. The hunt is yours to begin." }
+    )
+    .setFooter({ text: "The first correct answer claims the reward." });
+  return embed;
+}
+
+function solvedEmbed(riddle: Awaited<ReturnType<typeof riddleStore.getById>>, winnerId: string, attempts: number, participants: number, solveSeconds: number, guesses: Awaited<ReturnType<typeof riddleStore.getRecentGuesses>>) {
+  if (!riddle) return undefined;
+  const duration = solveSeconds < 60 ? solveSeconds + "s" : Math.floor(solveSeconds / 60) + "m " + (solveSeconds % 60) + "s";
+  const finalGuesses = guesses.length
+    ? guesses.map(g => "🧙 <@" + g.userId + "> — *" + formatGuess(g.answer) + "* " + (g.correct ? "✅" : "❌")).join("\n")
+    : "No guesses recorded.";
+  return new EmbedBuilder()
+    .setColor(0xFFD700)
+    .setTitle("✨ THE RIDDLE HAS BEEN BROKEN ✨")
+    .setDescription(riddle.question)
+    .addFields(
+      { name: "🔮 Answer", value: "**" + riddle.answer + "**", inline: true },
+      { name: "👑 Riddlebreaker", value: "<@" + winnerId + ">", inline: true },
+      { name: "💠 Reward", value: riddle.reward + " Sigils", inline: true },
+      { name: "📊 Hunt Results", value: attempts + " guesses • " + participants + " wizards • solved in " + duration },
+      { name: "📜 Final Guesses", value: finalGuesses }
+    )
+    .setFooter({ text: "The arcane seal has closed." });
+}
+
 export function buildRiddlePanel() {
   return { embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")], components: [row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start")), row(back())] };
 }
@@ -39,10 +84,10 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
     if (!channel || !channel.isSendable()) { await interaction.reply({ content: "❌ That channel cannot receive messages.", ephemeral: true }); return true; }
     const riddle = await riddleStore.create({ guildId: draft.guildId, channelId: draft.channelId, question, answer, hint: hint || undefined, reward });
-    const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription(question).addFields({ name:"💠 Reward", value: reward + " Sigils", inline:true }, { name:"🕯️ Status", value:"The riddle is sealed.", inline:true }).setFooter({ text:"The first correct answer claims the reward." });
+    const embed = await buildLiveRiddleEmbed(riddle.id);
     const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
     if (hint) buttons.push(button("💡 Reveal Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
-    const message = await channel.send({ embeds:[embed], components:[row(...buttons)] });
+    const message = await channel.send({ embeds:[embed!], components:[row(...buttons)] });
     await riddleStore.setMessageId(riddle.id, message.id);
     drafts.delete(interaction.user.id);
     await interaction.reply({ content: "✅ The riddle has been inscribed in <#" + draft.channelId + ">.", ephemeral: true }); return true;
@@ -53,6 +98,15 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
 export async function handleRiddleInteraction(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() || !interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
   const parts = interaction.customId.split(":"); const action = parts[2]; const id = parts[3];
+  if (action === "history" && id) {
+    const guesses = await riddleStore.getAllGuesses(id);
+    if (!guesses.length) { await interaction.reply({ content: "📜 No guesses were recorded for this riddle.", ephemeral: true }); return true; }
+    const lines = guesses.map((g, i) => (i + 1) + ". <@" + g.userId + "> — " + formatGuess(g.answer) + " " + (g.correct ? "✅" : "❌"));
+    let content = "📜 **Full Guess History**\n\n" + lines.join("\n");
+    if (content.length > 1900) content = content.slice(0, 1897) + "...";
+    await interaction.reply({ content, ephemeral: true });
+    return true;
+  }
   const riddle = id ? await riddleStore.getById(id) : undefined;
   if (action === "hint") { await interaction.reply({ content: riddle?.active && riddle.hint ? "💡 Arcane Hint: " + riddle.hint : "🕯️ The hint has faded.", ephemeral: true }); return true; }
   if (action === "answer" && riddle?.active) {
@@ -68,15 +122,32 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
   const id = interaction.customId.slice((RIDDLE_PREFIX + ":answerModal:").length);
   const riddle = await riddleStore.getById(id);
   if (!riddle?.active) { await interaction.reply({ content:"🕯️ Another wizard has already claimed this riddle.", ephemeral:true }); return true; }
+
   const result = await riddleStore.submitAnswer(id, interaction.fields.getTextInputValue("answer"), interaction.user.id);
-  if (result === "wrong") { await interaction.reply({ content:"❌ The sigils reject that answer. The riddle remains sealed.", ephemeral:true }); return true; }
+  if (result === "wrong") {
+    const updated = await buildLiveRiddleEmbed(id);
+    if (updated && riddle.messageId) {
+      const channel = await interaction.client.channels.fetch(riddle.channelId).catch(() => null);
+      if (channel && "messages" in channel) {
+        const message = await channel.messages.fetch(riddle.messageId).catch(() => null);
+        if (message) await message.edit({ embeds:[updated] }).catch(() => undefined);
+      }
+    }
+    await interaction.reply({ content:"❌ The sigils reject that answer. The riddle remains sealed.", ephemeral:true }); return true;
+  }
+
   if (result !== "correct" || !interaction.guildId) { await interaction.reply({ content:"🕯️ Another wizard has already claimed this riddle.", ephemeral:true }); return true; }
+
   const user = await sigilStore.awardSigils(interaction.guildId, interaction.user.id, riddle.reward, "Solved Arcane Riddle: " + riddle.id);
+  const [stats, guesses] = await Promise.all([riddleStore.getStats(id), riddleStore.getRecentGuesses(id, 6)]);
+  const solveSeconds = Math.max(0, Math.floor((Date.now() - riddle.createdAt.getTime()) / 1000));
+  const embed = solvedEmbed(riddle, interaction.user.id, stats.attempts, stats.participants, solveSeconds, guesses);
+
   if (riddle.messageId) {
     const channel = await interaction.client.channels.fetch(riddle.channelId).catch(() => null);
     if (channel && "messages" in channel) {
       const message = await channel.messages.fetch(riddle.messageId).catch(() => null);
-      if (message) await message.edit({ embeds:[new EmbedBuilder().setColor(0xFFD700).setTitle("✨ THE RIDDLE HAS BEEN BROKEN ✨").setDescription(riddle.question).addFields({ name:"👑 Riddlebreaker", value:"<@" + interaction.user.id + ">", inline:true }, { name:"💠 Reward", value:riddle.reward + " Sigils", inline:true }).setFooter({ text:"The arcane seal has closed." })], components:[] }).catch(() => undefined);
+      if (message) await message.edit({ embeds:[embed!], components:[row(button("📜 View Full Guess History", RIDDLE_PREFIX + ":history:" + riddle.id, ButtonStyle.Secondary))] }).catch(() => undefined);
     }
   }
   await interaction.reply({ content:"✨ The sigils recognize you, Riddlebreaker. You earned " + riddle.reward + " Sigils. Your balance is now " + user.balance + ".", ephemeral:true }); return true;
