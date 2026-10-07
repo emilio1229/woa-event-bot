@@ -16,7 +16,16 @@ export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[
 {id:"ember_wraith",name:"Ember Wraith",emoji:"🔥",rarity:"Common",description:"A restless flame spirit prowling the outer realm.",maxHp:85,maxMana:40,power:10,defense:6,speed:9,rewardXp:40,rewardSigils:5},
 {id:"frostbound_sentinel",name:"Frostbound Sentinel",emoji:"❄️",rarity:"Uncommon",description:"An ancient guardian carved from enchanted ice.",maxHp:125,maxMana:50,power:12,defense:11,speed:6,rewardXp:65,rewardSigils:8},
 {id:"void_stalker",name:"Void Stalker",emoji:"🌑",rarity:"Rare",description:"A creature that hunts where the light of the realm fades.",maxHp:150,maxMana:60,power:15,defense:10,speed:13,rewardXp:90,rewardSigils:12},
-{id:"astral_archon",name:"Astral Archon",emoji:"🌌",rarity:"Epic",description:"A powerful sentinel of the deeper Arcane Realm.",maxHp:210,maxMana:80,power:19,defense:14,speed:11,rewardXp:140,rewardSigils:20}
+{id:"astral_archon",name:"Astral Archon",emoji:"🌌",rarity:"Epic",description:"A powerful sentinel of the deeper Arcane Realm.",maxHp:210,maxMana:80,power:19,defense:14,speed:11,rewardXp:140,rewardSigils:20},
+{id:"runic_troll",name:"Runic Troll",emoji:"👹",rarity:"Common",description:"A hulking bridge troll covered in old wizarding runes.",maxHp:110,maxMana:20,power:13,defense:9,speed:5,rewardXp:45,rewardSigils:5},
+{id:"hexed_goblin",name:"Hexed Goblin",emoji:"👺",rarity:"Common",description:"A sneaky goblin who learned just enough spellcraft to be dangerous.",maxHp:75,maxMana:45,power:11,defense:5,speed:15,rewardXp:45,rewardSigils:6},
+{id:"enchanted_golem",name:"Enchanted Golem",emoji:"🗿",rarity:"Uncommon",description:"A stone guardian animated by a forgotten spell.",maxHp:145,maxMana:30,power:14,defense:15,speed:4,rewardXp:70,rewardSigils:8},
+{id:"witchwood_wolf",name:"Witchwood Wolf",emoji:"🐺",rarity:"Uncommon",description:"A moon-touched beast that prowls the forests beyond the wizard roads.",maxHp:105,maxMana:35,power:14,defense:7,speed:17,rewardXp:65,rewardSigils:8},
+{id:"cursed_knight",name:"Cursed Knight",emoji:"🛡️",rarity:"Rare",description:"A fallen guardian bound to an ancient sorcerer's oath.",maxHp:165,maxMana:40,power:17,defense:13,speed:8,rewardXp:95,rewardSigils:13},
+{id:"bog_witch",name:"Bog Witch",emoji:"🧙",rarity:"Rare",description:"A swamp-dwelling spellcaster whose curses linger long after the duel.",maxHp:130,maxMana:90,power:17,defense:8,speed:10,rewardXp:100,rewardSigils:14},
+{id:"tower_chimera",name:"Tower Chimera",emoji:"🐲",rarity:"Epic",description:"A magical beast stitched from the nightmares of an abandoned wizard tower.",maxHp:195,maxMana:70,power:20,defense:12,speed:12,rewardXp:135,rewardSigils:19},
+{id:"fallen_apprentice",name:"Fallen Apprentice",emoji:"🧙‍♂️",rarity:"Epic",description:"A rogue apprentice wielding unstable magic stolen from the Grand Archive.",maxHp:180,maxMana:110,power:21,defense:10,speed:14,rewardXp:150,rewardSigils:21},
+{id:"ancient_spellwyrm",name:"Ancient Spellwyrm",emoji:"🐉",rarity:"Legendary",description:"A dragon that fed for centuries on raw arcane energy.",maxHp:260,maxMana:120,power:24,defense:16,speed:13,rewardXp:220,rewardSigils:30}
 ];
 export const ARCANE_ITEMS:ArcaneItem[]=[
 {id:"ember_bolt",name:"Ember Bolt",emoji:"🔥",kind:"spell",rarity:"common",cost:0,description:"Reliable fire damage.",classId:"ember_mage",effect:{type:"damage",value:18}},
@@ -53,5 +62,6 @@ export const ARCANE_ITEMS:ArcaneItem[]=[
 ];
 export function getClass(id:string){return ARCANE_CLASSES.find(x=>x.id===id);}
 export function getPveEnemy(id:string){return ARCANE_PVE_ENEMIES.find(x=>x.id===id);}
+export function getRandomPveEnemy(){return ARCANE_PVE_ENEMIES[Math.floor(Math.random()*ARCANE_PVE_ENEMIES.length)];}
 export function getItem(id:string){return ARCANE_ITEMS.find(x=>x.id===id);}
 export function getItems(kind?:ArcaneItemKind){return kind?ARCANE_ITEMS.filter(x=>x.kind===kind):ARCANE_ITEMS;}
