@@ -68,7 +68,7 @@ async function showUnknown(interaction: ButtonInteraction, section: string) { aw
 
 function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
 
-function buildRealmPanel() {
+export function buildRealmPanel() {
   const embed = new EmbedBuilder().setTitle("🗺️ THE REALM").setDescription("Explore the Wizards of Ark community, raffles, events, and bounties.").addFields({ name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" });
   return {
     embeds: [embed], components: [
@@ -77,10 +77,10 @@ function buildRealmPanel() {
   };
 }
 
-export async function handleRealmPanel(interaction: Interaction) {
-  if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
+export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
+  if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
   const customId = interaction.customId;
-  if (!customId.startsWith(REALM_PREFIX)) return;
+  if (!customId.startsWith(REALM_PREFIX)) return false;
   const section = customId.slice(`${REALM_PREFIX}:`.length);
   if (section === "home") await showHome(interaction as ButtonInteraction);
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
