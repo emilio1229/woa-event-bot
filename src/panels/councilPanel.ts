@@ -89,7 +89,8 @@ export function buildCouncilPanel() {
   ).setFooter({ text: "The Wizards of Ark • High Council" });
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Economy", `${COUNCIL_PREFIX}:economy`), button("🎟️ Raffles", `${COUNCIL_PREFIX}:raffles`), button("🏆 Events", `${COUNCIL_PREFIX}:events`), button("📜 Bounties", `${COUNCIL_PREFIX}:bounties`)),
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`))
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`)),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
   ] };
 }
 
