@@ -83,6 +83,7 @@ function buildAiReview(draft: { question: string; answer: string; hint?: string;
 }
 
 async function postRiddle(interaction: Interaction, draft: { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number }) {
+  if (!interaction.isRepliable()) return false;
   if (await riddleStore.getActive(draft.guildId)) {
     await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true });
     return false;
@@ -191,7 +192,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
     const updated = { ...draft, question, answer, reward, hint: hint || undefined };
     aiDrafts.set(interaction.user.id, updated);
-    await interaction.update(buildAiReview(updated));
+    await interaction.reply(buildAiReview(updated));
     return true;
   }
   if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:cancel") {
