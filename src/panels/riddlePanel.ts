@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Interaction, type ChannelSelectMenuInteraction, type ModalSubmitInteraction } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Interaction, type ModalSubmitInteraction } from "discord.js";
 import { riddleStore } from "../riddleStore.js";
 import { sigilStore } from "../sigilStore.js";
 
