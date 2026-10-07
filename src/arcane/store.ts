@@ -3,7 +3,7 @@ import { prisma } from "../database/prisma.js";
 import { sigilStore } from "../sigilStore.js";
 import { getClass,getItem,type ArcaneClassId } from "./catalog.js";
 export interface ArcaneCharacterRecord { id:string;guildId:string;userId:string;name:string;classId:ArcaneClassId;level:number;xp:number;hp:number;mana:number;baseStats:any;equippedSpellIds:string[];ownedItemIds:string[];armorId:string;focusId:string;relicIds:string[];cosmetics:string[]; }
-const rec=(r:any):ArcaneCharacterRecord=>({...r,baseStats:r.baseStats||{},equippedSpellIds:r.equippedSpellIds||[],ownedItemIds:r.ownedItemIds||[],relicIds:r.relicIds||[],cosmetics:r.cosmetics||[]});
+const rec=(r:any):ArcaneCharacterRecord=>({...r,baseStats:r.baseStats||{},equippedSpellIds:r.equippedSpellIds||[],ownedItemIds:(r.ownedItemIds||[]).filter((id:string)=>!!getItem(id)),relicIds:(r.relicIds||[]).filter((id:string)=>!!getItem(id)),cosmetics:(r.cosmetics||[]).filter((id:string)=>!!getItem(id))});
 class ArcaneStore {
 async get(guildId:string,userId:string){const r=await prisma.arcaneCharacter.findUnique({where:{guildId_userId:{guildId,userId}}});return r?rec(r):undefined;}
 async create(guildId:string,userId:string,name:string,classId:ArcaneClassId){const cls=getClass(classId);if(!cls)throw new Error("Unknown class.");const old=await this.get(guildId,userId);if(old) return old;return rec(await prisma.arcaneCharacter.create({data:{id:randomUUID(),guildId,userId,name:name.trim().slice(0,32),classId,level:1,xp:0,hp:cls.base.maxHp,mana:cls.base.maxMana,baseStats:cls.base as any,equippedSpellIds:cls.starterSpells,ownedItemIds:["apprentice_robes","apprentice_wand",...cls.starterSpells],armorId:"apprentice_robes",focusId:"apprentice_wand",relicIds:[],cosmetics:[]}}));}
