@@ -23,6 +23,17 @@ export function registerInteractionCreateHandler(client: BotClient) {
         return;
       }
 
+      // Acknowledge Arcane component interactions immediately. Discord only gives
+      // component interactions a short response window; database work happens after
+      // this acknowledgement and the Arcane panel edits the original message.
+      if (
+        interaction.isMessageComponent() &&
+        interaction.customId.startsWith("woa:arcane:") &&
+        !(interaction.isButton() && interaction.customId.split(":")[2] === "classconfirm")
+      ) {
+        await interaction.deferUpdate();
+      }
+
       // New WoA panel navigation is handled before the legacy interaction system.
       if (await handleRealmPanel(interaction)) return;
 
