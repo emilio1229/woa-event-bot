@@ -144,3 +144,42 @@ model SigilAccount {
   @@id([guildId, discordUserId])
   @@index([guildId, balance])
 }
+model ArcaneCharacter {
+  id                String   @id
+  guildId           String
+  userId            String
+  name              String
+  classId           String
+  level             Int      @default(1)
+  xp                Int      @default(0)
+  hp                Int
+  mana              Int
+  baseStats         Json
+  equippedSpellIds  String[] @default([])
+  ownedItemIds      String[] @default([])
+  armorId           String
+  focusId           String
+  relicIds          String[] @default([])
+  cosmetics         String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@unique([guildId, userId])
+  @@index([guildId, level, xp])
+}
+
+model ArcaneBattle {
+  id           String   @id
+  guildId      String
+  challengerId String
+  opponentId   String
+  turnUserId   String
+  status       String   @default("active")
+  round        Int      @default(1)
+  state        Json
+  messageId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([guildId, status])
+  @@index([guildId, challengerId, status])
+  @@index([guildId, opponentId, status])
+}
