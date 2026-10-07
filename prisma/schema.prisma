@@ -105,6 +105,23 @@ model Raffle {
   @@index([guildId, messageId])
 }
 
+model Riddle {
+  id        String   @id
+  guildId   String
+  channelId String
+  messageId String?
+  question  String
+  answer    String
+  hint      String?
+  reward    Int
+  active    Boolean  @default(true)
+  winnerId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([guildId, active])
+  @@index([guildId, messageId])
+}
+
 model SigilAccount {
   guildId       String
   discordUserId String
