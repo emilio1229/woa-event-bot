@@ -7,7 +7,7 @@ const command: CommandModule = {
     .setName("realm")
     .setDescription("Open the Wizards of Ark Realm panel."),
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.reply({ ...buildRealmPanel(), flags: MessageFlags.Ephemeral });
+    await interaction.reply({ ...(await buildRealmPanel(interaction.guildId ?? undefined)), flags: MessageFlags.Ephemeral });
   }
 };
 
