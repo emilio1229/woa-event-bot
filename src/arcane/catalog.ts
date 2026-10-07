@@ -2,7 +2,7 @@ export type ArcaneClassId = "ember_mage"|"frostweaver"|"verdant_warden"|"storm_h
 export type ArcaneItemKind = "spell"|"armor"|"focus"|"relic"|"cosmetic";
 export interface ArcaneStats { maxHp:number; maxMana:number; power:number; defense:number; speed:number; }
 export interface ArcaneClass { id:ArcaneClassId; name:string; emoji:string; role:string; description:string; base:ArcaneStats; starterSpells:string[]; }
-export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; }
+export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; }\nexport interface ArcanePveEnemy { id:string; name:string; emoji:string; rarity:string; description:string; maxHp:number; maxMana:number; power:number; defense:number; speed:number; rewardXp:number; rewardSigils:number; }
 export const ARCANE_CLASSES:ArcaneClass[]=[
 {id:"ember_mage",name:"Ember Mage",emoji:"🔥",role:"Damage",description:"Aggressive fire magic.",base:{maxHp:95,maxMana:70,power:15,defense:8,speed:10},starterSpells:["ember_bolt","ember_ward"]},
 {id:"frostweaver",name:"Frostweaver",emoji:"❄️",role:"Control",description:"Cold magic and battlefield control.",base:{maxHp:105,maxMana:70,power:10,defense:11,speed:8},starterSpells:["frost_shard","frost_veil"]},
@@ -11,7 +11,7 @@ export const ARCANE_CLASSES:ArcaneClass[]=[
 {id:"voidcaller",name:"Voidcaller",emoji:"🌑",role:"Debuff",description:"Weakens enemies and drains power.",base:{maxHp:100,maxMana:80,power:10,defense:9,speed:11},starterSpells:["void_bolt","entropy"]},
 {id:"sigilbinder",name:"Sigilbinder",emoji:"🔮",role:"Hybrid",description:"Manipulates magical power itself.",base:{maxHp:100,maxMana:85,power:11,defense:10,speed:10},starterSpells:["sigil_bolt","sigil_focus"]}
 ];
-export const ARCANE_ITEMS:ArcaneItem[]=[
+export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[\n{id:"ember_wraith",name:"Ember Wraith",emoji:"🔥",rarity:"Common",description:"A restless flame spirit prowling the outer realm.",maxHp:85,maxMana:40,power:10,defense:6,speed:9,rewardXp:40,rewardSigils:5},\n{id:"frostbound_sentinel",name:"Frostbound Sentinel",emoji:"❄️",rarity:"Uncommon",description:"An ancient guardian carved from enchanted ice.",maxHp:125,maxMana:50,power:12,defense:11,speed:6,rewardXp:65,rewardSigils:8},\n{id:"void_stalker",name:"Void Stalker",emoji:"🌑",rarity:"Rare",description:"A creature that hunts where the light of the realm fades.",maxHp:150,maxMana:60,power:15,defense:10,speed:13,rewardXp:90,rewardSigils:12},\n{id:"astral_archon",name:"Astral Archon",emoji:"🌌",rarity:"Epic",description:"A powerful sentinel of the deeper Arcane Realm.",maxHp:210,maxMana:80,power:19,defense:14,speed:11,rewardXp:140,rewardSigils:20}\n];\nexport const ARCANE_ITEMS:ArcaneItem[]=[
 {id:"ember_bolt",name:"Ember Bolt",emoji:"🔥",kind:"spell",rarity:"common",cost:0,description:"Reliable fire damage.",classId:"ember_mage",effect:{type:"damage",value:18}},
 {id:"ember_ward",name:"Ember Ward",emoji:"🛡️",kind:"spell",rarity:"common",cost:0,description:"Raise a protective ward.",classId:"ember_mage",effect:{type:"shield",value:14}},
 {id:"flame_burst",name:"Flame Burst",emoji:"💥",kind:"spell",rarity:"uncommon",cost:45,description:"Heavy fire damage.",classId:"ember_mage",effect:{type:"damage",value:30}},
@@ -45,6 +45,6 @@ export const ARCANE_ITEMS:ArcaneItem[]=[
 {id:"void_mask",name:"Void Mask",emoji:"🎭",kind:"cosmetic",rarity:"epic",cost:150,description:"A mysterious cosmetic mask."},
 {id:"riddlebreaker_title",name:"The Riddlebreaker",emoji:"🧩",kind:"cosmetic",rarity:"rare",cost:125,description:"A prestigious WoA title."}
 ];
-export function getClass(id:string){return ARCANE_CLASSES.find(x=>x.id===id);}
+export function getClass(id:string){return ARCANE_CLASSES.find(x=>x.id===id);}\nexport function getPveEnemy(id:string){return ARCANE_PVE_ENEMIES.find(x=>x.id===id);}
 export function getItem(id:string){return ARCANE_ITEMS.find(x=>x.id===id);}
 export function getItems(kind?:ArcaneItemKind){return kind?ARCANE_ITEMS.filter(x=>x.kind===kind):ARCANE_ITEMS;}
