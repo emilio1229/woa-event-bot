@@ -379,7 +379,7 @@ async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raf
     const announcementChannel = await interaction.client.channels.fetch(raffle.channelId); if (!announcementChannel || !("send" in announcementChannel) || typeof announcementChannel.send !== "function") throw new Error("Raffle announcement channel is unavailable.");
     const grandEmbed = new EmbedBuilder().setColor(0xFF4500).setTitle("✨ A Champion Has Been Chosen ✨").setDescription(winnerId ? "The sigils have chosen their champion." : "The ritual concludes with no champion.").addFields({ name: "👑 Winner", value: winnerId ? `<@${winnerId}>` : "No entries", inline: false }, { name: "🎁 Prize", value: `**${raffle.prize}**`, inline: false }, { name: "💠 Entries", value: `${entries.length}`, inline: true }).setFooter({ text: "Wizards of Ark • Ascension Complete" }).setTimestamp();
     const attachment = new AttachmentBuilder("./assets/woa_winner_bg.png", { name: "woa_winner_bg.png" }); await announcementChannel.send({ embeds: [grandEmbed], files: [attachment], allowedMentions: { users: winnerId ? [winnerId] : [] } });
-    if (raffle.messageId) { const message = await announcementChannel.messages?.fetch?.(raffle.messageId).catch(() => null); if (message) await message.edit({ components: [] }).catch(() => undefined); }
+    if (raffle.messageId && "messages" in announcementChannel) { const message = await announcementChannel.messages.fetch(raffle.messageId).catch(() => null); if (message) await message.edit({ components: [] }).catch(() => undefined); }
     await raffleStore.end(raffle.id); await interaction.update({ content: winnerId ? `🔮 Giveaway ended. Winner: <@${winnerId}>` : "🔮 Giveaway ended with no entries.", components: [backButtonRow()], embeds: [] });
   } catch (error) { console.error("Council raffle end failed:", error); await interaction.update({ content: "❌ The giveaway could not be safely concluded. It remains active for a retry.", components: [backButtonRow()], embeds: [] }); }
 }
@@ -394,7 +394,7 @@ async function showStatistics(interaction: ButtonInteraction) { const users = aw
 async function showConfiguration(interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction, notice?: string) {
   const timezone = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
   const timezoneText = timezone ? `**${timezone}**` : "⚠️ **Not set**";
-  const description = [notice ?? null, `🌎 **My timezone:** ${timezoneText}`, "", "Set your timezone once. After that, every event or giveaway time you enter is interpreted in your own local timezone and converted automatically for Discord.", "", `Giveaway threads: **${env.raffleThreadsEnabled ? "enabled" : "disabled"}**`, `Thread archive: **${env.raffleThreadAutoArchiveMinutes} minutes**`].filter(Boolean).join("\n");
+  const description = [notice ?? null, `🌎 **My timezone:** ${timezoneText}`, "", "Set your timezone once. After that, every event or giveaway time you enter is interpreted in your own local timezone and converted automatically for Discord."].filter(Boolean).join("\n");
   await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("⚙️ Configuration").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌎 My Timezone", `${COUNCIL_PREFIX}:configuration:timezone`)), backButtonRow()] });
 }
 function backButton() { return button("◀ Council", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary); }
