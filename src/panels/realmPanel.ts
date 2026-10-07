@@ -15,7 +15,7 @@ import { env } from "../config/env.js";
 import { raffleStore } from "../raffleStore.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { bountyStore } from "../utils/bountyStore.js";
-import { getUpcomingEvents, getEventRsvpSummary } from "../services/eventService.js";
+import { getUpcomingEvents, getEventById, getEventRsvpSummary, updateEventRsvp } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 
@@ -51,9 +51,43 @@ async function showBounties(interaction: ButtonInteraction) {
 async function showEvents(interaction: ButtonInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guild!.id, 10);
   const embed = new EmbedBuilder().setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
-  if (!events.length) embed.setDescription(`${notice ? `${notice}\n\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
-  else embed.setDescription(`${notice ? `${notice}\n\n` : ""}${events.map((event, index) => { const summary = getEventRsvpSummary(event); const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going"); const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet"; return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n📖 ${event.description ?? "No description provided."}\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`; }).join("\n\n")}`.slice(0, 4000));
-  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
+  if (!events.length) {
+    embed.setDescription(`${notice ? `${notice}\\n\\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
+    await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
+    return;
+  }
+
+  const visibleEvents = events.slice(0, 4);
+  embed.setDescription(`${notice ? `${notice}\\n\\n` : ""}${visibleEvents.map((event, index) => {
+    const summary = getEventRsvpSummary(event);
+    const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going");
+    const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet";
+    return `**${index + 1}. ${event.title}**\\n🗓️ <t:${event.startAtUnix}:F>\\n📖 ${event.description ?? "No description provided."}\\n🟢 **Going (${summary.going})**\\n${goingList}${event.notes ? `\\n📝 ${event.notes}` : ""}`;
+  }).join("\\n\\n")}${events.length > 4 ? "\\n\\n*Showing the next 4 upcoming gatherings.*" : ""}`.slice(0, 4000));
+
+  const eventButtons = visibleEvents.map(event =>
+    button(`🜂 Going: ${event.title}`.slice(0, 80), `${REALM_PREFIX}:event:going:${event.id}`, ButtonStyle.Success)
+  );
+  const components: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (let i = 0; i < eventButtons.length; i += 5) {
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...eventButtons.slice(i, i + 5)));
+  }
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
+  await interaction.update({ embeds: [embed], components });
+}
+
+async function markEventGoing(interaction: ButtonInteraction, eventId: string) {
+  const event = await getEventById(eventId);
+  if (!event || event.guildId !== interaction.guildId) {
+    await showEvents(interaction, "❌ That gathering could not be found.");
+    return;
+  }
+  const updated = await updateEventRsvp(eventId, interaction.user.id, "going");
+  if (!updated) {
+    await showEvents(interaction, "❌ That gathering is no longer active.");
+    return;
+  }
+  await showEvents(interaction, "🜂 You are now marked **Going** for **" + updated.title + "**.");
 }
 
 async function showHome(interaction: ButtonInteraction){const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); const components = [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)),new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`))]; await interaction.update({ embeds: [embed], components });}
@@ -73,6 +107,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
+  else if (section.startsWith("event:going:")) await markEventGoing(interaction as ButtonInteraction, section.slice("event:going:".length));
   else await showUnknown(interaction as ButtonInteraction, section);
   return true;
 }
