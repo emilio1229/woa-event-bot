@@ -52,18 +52,18 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guild!.id, 10);
   const embed = new EmbedBuilder().setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
   if (!events.length) {
-    embed.setDescription(`${notice ? `${notice}\\n\\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
+    embed.setDescription(`${notice ? `${notice}\n\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
     await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
     return;
   }
 
   const visibleEvents = events.slice(0, 4);
-  embed.setDescription(`${notice ? `${notice}\\n\\n` : ""}${visibleEvents.map((event, index) => {
+  embed.setDescription(`${notice ? `${notice}\n\n` : ""}${visibleEvents.map((event, index) => {
     const summary = getEventRsvpSummary(event);
     const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going");
     const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet";
-    return `**${index + 1}. ${event.title}**\\n🗓️ <t:${event.startAtUnix}:F>\\n📖 ${event.description ?? "No description provided."}\\n🟢 **Going (${summary.going})**\\n${goingList}${event.notes ? `\\n📝 ${event.notes}` : ""}`;
-  }).join("\\n\\n")}${events.length > 4 ? "\\n\\n*Showing the next 4 upcoming gatherings.*" : ""}`.slice(0, 4000));
+    return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n📖 ${event.description ?? "No description provided."}\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`;
+  }).join("\n\n")}${events.length > 4 ? "\n\n*Showing the next 4 upcoming gatherings.*" : ""}`.slice(0, 4000));
 
   const eventButtons = visibleEvents.map(event =>
     button(`🜂 Going: ${event.title}`.slice(0, 80), `${REALM_PREFIX}:event:going:${event.id}`, ButtonStyle.Success)
@@ -93,7 +93,7 @@ async function markEventGoing(interaction: ButtonInteraction, eventId: string) {
 async function showHome(interaction: ButtonInteraction) {
   const activeBounties = await bountyStore.getActive(interaction.guild!.id);
   const bountySummary = activeBounties.length
-    ? activeBounties.slice(0, 3).map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\\n")
+    ? activeBounties.slice(0, 3).map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\n")
     : "No active bounties right now.";
 
   const embed = new EmbedBuilder()
