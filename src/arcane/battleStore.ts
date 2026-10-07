@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../database/prisma.js";
 import { arcaneStore,type ArcaneCharacterRecord } from "./store.js";
-import { getClass,getItem,getPveEnemy } from "./catalog.js";\nimport { sigilStore } from "../sigilStore.js";
+import { getClass,getItem,getPveEnemy } from "./catalog.js";
+import { sigilStore } from "../sigilStore.js";
 export type BattleState={hp:number;mana:number;shield:number;weakened:number;defended:boolean;relicUsed:boolean;log:string[]};
 export type BattleRecord={id:string;guildId:string;challengerId:string;opponentId:string;turnUserId:string;status:string;round:number;state:any;messageId?:string|null};
 const stats=(c:ArcaneCharacterRecord)=>{const cls=getClass(c.classId)!;const ar=getItem(c.armorId),fo=getItem(c.focusId);return {maxHp:cls.base.maxHp+(ar?.stats?.maxHp||0),maxMana:cls.base.maxMana+(ar?.stats?.maxMana||0),power:cls.base.power+(ar?.stats?.power||0),defense:cls.base.defense+(ar?.stats?.defense||0),speed:cls.base.speed+(ar?.stats?.speed||0)};};
