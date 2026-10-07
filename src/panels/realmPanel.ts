@@ -87,6 +87,7 @@ export async function handleRealmPanel(interaction: Interaction) {
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
   else await showUnknown(interaction as ButtonInteraction, section);
+  return true;
 }
 
 export function getRealmPanel() { return buildRealmPanel(); }
