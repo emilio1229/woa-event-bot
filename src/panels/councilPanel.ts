@@ -35,7 +35,6 @@ import { discordDirectoryService } from "../services/discordDirectoryService.js"
 import { attachEventMessageId, createEvent, deleteEvent, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
-import { createRaffleThreadFromMessage, closeRaffleThread, getRaffleMessageChannelId } from "../services/raffleThreadService.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
 
 export const COUNCIL_PREFIX = "woa:council";
@@ -299,8 +298,7 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
     if (!prize || endsAt === null || Number.isNaN(endsAt) || endsAt <= Date.now()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription("❌ Provide a prize and a valid future end time.")], components: [backButtonRow()] }); return; }
     const raffle = await raffleStore.create({ guildId: guild.id, channelId: draft.channelId, name, prize, endsAt, tagRole: draft.roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", entries: [], boundUsers: [] });
     const announcement = await channel.send({ embeds: [new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription(`A WoA community giveaway has begun.\n\n⟐ **Name:** ${name}\n⟐ **Notification:** <@&${draft.roleId}>\n🎁 **Offering:** ${prize}`).setColor(0x4B0082)], allowedMentions: { roles: [draft.roleId] } });
-    const thread = await createRaffleThreadFromMessage(announcement, raffle); const destination = thread ?? channel; if (thread) await raffleStore.setThreadId(raffle.id, thread.id);
-    const message = await destination.send({ embeds: [buildActiveRaffleEmbed(raffle)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Join Giveaway", "bindSoul"), button("⚫ Leave Giveaway", "unbindSoul", ButtonStyle.Secondary))], files: ["./assets/woa_ritual_bg.png"] });
+    const message = await channel.send({ embeds: [buildActiveRaffleEmbed(raffle)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Join Giveaway", "bindSoul"), button("⚫ Leave Giveaway", "unbindSoul", ButtonStyle.Secondary))], files: ["./assets/woa_ritual_bg.png"] });
     await raffleStore.setMessageId(raffle.id, message.id); postingDrafts.delete(userId); await showRaffles(interaction); return;
   }
   if (id.startsWith(`${COUNCIL_PREFIX}:bounty:modal:`)) {
@@ -381,7 +379,7 @@ async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raf
     const announcementChannel = await interaction.client.channels.fetch(raffle.channelId); if (!announcementChannel || !("send" in announcementChannel) || typeof announcementChannel.send !== "function") throw new Error("Raffle announcement channel is unavailable.");
     const grandEmbed = new EmbedBuilder().setColor(0xFF4500).setTitle("✨ A Champion Has Been Chosen ✨").setDescription(winnerId ? "The sigils have chosen their champion." : "The ritual concludes with no champion.").addFields({ name: "👑 Winner", value: winnerId ? `<@${winnerId}>` : "No entries", inline: false }, { name: "🎁 Prize", value: `**${raffle.prize}**`, inline: false }, { name: "💠 Entries", value: `${entries.length}`, inline: true }).setFooter({ text: "Wizards of Ark • Ascension Complete" }).setTimestamp();
     const attachment = new AttachmentBuilder("./assets/woa_winner_bg.png", { name: "woa_winner_bg.png" }); await announcementChannel.send({ embeds: [grandEmbed], files: [attachment], allowedMentions: { users: winnerId ? [winnerId] : [] } });
-    await closeRaffleThread(interaction.client, raffle); const messageChannel = await interaction.client.channels.fetch(getRaffleMessageChannelId(raffle)).catch(() => null); if (messageChannel && "messages" in messageChannel && raffle.messageId) { const message = await messageChannel.messages.fetch(raffle.messageId).catch(() => null); if (message) await message.edit({ components: [] }).catch(() => undefined); }
+    if (raffle.messageId) { const message = await announcementChannel.messages?.fetch?.(raffle.messageId).catch(() => null); if (message) await message.edit({ components: [] }).catch(() => undefined); }
     await raffleStore.end(raffle.id); await interaction.update({ content: winnerId ? `🔮 Giveaway ended. Winner: <@${winnerId}>` : "🔮 Giveaway ended with no entries.", components: [backButtonRow()], embeds: [] });
   } catch (error) { console.error("Council raffle end failed:", error); await interaction.update({ content: "❌ The giveaway could not be safely concluded. It remains active for a retry.", components: [backButtonRow()], embeds: [] }); }
 }
