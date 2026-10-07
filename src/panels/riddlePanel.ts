@@ -84,9 +84,19 @@ function buildAiReview(draft: { question: string; answer: string; hint?: string;
 
 async function postRiddle(interaction: Interaction, draft: { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number }) {
   if (!interaction.isRepliable()) return false;
-  if (await riddleStore.getActive(draft.guildId)) {
-    await interaction.reply({ content: "❌ There is already an active riddle.", ephemeral: true });
-    return false;
+  const active = await riddleStore.getActive(draft.guildId);
+  if (active) {
+    // A failed publish can leave an orphaned active database row with no
+    // Discord message. It should never block the next riddle.
+    if (!active.messageId) {
+      await riddleStore.end(active.id);
+    } else {
+      await interaction.reply({
+        content: "❌ There is already an active riddle. Solve it first, or end that riddle before posting another.",
+        ephemeral: true
+      });
+      return false;
+    }
   }
   const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
   if (!channel || !channel.isSendable()) {
@@ -97,9 +107,15 @@ async function postRiddle(interaction: Interaction, draft: { guildId: string; ch
   const embed = await buildLiveRiddleEmbed(riddle.id);
   const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
   if (riddle.hint) buttons.push(button("💡 Reveal Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
-  const message = await channel.send({ embeds: [embed!], components: [row(...buttons)] });
-  await riddleStore.setMessageId(riddle.id, message.id);
-  return true;
+  try {
+    const message = await channel.send({ embeds: [embed!], components: [row(...buttons)] });
+    await riddleStore.setMessageId(riddle.id, message.id);
+    return true;
+  } catch (error) {
+    // Never leave a database riddle active when Discord rejected the publish.
+    await riddleStore.end(riddle.id);
+    throw error;
+  }
 }
 
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
