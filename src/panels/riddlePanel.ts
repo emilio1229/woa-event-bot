@@ -14,7 +14,8 @@ export function buildRiddlePanel() {
 }
 
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
-  if (!interaction.customId?.startsWith(RIDDLE_PREFIX + ":")) return false;
+  if (!interaction.isButton() && !interaction.isChannelSelectMenu() && !interaction.isModalSubmit()) return false;
+  if (!interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
   if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":start") {
     const menu = new ChannelSelectMenuBuilder().setCustomId(RIDDLE_PREFIX + ":channel").setPlaceholder("Choose the riddle channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
     await interaction.update({ embeds: [new EmbedBuilder().setTitle("🧩 Riddle Channel").setDescription("Choose where to post the riddle.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), row(back())] });
