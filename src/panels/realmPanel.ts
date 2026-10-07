@@ -115,7 +115,7 @@ async function showHome(interaction: ButtonInteraction) {
       button("📜 Bounties", `${REALM_PREFIX}:bounties`)
     ),
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      button("🏆 Events", `${REALM_PREFIX}:events`)
+      button("🏆 Events", `${REALM_PREFIX}:events`), button("📚 Codex", `${REALM_PREFIX}:codex`)
     )
   ];
 
@@ -126,7 +126,21 @@ async function showUnknown(interaction: ButtonInteraction, section: string) { aw
 
 function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
 
-export function buildRealmPanel() { const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); return { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`))] }; }
+function realmCodexHome() { return { embeds: [new EmbedBuilder().setColor(0x6A0DAD).setTitle("📚 THE REALM CODEX").setDescription("A guide to everything inside the Wizards of Ark Realm. Choose a chamber below to learn what it does and what you can do there.")], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${REALM_PREFIX}:codex:arcane`), button("🎟️ Raffles", `${REALM_PREFIX}:codex:raffles`), button("📜 Bounties", `${REALM_PREFIX}:codex:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:codex:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }; }
+
+function realmCodexSection(section: string) {
+  const data: Record<string,{title:string;description:string}> = {
+    arcane: { title: "🔮 CODEX • ARCANE REALM", description: "**What it is:** The Arcane Realm is WoA's turn-based Wizard game.\n\n**🧙 Wizard** — View your Wizard, class, level, XP, Sigils, equipment and special move.\n\n**🛡️ Armory** — Equip your armor, focus, spells, relics and cosmetics.\n\n**🔮 Grand Sigil Exchange** — Spend Sigils on spells, armor, focuses, relics and cosmetics.\n\n**⚔️ Trials** — Enter PvE battles against Arcane creatures or challenge another player who has created a Wizard.\n\n**🏆 Rankings** — See the highest-level Wizards.\n\n**📚 Codex** — Learn the classes, items, enemies, rules and how the Arcane game works.\n\nYour Arcane progression is separate from normal ARK progression." },
+    raffles: { title: "🎟️ CODEX • RAFFLES", description: "**What it is:** Community giveaways opened by the High Council.\n\n**How to use it:** Open the Raffle Chamber from the Realm to see giveaways currently available to you. Open a giveaway to enter it.\n\n**💠 Sigils:** Sigils can be exchanged for raffle entries when the giveaway is active.\n\n**Important:** Each giveaway has its own prize and closing time. The Council announces the winner when the ritual concludes." },
+    bounties: { title: "📜 CODEX • BOUNTIES", description: "**What it is:** The Weekly Hunt — a community challenge posted by the Council.\n\n**How to use it:** Read the current targets and required stat on the Bounty Board. Complete the hunt according to the posted ritual, then follow the turn-in instructions in the bounty announcement.\n\n**Tip:** Read the full bounty post before hunting so you do not miss level, taming, screenshot, cryopod or turn-in requirements." },
+    events: { title: "🏆 CODEX • EVENTS", description: "**What it is:** The Realm's schedule for upcoming WoA gatherings.\n\n**How to use it:** Open Events to see upcoming gatherings, times, descriptions and current Going counts. Use the **Going** button on an event to RSVP.\n\n**Why RSVP:** It lets the community and Council know who plans to attend and helps event organizers prepare." }
+  };
+  const item=data[section];
+  if(!item) return realmCodexHome();
+  return { embeds: [new EmbedBuilder().setColor(0x6A0DAD).setTitle(item.title).setDescription(item.description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("📚 Codex", `${REALM_PREFIX}:codex`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] };
+}
+
+export function buildRealmPanel() { const embed = new EmbedBuilder().setColor(0x4B0082).setTitle("🌌 THE WIZARDS OF ARK REALM").setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*").addFields({ name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false }, { name: "🎟️ Raffles", value: "Active community giveaways", inline: true }, { name: "📜 Bounties", value: "Weekly hunts and challenges", inline: true }, { name: "🏆 Events", value: "Upcoming gatherings", inline: true }).setFooter({ text: "The Wizards of Ark • Realm Portal" }); return { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌌 Arcane Realm", "woa:arcane:open"), button("🎟️ Raffles", `${REALM_PREFIX}:raffles`), button("📜 Bounties", `${REALM_PREFIX}:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:events`), button("📚 Codex", `${REALM_PREFIX}:codex`))] }; }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
@@ -137,6 +151,8 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
+  else if (section === "codex") await interaction.update(realmCodexHome());
+  else if (section.startsWith("codex:")) await interaction.update(realmCodexSection(section.slice("codex:".length)));
   else if (section.startsWith("event:going:")) await markEventGoing(interaction as ButtonInteraction, section.slice("event:going:".length));
   else await showUnknown(interaction as ButtonInteraction, section);
   return true;
