@@ -1,16 +1,16 @@
 export type ArcaneClassId = "ember_mage"|"frostweaver"|"verdant_warden"|"storm_herald"|"voidcaller"|"sigilbinder";
 export type ArcaneItemKind = "spell"|"armor"|"focus"|"relic"|"cosmetic";
 export interface ArcaneStats { maxHp:number; maxMana:number; power:number; defense:number; speed:number; }
-export interface ArcaneClass { id:ArcaneClassId; name:string; emoji:string; role:string; description:string; base:ArcaneStats; starterSpells:string[]; }
+export interface ArcaneClass { id:ArcaneClassId; name:string; emoji:string; role:string; description:string; base:ArcaneStats; starterSpells:string[]; special:{name:string;description:string}; }
 export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; }
 export interface ArcanePveEnemy { id:string; name:string; emoji:string; rarity:string; description:string; maxHp:number; maxMana:number; power:number; defense:number; speed:number; rewardXp:number; rewardSigils:number; }
 export const ARCANE_CLASSES:ArcaneClass[]=[
-{id:"ember_mage",name:"Ember Mage",emoji:"🔥",role:"Damage",description:"Aggressive fire magic.",base:{maxHp:95,maxMana:70,power:15,defense:8,speed:10},starterSpells:["ember_bolt","ember_ward"]},
-{id:"frostweaver",name:"Frostweaver",emoji:"❄️",role:"Control",description:"Cold magic and battlefield control.",base:{maxHp:105,maxMana:70,power:10,defense:11,speed:8},starterSpells:["frost_shard","frost_veil"]},
-{id:"verdant_warden",name:"Verdant Warden",emoji:"🌿",role:"Support",description:"Healing and protection.",base:{maxHp:120,maxMana:65,power:8,defense:14,speed:7},starterSpells:["verdant_bloom","thorn_guard"]},
-{id:"storm_herald",name:"Storm Herald",emoji:"⚡",role:"Speed",description:"Fast lightning and burst attacks.",base:{maxHp:90,maxMana:75,power:12,defense:8,speed:16},starterSpells:["storm_bolt","thunderstep"]},
-{id:"voidcaller",name:"Voidcaller",emoji:"🌑",role:"Debuff",description:"Weakens enemies and drains power.",base:{maxHp:100,maxMana:80,power:10,defense:9,speed:11},starterSpells:["void_bolt","entropy"]},
-{id:"sigilbinder",name:"Sigilbinder",emoji:"🔮",role:"Hybrid",description:"Manipulates magical power itself.",base:{maxHp:100,maxMana:85,power:11,defense:10,speed:10},starterSpells:["sigil_bolt","sigil_focus"]}
+{id:"ember_mage",name:"Ember Mage",emoji:"🔥",role:"Damage",description:"Aggressive fire magic.",base:{maxHp:95,maxMana:70,power:15,defense:8,speed:10},starterSpells:["ember_bolt","ember_ward"],special:{name:"Inferno",description:"Unleash a devastating burst of flame against the enemy."}},
+{id:"frostweaver",name:"Frostweaver",emoji:"❄️",role:"Control",description:"Cold magic and battlefield control.",base:{maxHp:105,maxMana:70,power:10,defense:11,speed:8},starterSpells:["frost_shard","frost_veil"],special:{name:"Absolute Zero",description:"Strike with freezing magic and leave the enemy weakened."}},
+{id:"verdant_warden",name:"Verdant Warden",emoji:"🌿",role:"Support",description:"Healing and protection.",base:{maxHp:120,maxMana:65,power:8,defense:14,speed:7},starterSpells:["verdant_bloom","thorn_guard"],special:{name:"Nature's Rebirth",description:"Restore health and raise a protective living ward."}},
+{id:"storm_herald",name:"Storm Herald",emoji:"⚡",role:"Speed",description:"Fast lightning and burst attacks.",base:{maxHp:90,maxMana:75,power:12,defense:8,speed:16},starterSpells:["storm_bolt","thunderstep"],special:{name:"Tempest Rush",description:"A rapid lightning assault that hits with exceptional force."}},
+{id:"voidcaller",name:"Voidcaller",emoji:"🌑",role:"Debuff",description:"Weakens enemies and drains power.",base:{maxHp:100,maxMana:80,power:10,defense:9,speed:11},starterSpells:["void_bolt","entropy"],special:{name:"Oblivion",description:"Tear at the enemy with void magic, weakening and draining them."}},
+{id:"sigilbinder",name:"Sigilbinder",emoji:"🔮",role:"Hybrid",description:"Manipulates magical power itself.",base:{maxHp:100,maxMana:85,power:11,defense:10,speed:10},starterSpells:["sigil_bolt","sigil_focus"],special:{name:"Arcane Convergence",description:"Collapse raw Sigil energy into a balanced strike and ward."}}
 ];
 export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[
 {id:"ember_wraith",name:"Ember Wraith",emoji:"🔥",rarity:"Common",description:"A restless flame spirit prowling the outer realm.",maxHp:85,maxMana:40,power:10,defense:6,speed:9,rewardXp:40,rewardSigils:5},
