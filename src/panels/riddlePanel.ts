@@ -217,12 +217,20 @@ export async function handleRiddleInteraction(interaction: Interaction): Promise
   }
   const riddle = id ? await riddleStore.getById(id) : undefined;
   if (action === "hint") { await interaction.reply({ content: riddle?.active && riddle.hint ? "💡 Arcane Hint: " + riddle.hint : "🕯️ The hint has faded.", ephemeral: true }); return true; }
-  if (action === "answer" && riddle?.active) {
+  if (action === "answer") {
+    if (!riddle?.active) {
+      await interaction.reply({ content: "🕯️ That riddle is no longer active.", ephemeral: true });
+      return true;
+    }
     const modal = new ModalBuilder().setCustomId(RIDDLE_PREFIX + ":answerModal:" + riddle.id).setTitle("Answer the Arcane Riddle");
     modal.addComponents(input("answer","Your answer","Speak your answer",TextInputStyle.Short));
-    await interaction.showModal(modal); return true;
+    await interaction.showModal(modal);
+    return true;
   }
-  await interaction.reply({ content: "🕯️ That riddle is no longer active.", ephemeral: true }); return true;
+
+  // Only handle known riddle buttons here. Channel selects, AI controls, and
+  // other riddle panel interactions are handled by handleRiddlePanel().
+  return false;
 }
 
 export async function handleRiddleAnswerModal(interaction: ModalSubmitInteraction): Promise<boolean> {
