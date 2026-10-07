@@ -122,6 +122,17 @@ model Riddle {
   @@index([guildId, messageId])
 }
 
+model RiddleGuess {
+  id        String   @id
+  riddleId  String
+  userId    String
+  answer    String
+  correct   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([riddleId, createdAt])
+  @@index([riddleId, userId])
+}
+
 model SigilAccount {
   guildId       String
   discordUserId String
