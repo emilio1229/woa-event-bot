@@ -21,11 +21,10 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: "Forge one fresh WoA riddle now. Do not reuse a familiar riddle structure. Favor an unexpected ARK connection and a fair but difficult inference path." }
       ],
-      temperature: 1.1,
       max_output_tokens: 700
     })
   });
-  if (!response.ok) throw new Error("OpenAI request failed (" + response.status + ").");
+  if (!response.ok) {\n    let detail = "";\n    try {\n      const errorData = await response.json() as any;\n      detail = errorData?.error?.message || errorData?.message || "";\n    } catch {\n      detail = await response.text().catch(() => "");\n    }\n    throw new Error("OpenAI request failed (" + response.status + ")" + (detail ? ": " + detail : "."));\n  }
   const data = await response.json() as any;
   const outputText = typeof data.output_text === "string"
     ? data.output_text
