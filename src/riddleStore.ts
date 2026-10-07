@@ -38,6 +38,14 @@ class RiddleStore {
     return r ? toRecord(r) : undefined;
   }
 
+  async getActiveRiddles(guildId: string) {
+    const rows = await prisma.riddle.findMany({
+      where: { guildId, active: true },
+      orderBy: { createdAt: "desc" }
+    });
+    return rows.map(toRecord);
+  }
+
   async submitAnswer(id: string, answer: string, userId: string) {
     const r = await this.getById(id);
     if (!r || !r.active) return "closed" as const;
