@@ -20,6 +20,8 @@ export const env = {
   allowedGuildIds: readCommaSeparatedList("ALLOWED_GUILD_IDS"),
   databaseUrl: readEnv("DATABASE_URL"),
   apiKey: readEnv("API_KEY"),
+  openAiApiKey: readEnv("OPENAI_API_KEY"),
+  openAiModel: readEnv("OPENAI_MODEL") || "gpt-5-mini",
   apiHost: process.env.API_HOST?.trim() || "0.0.0.0",
   apiPort: Number.parseInt(process.env.PORT?.trim() || process.env.API_PORT?.trim() || "3000", 10),
   councilRoleIds: readCommaSeparatedList("COUNCIL_ROLE_IDS"),
