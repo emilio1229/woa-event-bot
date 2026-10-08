@@ -59,17 +59,21 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
       .setLabel("🗝️ Submit Answer")
       .setCustomId("woa:riddle:answer:" + riddle.id)
       .setStyle(ButtonStyle.Primary);
-    const buttons = [answerButton];
-    if (hints.length) {
-      buttons.push(new ButtonBuilder()
+    const hintButton = hints.length
+      ? new ButtonBuilder()
         .setLabel("💡 Seek a Hint")
         .setCustomId("woa:riddle:hint:" + riddle.id)
-        .setStyle(ButtonStyle.Secondary));
-    }
+        .setStyle(ButtonStyle.Secondary)
+      : null;
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      answerButton,
+      ...(hintButton ? [hintButton] : [])
+    );
 
     const message = await channel.send({
       embeds: [embed],
-      components: [new ActionRowBuilder().addComponents(...buttons)]
+      components: [row]
     });
     await riddleStore.setMessageId(riddle.id, message.id);
     logInfo("Automatic arcane riddle posted.", { guildId: channel.guildId, channelId, riddleId: riddle.id });
