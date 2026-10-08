@@ -3279,7 +3279,7 @@ const RIDDLES: RiddleSeed[] = [
     "Three is the obvious clue; the myth is the lock.",
     "Wizard's note points toward a multi-headed Fantastic Tame.",
     "Look at Fantastic Tames Season 1.",
-    "Think of Cerberax."
+    "The final clue points toward the three-headed Fantastic Tame."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Cerberax"
@@ -3298,7 +3298,7 @@ const RIDDLES: RiddleSeed[] = [
     "The mouth is the clue, but the name is not simply 'giant.'",
     "Doxo's note points toward an unusual consumption ability.",
     "Look at Fantastic Tames Season 1.",
-    "Think of Gargantar."
+    "The final clue points toward the Fantastic Tame whose appetite is part of its mystery."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Gargantar"
@@ -3317,7 +3317,7 @@ const RIDDLES: RiddleSeed[] = [
     "The answer concerns a future map release rather than a current creature.",
     "Rin's note points toward the roadmap.",
     "Look at the announced December 2026 ASA roadmap.",
-    "Think of Fjordur Ascended."
+    "The final clue points toward the northern Realm named in the roadmap."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Fjördür Ascended"
@@ -3326,6 +3326,18 @@ const RIDDLES: RiddleSeed[] = [
 
 let shuffleBag: number[] = [];
 let recentCategories: RiddleCategory[] = [];
+
+function normalizeHintText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function hintsAreSafe(seed: RiddleSeed): boolean {
+  const answer = normalizeHintText(seed.answer);
+  return Boolean(answer) && seed.hints.length > 0 && seed.hints.every((hint) => {
+    const text = normalizeHintText(hint);
+    return !text.includes(answer);
+  });
+}
 
 function refillShuffleBag(): void {
   shuffleBag = RIDDLES.map((_, index) => index);
@@ -3373,14 +3385,23 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
 
   for (let i = 0; i < attempts; i += 1) {
     const candidate = await chooseSeed();
-    if (!used.has(candidate.answer.trim().toLowerCase())) {
+    if (!used.has(candidate.answer.trim().toLowerCase()) && hintsAreSafe(candidate)) {
       seed = candidate;
       break;
     }
   }
 
   // If the persistent archive has exhausted the catalog, allow a new cycle.
-  if (!seed) seed = await chooseSeed();
+  if (!seed) {
+    for (let i = 0; i < RIDDLES.length; i += 1) {
+      const candidate = await chooseSeed();
+      if (hintsAreSafe(candidate)) {
+        seed = candidate;
+        break;
+      }
+    }
+  }
+  if (!seed) throw new Error("No riddle with safe hints is available.");
 
   return {
     question: seed.lines.join("\n"),
