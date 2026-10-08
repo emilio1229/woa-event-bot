@@ -2,7 +2,7 @@ export type ArcaneClassId = "ember_mage"|"frostweaver"|"verdant_warden"|"storm_h
 export type ArcaneItemKind = "spell"|"armor"|"focus"|"relic"|"cosmetic";
 export interface ArcaneStats { maxHp:number; maxMana:number; power:number; defense:number; speed:number; }
 export interface ArcaneClass { id:ArcaneClassId; name:string; emoji:string; role:string; description:string; base:ArcaneStats; starterSpells:string[]; special:{name:string;description:string;manaCost:number}; }
-export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; manaCost?:number; }
+export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; minLevel?:number; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; manaCost?:number; }
 export interface ArcanePveEnemy { id:string; name:string; emoji:string; rarity:string; description:string; maxHp:number; maxMana:number; power:number; defense:number; speed:number; rewardXp:number; rewardSigils:number; }
 export const ARCANE_CLASSES:ArcaneClass[]=[
 {id:"ember_mage",name:"Ember Mage",emoji:"🔥",role:"Damage",description:"Aggressive fire magic.",base:{maxHp:95,maxMana:70,power:15,defense:8,speed:10},starterSpells:["ember_bolt","ember_ward"],special:{name:"Inferno",description:"Unleash a devastating burst of flame against the enemy.",manaCost:30}},
@@ -28,24 +28,36 @@ export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[
 {id:"ancient_spellwyrm",name:"Ancient Spellwyrm",emoji:"🐉",rarity:"Legendary",description:"A dragon that fed for centuries on raw arcane energy.",maxHp:260,maxMana:120,power:24,defense:16,speed:13,rewardXp:220,rewardSigils:30}
 ];
 export const ARCANE_ITEMS:ArcaneItem[]=[
-{id:"ember_bolt",name:"Ember Bolt",emoji:"🔥",kind:"spell",rarity:"common",cost:0,description:"Reliable fire damage.",classId:"ember_mage",effect:{type:"damage",value:18},manaCost:8},
-{id:"ember_ward",name:"Ember Ward",emoji:"🛡️",kind:"spell",rarity:"common",cost:0,description:"Raise a protective ward.",classId:"ember_mage",effect:{type:"shield",value:14},manaCost:8},
-{id:"flame_burst",name:"Flame Burst",emoji:"💥",kind:"spell",rarity:"uncommon",cost:45,description:"Heavy fire damage.",classId:"ember_mage",effect:{type:"damage",value:30},manaCost:14},
-{id:"frost_shard",name:"Frost Shard",emoji:"❄️",kind:"spell",rarity:"common",cost:0,description:"Cold damage.",classId:"frostweaver",effect:{type:"damage",value:16},manaCost:8},
-{id:"frost_veil",name:"Frost Veil",emoji:"🧊",kind:"spell",rarity:"common",cost:0,description:"Reduce incoming damage.",classId:"frostweaver",effect:{type:"guard",value:16},manaCost:8},
-{id:"glacial_bind",name:"Glacial Bind",emoji:"⛓️",kind:"spell",rarity:"uncommon",cost:45,description:"Damage and control.",classId:"frostweaver",effect:{type:"damage",value:24},manaCost:14},
-{id:"verdant_bloom",name:"Verdant Bloom",emoji:"🌿",kind:"spell",rarity:"common",cost:0,description:"Restore health.",classId:"verdant_warden",effect:{type:"heal",value:22},manaCost:8},
-{id:"thorn_guard",name:"Thorn Guard",emoji:"🌱",kind:"spell",rarity:"common",cost:0,description:"Raise a shield.",classId:"verdant_warden",effect:{type:"shield",value:18},manaCost:8},
-{id:"lifeweave",name:"Lifeweave",emoji:"✨",kind:"spell",rarity:"uncommon",cost:50,description:"Strong restoration.",classId:"verdant_warden",effect:{type:"heal",value:34},manaCost:14},
-{id:"storm_bolt",name:"Storm Bolt",emoji:"⚡",kind:"spell",rarity:"common",cost:0,description:"Fast lightning damage.",classId:"storm_herald",effect:{type:"damage",value:17},manaCost:8},
-{id:"thunderstep",name:"Thunderstep",emoji:"⚡",kind:"spell",rarity:"common",cost:0,description:"Strike with lightning.",classId:"storm_herald",effect:{type:"damage",value:14},manaCost:8},
-{id:"chain_lightning",name:"Chain Lightning",emoji:"🌩️",kind:"spell",rarity:"uncommon",cost:55,description:"Powerful lightning.",classId:"storm_herald",effect:{type:"damage",value:28},manaCost:14},
-{id:"void_bolt",name:"Void Bolt",emoji:"🌑",kind:"spell",rarity:"common",cost:0,description:"Precise void damage.",classId:"voidcaller",effect:{type:"damage",value:16},manaCost:8},
-{id:"entropy",name:"Entropy",emoji:"🕳️",kind:"spell",rarity:"common",cost:0,description:"Weaken the enemy.",classId:"voidcaller",effect:{type:"weaken",value:10},manaCost:8},
-{id:"void_drain",name:"Void Drain",emoji:"🌑",kind:"spell",rarity:"uncommon",cost:55,description:"Damage and recover.",classId:"voidcaller",effect:{type:"drain",value:20},manaCost:14},
-{id:"sigil_bolt",name:"Sigil Bolt",emoji:"🔮",kind:"spell",rarity:"common",cost:0,description:"Balanced arcane damage.",classId:"sigilbinder",effect:{type:"damage",value:16},manaCost:8},
-{id:"sigil_focus",name:"Sigil Focus",emoji:"🔮",kind:"spell",rarity:"common",cost:0,description:"Recover Mana.",classId:"sigilbinder",effect:{type:"mana",value:20},manaCost:8},
-{id:"arcane_surge",name:"Arcane Surge",emoji:"✨",kind:"spell",rarity:"uncommon",cost:60,description:"Powerful arcane damage.",classId:"sigilbinder",effect:{type:"damage",value:25},manaCost:14},
+{id:"ember_bolt",name:"Ember Bolt",emoji:"🔥",kind:"spell",rarity:"common",cost:0,description:"Reliable fire damage.",classId:"ember_mage",effect:{type:"damage",value:18},manaCost:8,minLevel:1},
+{id:"ember_ward",name:"Ember Ward",emoji:"🛡️",kind:"spell",rarity:"common",cost:0,description:"Raise a protective ward.",classId:"ember_mage",effect:{type:"shield",value:14},manaCost:8,minLevel:1},
+{id:"flame_burst",name:"Flame Burst",emoji:"💥",kind:"spell",rarity:"uncommon",cost:45,description:"Heavy fire damage.",classId:"ember_mage",effect:{type:"damage",value:30},manaCost:14,minLevel:5},
+{id:"cinder_lance",name:"Cinder Lance",emoji:"🔥",kind:"spell",rarity:"rare",cost:90,description:"A concentrated lance of flame that punches through defenses.",classId:"ember_mage",effect:{type:"damage",value:38},manaCost:18,minLevel:10},
+{id:"infernal_core",name:"Infernal Core",emoji:"🌋",kind:"spell",rarity:"legendary",cost:120,description:"Unleash a devastating core of living fire.",classId:"ember_mage",effect:{type:"damage",value:52},manaCost:24,minLevel:15},
+{id:"frost_shard",name:"Frost Shard",emoji:"❄️",kind:"spell",rarity:"common",cost:0,description:"Cold damage.",classId:"frostweaver",effect:{type:"damage",value:16},manaCost:8,minLevel:1},
+{id:"frost_veil",name:"Frost Veil",emoji:"🧊",kind:"spell",rarity:"common",cost:0,description:"Reduce incoming damage.",classId:"frostweaver",effect:{type:"guard",value:16},manaCost:8,minLevel:1},
+{id:"glacial_bind",name:"Glacial Bind",emoji:"⛓️",kind:"spell",rarity:"uncommon",cost:45,description:"Cold magic that strikes and disrupts.",classId:"frostweaver",effect:{type:"damage",value:24},manaCost:14,minLevel:5},
+{id:"winter_grasp",name:"Winter's Grasp",emoji:"🧊",kind:"spell",rarity:"rare",cost:85,description:"A punishing frost spell that leaves the enemy weakened.",classId:"frostweaver",effect:{type:"weaken",value:10},manaCost:18,minLevel:10},
+{id:"absolute_frost",name:"Absolute Frost",emoji:"🌨️",kind:"spell",rarity:"legendary",cost:120,description:"Freeze the battlefield beneath an overwhelming wave of ancient cold.",classId:"frostweaver",effect:{type:"damage",value:46},manaCost:24,minLevel:15},
+{id:"verdant_bloom",name:"Verdant Bloom",emoji:"🌿",kind:"spell",rarity:"common",cost:0,description:"Restore health.",classId:"verdant_warden",effect:{type:"heal",value:22},manaCost:8,minLevel:1},
+{id:"thorn_guard",name:"Thorn Guard",emoji:"🌱",kind:"spell",rarity:"common",cost:0,description:"Raise a shield.",classId:"verdant_warden",effect:{type:"shield",value:18},manaCost:8,minLevel:1},
+{id:"lifeweave",name:"Lifeweave",emoji:"✨",kind:"spell",rarity:"uncommon",cost:50,description:"Strong restoration.",classId:"verdant_warden",effect:{type:"heal",value:34},manaCost:14,minLevel:5},
+{id:"ancient_bark",name:"Ancient Bark",emoji:"🌳",kind:"spell",rarity:"rare",cost:85,description:"Wrap yourself in an ancient living ward.",classId:"verdant_warden",effect:{type:"shield",value:30},manaCost:18,minLevel:10},
+{id:"worldroot",name:"Worldroot",emoji:"🌲",kind:"spell",rarity:"legendary",cost:120,description:"Call on the oldest roots of the Realm to restore and protect you.",classId:"verdant_warden",effect:{type:"heal",value:52},manaCost:24,minLevel:15},
+{id:"storm_bolt",name:"Storm Bolt",emoji:"⚡",kind:"spell",rarity:"common",cost:0,description:"Fast lightning damage.",classId:"storm_herald",effect:{type:"damage",value:17},manaCost:8,minLevel:1},
+{id:"thunderstep",name:"Thunderstep",emoji:"⚡",kind:"spell",rarity:"common",cost:0,description:"Strike with lightning.",classId:"storm_herald",effect:{type:"damage",value:14},manaCost:8,minLevel:1},
+{id:"chain_lightning",name:"Chain Lightning",emoji:"🌩️",kind:"spell",rarity:"uncommon",cost:55,description:"Powerful lightning.",classId:"storm_herald",effect:{type:"damage",value:28},manaCost:14,minLevel:5},
+{id:"tempest_lance",name:"Tempest Lance",emoji:"🌪️",kind:"spell",rarity:"rare",cost:90,description:"A compressed thunderbolt that hits with brutal speed.",classId:"storm_herald",effect:{type:"damage",value:40},manaCost:18,minLevel:10},
+{id:"storm_sovereign",name:"Storm Sovereign",emoji:"⛈️",kind:"spell",rarity:"legendary",cost:125,description:"Become the eye of the storm and unleash catastrophic lightning.",classId:"storm_herald",effect:{type:"damage",value:54},manaCost:24,minLevel:15},
+{id:"void_bolt",name:"Void Bolt",emoji:"🌑",kind:"spell",rarity:"common",cost:0,description:"Precise void damage.",classId:"voidcaller",effect:{type:"damage",value:16},manaCost:8,minLevel:1},
+{id:"entropy",name:"Entropy",emoji:"🕳️",kind:"spell",rarity:"common",cost:0,description:"Weaken the enemy.",classId:"voidcaller",effect:{type:"weaken",value:10},manaCost:8,minLevel:1},
+{id:"void_drain",name:"Void Drain",emoji:"🌑",kind:"spell",rarity:"uncommon",cost:55,description:"Damage and recover.",classId:"voidcaller",effect:{type:"drain",value:20},manaCost:14,minLevel:5},
+{id:"soul_rift",name:"Soul Rift",emoji:"🩸",kind:"spell",rarity:"rare",cost:90,description:"Rip through the enemy while feeding the caster's strength.",classId:"voidcaller",effect:{type:"drain",value:34},manaCost:18,minLevel:10},
+{id:"null_field",name:"Null Field",emoji:"🕳️",kind:"spell",rarity:"legendary",cost:120,description:"Collapse the enemy's magical certainty beneath a crushing void.",classId:"voidcaller",effect:{type:"weaken",value:16},manaCost:24,minLevel:15},
+{id:"sigil_bolt",name:"Sigil Bolt",emoji:"🔮",kind:"spell",rarity:"common",cost:0,description:"Balanced arcane damage.",classId:"sigilbinder",effect:{type:"damage",value:16},manaCost:8,minLevel:1},
+{id:"sigil_focus",name:"Sigil Focus",emoji:"🔮",kind:"spell",rarity:"common",cost:0,description:"Recover Mana.",classId:"sigilbinder",effect:{type:"mana",value:20},manaCost:8,minLevel:1},
+{id:"arcane_surge",name:"Arcane Surge",emoji:"✨",kind:"spell",rarity:"uncommon",cost:60,description:"Powerful arcane damage.",classId:"sigilbinder",effect:{type:"damage",value:25},manaCost:14,minLevel:5},
+{id:"sigil_fracture",name:"Sigil Fracture",emoji:"💠",kind:"spell",rarity:"rare",cost:90,description:"Shatter the enemy with unstable sigil energy.",classId:"sigilbinder",effect:{type:"damage",value:38},manaCost:18,minLevel:10},
+{id:"grand_convergence",name:"Grand Convergence",emoji:"🌌",kind:"spell",rarity:"legendary",cost:125,description:"Collapse raw Arcane power into a devastating final convergence.",classId:"sigilbinder",effect:{type:"damage",value:50},manaCost:24,minLevel:15},
 {id:"apprentice_robes",name:"Apprentice Robes",emoji:"🧥",kind:"armor",rarity:"common",cost:0,description:"Starter robes.",stats:{defense:2}},
 {id:"emberweave_mantle",name:"Emberweave Mantle",emoji:"🔥",kind:"armor",rarity:"uncommon",cost:60,description:"Ember-threaded armor.",stats:{defense:5,power:2}},
 {id:"frostbound_raiment",name:"Frostbound Raiment",emoji:"❄️",kind:"armor",rarity:"rare",cost:90,description:"Steadying frost armor.",stats:{defense:7,maxHp:8}},
