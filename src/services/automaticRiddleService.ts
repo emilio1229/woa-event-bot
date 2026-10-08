@@ -1,4 +1,4 @@
-import type { TextChannel } from "discord.js";
+import type { TextChannel, MessageActionRowComponentBuilder } from "discord.js";
 import type { BotClient } from "../index.js";
 import { env } from "../config/env.js";
 import { riddleStore } from "../riddleStore.js";
@@ -66,7 +66,7 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
         .setStyle(ButtonStyle.Secondary)
       : null;
 
-    const row = new ActionRowBuilder().addComponents(
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       answerButton,
       ...(hintButton ? [hintButton] : [])
     );
