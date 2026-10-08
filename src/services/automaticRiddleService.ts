@@ -13,7 +13,7 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
 
   const channel = await client.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased() || !channel.isSendable() || !("guildId" in channel) || !channel.guildId) {
-    logError("Automatic riddle channel is invalid or not a guild text channel.");
+    logError("Automatic riddle channel is invalid or not a guild text channel.", new Error("Invalid automatic riddle channel"));
     return false;
   }
 
@@ -69,7 +69,7 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
 
     const message = await channel.send({
       embeds: [embed],
-      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons)]
+      components: [new ActionRowBuilder().addComponents(...buttons)]
     });
     await riddleStore.setMessageId(riddle.id, message.id);
     logInfo("Automatic arcane riddle posted.", { guildId: channel.guildId, channelId, riddleId: riddle.id });
