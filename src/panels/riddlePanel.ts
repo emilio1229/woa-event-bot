@@ -16,6 +16,24 @@ function formatGuess(answer: string) {
   return clean.length > 55 ? clean.slice(0, 52) + "..." : clean;
 }
 
+function parseHintSequence(hint?: string) {
+  if (!hint?.trim()) return [];
+  try {
+    const parsed = JSON.parse(hint);
+    if (Array.isArray(parsed) && parsed.every(item => typeof item === "string")) return parsed;
+  } catch {
+    // Older/manual riddles store a single plain-text hint.
+  }
+  return [hint.trim()];
+}
+
+function formatHintReview(hint?: string) {
+  const hints = parseHintSequence(hint);
+  return hints.length
+    ? hints.map((item, index) => "Hint " + (index + 1) + ": " + item).join("\n")
+    : "None";
+}
+
 async function buildLiveRiddleEmbed(riddleId: string) {
   const riddle = await riddleStore.getById(riddleId);
   if (!riddle) return undefined;
@@ -93,7 +111,7 @@ function buildAiReview(draft: { question: string; answer: string; hint?: string;
     .addFields(
       { name: "🔮 Answer", value: "**" + draft.answer + "**", inline: true },
       { name: "💠 Reward", value: draft.reward + " Sigils", inline: true },
-      { name: "💡 Hint", value: draft.hint || "None", inline: false },
+      { name: "💡 Hint Path", value: formatHintReview(draft.hint), inline: false },
       { name: "🧙 Scribe Notes", value: draft.notes || "No notes." }
     )
     .setFooter({ text: "NOT POSTED • Review before publishing" });
@@ -141,7 +159,7 @@ async function postRiddle(interaction: Interaction, draft: { guildId: string; ch
   const riddle = await riddleStore.create({ guildId: draft.guildId, channelId: draft.channelId, question: draft.question, answer: draft.answer, hint: draft.hint || undefined, reward: draft.reward });
   const embed = await buildLiveRiddleEmbed(riddle.id);
   const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
-  if (riddle.hint) buttons.push(button("💡 Reveal Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
+  if (riddle.hint) buttons.push(button("💡 Seek a Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
   try {
     const message = await channel.send({ embeds: [embed!], components: [row(...buttons)] });
     await riddleStore.setMessageId(riddle.id, message.id);
@@ -333,7 +351,26 @@ export async function handleRiddleInteraction(interaction: Interaction): Promise
     return true;
   }
   const riddle = id ? await riddleStore.getById(id) : undefined;
-  if (action === "hint") { await interaction.reply({ content: riddle?.active && riddle.hint ? "💡 Arcane Hint: " + riddle.hint : "🕯️ The hint has faded.", ephemeral: true }); return true; }
+  if (action === "hint") {
+    if (!riddle?.active || !riddle.hint) {
+      await interaction.reply({ content: "🕯️ The hint has faded.", ephemeral: true });
+      return true;
+    }
+    const hints = parseHintSequence(riddle.hint);
+    const stats = await riddleStore.getStats(riddle.id);
+    const index = Math.min(stats.attempts, hints.length - 1);
+    const hintNumber = index + 1;
+    const unlocked = hints[index];
+    const remaining = Math.max(0, hints.length - hintNumber);
+    const progress = remaining
+      ? "\\n\\n*The Realm will reveal a sharper clue after another wrong guess.*"
+      : "\\n\\n*That is the final clue. The answer is still yours to uncover.*";
+    await interaction.reply({
+      content: "💡 **Arcane Hint " + hintNumber + "/" + hints.length + "**\\n" + unlocked + progress,
+      ephemeral: true
+    });
+    return true;
+  }
   if (action === "answer") {
     if (!riddle?.active) {
       await interaction.reply({ content: "🕯️ That riddle is no longer active.", ephemeral: true });
