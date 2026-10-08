@@ -196,3 +196,18 @@ Never commit secrets, bot tokens, database credentials, or private keys to the r
 
 **The Wizards of Ark**  
 *Wizards, Warlocks & Witches — welcome to the Realm.* 🔮
+
+
+## Automatic Arcane Riddles
+
+Automatic riddles are off by default. Enable them with these environment settings:
+
+- `RIDDLE_AUTO_ENABLED=true` — turns the scheduler on.
+- `RIDDLE_AUTO_CHANNEL_ID=<discord-channel-id>` — channel where automatic riddles are posted.
+- `RIDDLE_AUTO_INTERVAL_MINUTES=360` — minimum interval between scheduler checks; defaults to 6 hours and cannot be set below 15 minutes.
+- `RIDDLE_AUTO_REWARD_MIN=15` and `RIDDLE_AUTO_REWARD_MAX=35` — randomized Sigil reward range.
+
+The scheduler will not post while another riddle is active. It also keeps the existing shuffle/archive protection so recently used answers are avoided.
+
+Automatic riddles use the hardened Arcane Scribe path: explicit answer-question lines are removed before posting, and progressive hints are intentionally interpretive rather than map/species/mechanic reveals.
+
