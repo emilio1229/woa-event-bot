@@ -1,5 +1,5 @@
 export type ArcaneClassId = "ember_mage"|"frostweaver"|"verdant_warden"|"storm_herald"|"voidcaller"|"sigilbinder";
-export type ArcaneItemKind = "spell"|"armor"|"focus"|"relic"|"cosmetic";
+export type ArcaneItemKind = "spell"|"armor"|"focus"|"relic"|"cosmetic"|"consumable";
 export interface ArcaneStats { maxHp:number; maxMana:number; power:number; defense:number; speed:number; }
 export interface ArcaneClass { id:ArcaneClassId; name:string; emoji:string; role:string; description:string; base:ArcaneStats; starterSpells:string[]; special:{name:string;description:string;manaCost:number}; }
 export interface ArcaneItem { id:string; name:string; emoji:string; kind:ArcaneItemKind; rarity:string; cost:number; description:string; classId?:ArcaneClassId; minLevel?:number; stats?:Partial<ArcaneStats>; effect?:{type:string;value:number}; manaCost?:number; }
@@ -28,6 +28,18 @@ export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[
 {id:"ancient_spellwyrm",name:"Ancient Spellwyrm",emoji:"🐉",rarity:"Legendary",description:"A dragon that fed for centuries on raw arcane energy.",maxHp:260,maxMana:120,power:24,defense:16,speed:13,rewardXp:220,rewardSigils:30}
 ];
 export const ARCANE_ITEMS:ArcaneItem[]=[
+{id:"ember_flare",name:"Ember Flare",emoji:"🔥",kind:"spell",rarity:"uncommon",cost:55,description:"A fast burst of flame that strikes hard and leaves little room to recover.",classId:"ember_mage",effect:{type:"damage",value:26},manaCost:13,minLevel:5},
+{id:"frost_lance",name:"Frost Lance",emoji:"❄️",kind:"spell",rarity:"uncommon",cost:55,description:"A focused shard of winter that damages and weakens the enemy.",classId:"frostweaver",effect:{type:"weaken",value:12},manaCost:13,minLevel:5},
+{id:"verdant_surge",name:"Verdant Surge",emoji:"🌿",kind:"spell",rarity:"uncommon",cost:55,description:"A burst of living magic that restores health and raises a small ward.",classId:"verdant_warden",effect:{type:"heal",value:28},manaCost:13,minLevel:5},
+{id:"storm_arc",name:"Storm Arc",emoji:"⚡",kind:"spell",rarity:"uncommon",cost:60,description:"Lightning leaps through the target with brutal speed.",classId:"storm_herald",effect:{type:"damage",value:27},manaCost:13,minLevel:5},
+{id:"void_mark",name:"Void Mark",emoji:"🌑",kind:"spell",rarity:"uncommon",cost:60,description:"Mark the enemy with unstable void energy, weakening them for the next exchanges.",classId:"voidcaller",effect:{type:"weaken",value:14},manaCost:13,minLevel:5},
+{id:"sigil_echo",name:"Sigil Echo",emoji:"🔮",kind:"spell",rarity:"uncommon",cost:60,description:"Restore magical reserves while striking with a measured arcane pulse.",classId:"sigilbinder",effect:{type:"mana",value:18},manaCost:13,minLevel:5},
+{id:"minor_healing_draught",name:"Minor Healing Draught",emoji:"🧪",kind:"consumable",rarity:"common",cost:15,description:"Restore 30 HP. Can be purchased and carried in multiple copies.",effect:{type:"heal",value:30}},
+{id:"mana_elixir",name:"Mana Elixir",emoji:"🔵",kind:"consumable",rarity:"common",cost:18,description:"Restore 25 Mana. Can be purchased and carried in multiple copies.",effect:{type:"mana",value:25}},
+{id:"ward_tonic",name:"Ward Tonic",emoji:"🛡️",kind:"consumable",rarity:"uncommon",cost:22,description:"Gain 22 Ward. Can be purchased and carried in multiple copies.",effect:{type:"shield",value:22}},
+{id:"greater_healing_elixir",name:"Greater Healing Elixir",emoji:"❤️",kind:"consumable",rarity:"rare",cost:40,description:"Restore 55 HP. Can be purchased and carried in multiple copies.",effect:{type:"heal",value:55}},
+{id:"greater_mana_elixir",name:"Greater Mana Elixir",emoji:"💙",kind:"consumable",rarity:"rare",cost:45,description:"Restore 50 Mana. Can be purchased and carried in multiple copies.",effect:{type:"mana",value:50}},
+{id:"astral_tonic",name:"Astral Tonic",emoji:"🌌",kind:"consumable",rarity:"epic",cost:65,description:"Restore 35 HP and 30 Mana. A prized emergency tonic.",effect:{type:"astral_tonic",value:1}},
 {id:"ember_bolt",name:"Ember Bolt",emoji:"🔥",kind:"spell",rarity:"common",cost:0,description:"Reliable fire damage.",classId:"ember_mage",effect:{type:"damage",value:18},manaCost:8,minLevel:1},
 {id:"ember_ward",name:"Ember Ward",emoji:"🛡️",kind:"spell",rarity:"common",cost:0,description:"Raise a protective ward.",classId:"ember_mage",effect:{type:"shield",value:14},manaCost:8,minLevel:1},
 {id:"flame_burst",name:"Flame Burst",emoji:"💥",kind:"spell",rarity:"uncommon",cost:45,description:"Heavy fire damage.",classId:"ember_mage",effect:{type:"damage",value:30},manaCost:14,minLevel:1},
