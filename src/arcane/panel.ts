@@ -21,7 +21,7 @@ async function shopCategory(i:ButtonInteraction|StringSelectMenuInteraction,kind
 const c=await arcaneStore.get(i.guildId!,i.user.id);
 if(!c)return;
 let items=getItems(kind).filter(x=>x.cost>0);
-if(kind==="spell")items=items.filter(x=>x.classId===c.classId);
+if(kind==="spell")items=items.filter(x=>x.classId===c.classId).sort((a,b)=>(a.minLevel||1)-(b.minLevel||1)||a.cost-b.cost);\nelse items=items.sort((a,b)=>(a.minLevel||1)-(b.minLevel||1)||a.cost-b.cost);
 const available=items.filter(x=>!x.minLevel||c.level>=x.minLevel).filter(x=>x.kind==="consumable"||!c.ownedItemIds.includes(x.id));
 const lines=items.map(x=>{
 if(x.minLevel&&c.level<x.minLevel)return "🔒 **"+x.name+"** — Level "+x.minLevel+" required\n"+x.description+"\n"+itemDetails(x);
