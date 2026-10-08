@@ -227,6 +227,8 @@ const RIDDLES: RiddleSeed[] = [
   }
 ];
 
+];
+
 let cursor = 0;
 
 function chooseSeed(): RiddleSeed {
