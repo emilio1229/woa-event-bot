@@ -51,7 +51,7 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "The first archivist may have mistaken the clue for something harmless.",
       "Rin's note: the dangerous part is not how high the creature can go, but how far its attack can travel.",
-      "Look toward the darkness of Aberration Ascended.",
+      "The third clue narrows the era or Realm.",
       "Its feathers are more than feathers; they can be launched at a distant target."
     ],
     reward: 30,
@@ -71,7 +71,7 @@ const RIDDLES: RiddleSeed[] = [
       "The obvious desert answer is useful only if you assume the danger comes from above.",
       "The Council record describes an ambusher rather than a wanderer.",
       "The trail leads to Scorched Earth Ascended.",
-      "Think of the large new predator that can emerge from beneath the sand."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Fasolasuchus"
@@ -89,7 +89,7 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "Do not assume the word 'mountain' means stone.",
       "Wizard's note: the answer is something alive that can become infrastructure.",
-      "The clue belongs to The Center Ascended.",
+      "The third clue places the mystery in a particular part of the Realm.",
       "Look for the enormous aquatic creature whose platform can turn it into an underwater base."
     ],
     reward: 31,
@@ -108,8 +108,8 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "The first mistake is assuming the nest is merely decoration.",
       "The Council's record spends unusually much ink on offspring.",
-      "Look toward Ragnarok Ascended.",
-      "Think of the giant bird whose special utility revolves around raising and caring for young creatures."
+      "The third clue narrows the era or Realm.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Gigantoraptor"
@@ -147,7 +147,7 @@ const RIDDLES: RiddleSeed[] = [
       "The clue may be hiding in the name rather than the creature.",
       "Brendon's note suggests that one familiar word has been enlarged beyond expectation.",
       "The answer belongs to Valguero Ascended.",
-      "Think of the large new raptor-like predator introduced there."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Megaraptor"
@@ -166,7 +166,7 @@ const RIDDLES: RiddleSeed[] = [
       "The word 'elder' may point to age, but age is not the important part.",
       "The Council classifies this mystery differently from ordinary prehistoric wildlife.",
       "Begin with Valguero Ascended, then widen the map.",
-      "Think of the Fantastic Tame that serves as a forest guardian."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Elderclaw"
@@ -185,7 +185,7 @@ const RIDDLES: RiddleSeed[] = [
       "The obvious answer is the element around the creature, not the creature itself.",
       "Wizard's warning is about identity changing with form.",
       "The trail belongs to ASA's Fantastic Tames.",
-      "Think of the fiery creature that can shift between a larger combat form and a shoulder form."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Pyromane"
@@ -204,7 +204,7 @@ const RIDDLES: RiddleSeed[] = [
       "The spider itself is a distraction; follow what it leaves behind.",
       "The Council cares more about the path than the creature making it.",
       "Look to Aberration Ascended.",
-      "Think of the new shoulder pet whose webs create useful lines for traversal."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Cosmo"
@@ -223,7 +223,7 @@ const RIDDLES: RiddleSeed[] = [
       "The obvious clue points toward speed; the useful clue points upward.",
       "Heathen's note suggests that the target can become part of the attack.",
       "The creature is strongly associated with Valguero.",
-      "Think of the raptor-like predator known for clinging to larger creatures."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Deinonychus"
@@ -242,7 +242,7 @@ const RIDDLES: RiddleSeed[] = [
       "The clue is about a thief, but not the kind that steals from a vault.",
       "Panda's correction suggests an old species wearing an unusual identity.",
       "Look for an Aberrant remaster in ASA.",
-      "Think of the Oviraptor variant associated with Aberration."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-first ASA riddle • Aberrant Oviraptor"
@@ -261,7 +261,7 @@ const RIDDLES: RiddleSeed[] = [
       "Solve the bird and the Realm separately before joining them.",
       "The Council archives treat this as a variant, not an unrelated species.",
       "The trail leads into Aberration Ascended.",
-      "Think of Gigantoraptor in its Aberrant form."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Aberrant Gigantoraptor"
@@ -272,7 +272,7 @@ const RIDDLES: RiddleSeed[] = [
     lines: [
       "The desert learned to hide me. The cave learned to glow around me.",
       "I carried an old hunting trick into a Realm that should have rejected it.",
-      "The answer is two places that do not seem willing to share one creature.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Rin's note reads: 'Sometimes the mutation is the map.'",
       "What desert ambusher wears the colors of Aberration?"
     ],
@@ -280,7 +280,7 @@ const RIDDLES: RiddleSeed[] = [
       "The first clue points toward a habitat, but it is not the final habitat.",
       "Rin suggests solving the environment before solving the animal.",
       "Find the Aberrant version of a Scorched Earth predator.",
-      "Think of Fasolasuchus adapted to Aberration."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Aberrant Fasolasuchus"
@@ -299,7 +299,7 @@ const RIDDLES: RiddleSeed[] = [
       "Do not search the tameable bestiary first.",
       "The Council files this under challenge, not creature ownership.",
       "The trail leads to Valguero Ascended.",
-      "Think of the new boss encounter added with Valguero Ascended."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 31,
     notes: "Lore-first ASA riddle • Grendel"
@@ -318,7 +318,7 @@ const RIDDLES: RiddleSeed[] = [
       "The cold is a clue, but not the whole clue.",
       "Heathen's note says the disguise matters more than the material.",
       "Search the elemental additions of Valguero Ascended.",
-      "Think of the tameable ice-built golem."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Ice Golem"
@@ -337,7 +337,7 @@ const RIDDLES: RiddleSeed[] = [
       "The first clue can make you search for a structure instead of a creature.",
       "Panda's note is literal enough to be useful and vague enough to be annoying.",
       "The answer belongs to Valguero Ascended's new elemental creatures.",
-      "Think of the pale, chalk-like golem variant."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Chalk Golem"
@@ -355,8 +355,8 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "The answer has four legs, but do not begin with the prehistoric bestiary.",
       "Bob's story matters more than the species list.",
-      "Look toward Extinction Ascended and Wasteland War.",
-      "Think of the canine companion introduced with Bob's Tall Tales."
+      "The third clue narrows the era or Realm.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-first ASA riddle • Armadoggo"
@@ -372,10 +372,10 @@ const RIDDLES: RiddleSeed[] = [
       "What ability lets an ocean giant read the darkness without light?"
     ],
     hints: [
-      "The answer is not a creature, though a creature performs it.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Rin's advice is deliberately backwards for ordinary survival.",
       "The ability belongs to the giant aquatic addition of The Center Ascended.",
-      "Think of the Shastasaurus sense that uses ultrasonic calls to reveal what is nearby."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Shastasaurus echolocation"
@@ -394,7 +394,7 @@ const RIDDLES: RiddleSeed[] = [
       "Do not look for a projectile.",
       "Doxo's clue points to an ability that affects technology rather than flesh.",
       "The answer belongs to Dreadnoughtus on Extinction Ascended.",
-      "Think of its anti-Element roar used against Titans."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 31,
     notes: "Lore-first ASA riddle • Dreadnoughtus roar"
@@ -413,7 +413,7 @@ const RIDDLES: RiddleSeed[] = [
       "The misleading part is assuming the answer must be crafted ammunition.",
       "Wizard's note says the weapon is biological.",
       "The trail leads to Aberration Ascended.",
-      "Think of the projectiles fired from Yi Ling's own feathers."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Yi Ling feathers"
@@ -432,7 +432,7 @@ const RIDDLES: RiddleSeed[] = [
       "The first clue points toward construction, but no foundation is required.",
       "Panda's phrase describes a path that exists only because something was fired.",
       "Look to Cosmo and Aberration Ascended.",
-      "Think of the web line created by Cosmo for traversal."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Cosmo's web"
@@ -451,7 +451,7 @@ const RIDDLES: RiddleSeed[] = [
       "Do not begin by looking for ordinary riding gear.",
       "Brendon's note suggests that the passenger is not the main purpose.",
       "The answer belongs to Shastasaurus on The Center Ascended.",
-      "Think of its platform saddle that supports structures and equipment."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Shastasaurus saddle"
@@ -467,10 +467,10 @@ const RIDDLES: RiddleSeed[] = [
       "What turns a giant Extinction mount into a mobile war platform?"
     ],
     hints: [
-      "The answer is equipment, not the creature carrying it.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Heathen's note implies ranged force on an enormous scale.",
-      "Look toward Dreadnoughtus on Extinction Ascended.",
-      "Think of the platform saddle designed to carry heavy weaponry."
+      "The third clue narrows the era or Realm.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Dreadnoughtus saddle"
@@ -486,10 +486,10 @@ const RIDDLES: RiddleSeed[] = [
       "What fragile thing belongs to the creature that hunts beneath Scorched Earth?"
     ],
     hints: [
-      "The answer is something that has not yet become dangerous.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Rin's warning is about what the shell becomes, not what it is now.",
       "Search the breeding records of Scorched Earth Ascended.",
-      "Think of the egg laid by Fasolasuchus."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 26,
     notes: "Lore-first ASA riddle • Fasolasuchus egg"
@@ -505,10 +505,10 @@ const RIDDLES: RiddleSeed[] = [
       "What mechanic lets one Fantastic Tame become both predator and shoulder companion?"
     ],
     hints: [
-      "The answer is a change, not an object.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Wizard's note points toward one tame occupying two roles.",
-      "Look at the form system of ASA Fantastic Tames.",
-      "Think of Pyromane switching between its larger form and shoulder form."
+      "The third clue narrows the era, Realm, or context.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-first ASA riddle • Pyromane forms"
@@ -527,7 +527,7 @@ const RIDDLES: RiddleSeed[] = [
       "The misleading path is the normal knockout-tame routine.",
       "Panda's instruction tells you to change the relationship, not the weapon.",
       "The clue points to Elderclaw in ASA.",
-      "Think of the nonstandard process required to tame Elderclaw."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Elderclaw taming"
@@ -543,10 +543,10 @@ const RIDDLES: RiddleSeed[] = [
       "Where does Valguero Ascended ask its newest challengers to prove themselves?"
     ],
     hints: [
-      "The answer is a location, not the creature waiting inside.",
+      "The first clue tells you what kind of thing you are seeking.",
       "The Council's order of records is the clue: room first, enemy second.",
-      "Look toward the new Valguero Ascended boss content.",
-      "Think of the dedicated arena associated with the Grendel encounter."
+      "The third clue narrows the era or Realm.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-first ASA riddle • Grendel arena"
@@ -565,7 +565,7 @@ const RIDDLES: RiddleSeed[] = [
       "The first clue can describe a cave, but this cave is an entire world.",
       "Rin's warning is about a Realm whose environment changes ordinary survival rules.",
       "Several ASA-exclusive additions point back to this map.",
-      "Think of the underground ARK with radiation, charge light, and vertical ecosystems."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA map riddle • Aberration"
@@ -584,7 +584,7 @@ const RIDDLES: RiddleSeed[] = [
       "The name itself is a trap; do not solve from geography alone.",
       "Wizard's circles suggest that the answer has layers.",
       "The Shastasaurus trail leads here.",
-      "Think of the remastered ASA map where the enormous aquatic addition belongs."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA map riddle • The Center"
@@ -603,7 +603,7 @@ const RIDDLES: RiddleSeed[] = [
       "The obvious answer is 'desert,' but the Realm has a proper name.",
       "Heathen's note points toward survival resources rather than a specific creature.",
       "The new sand ambusher is a major ASA clue.",
-      "Think of the ARK Realm where water scarcity and heat shape the whole adventure."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA map riddle • Scorched Earth"
@@ -619,10 +619,10 @@ const RIDDLES: RiddleSeed[] = [
       "Which Realm turns the end of the world into a starting point?"
     ],
     hints: [
-      "The answer is not an event; it is a Realm.",
+      "The first clue tells you what kind of thing you are seeking.",
       "The Council records repeatedly mention Titans and a world already damaged.",
       "Dreadnoughtus and Wasteland War additions point here.",
-      "Think of the ruined ARK where Titans dominate the landscape."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA map riddle • Extinction"
@@ -641,7 +641,7 @@ const RIDDLES: RiddleSeed[] = [
       "The diversity of environments is the decoy; the new additions are the real trail.",
       "Brendon's note points toward a remastered Realm gaining several unusual records.",
       "Megaraptor, Elderclaw, golems, and Grendel all point toward the same map.",
-      "Think of Valguero Ascended."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 29,
     notes: "Lore-rich ASA map riddle • Valguero"
@@ -660,7 +660,7 @@ const RIDDLES: RiddleSeed[] = [
       "The name suggests destruction, but the clue is about a place full of life.",
       "Panda's note points toward a creature whose story begins with young.",
       "The new giant bird was added to Ragnarok Ascended.",
-      "Think of the official map associated with Gigantoraptor's ASA arrival."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA map riddle • Ragnarok"
@@ -676,10 +676,10 @@ const RIDDLES: RiddleSeed[] = [
       "What ASA collection contains the stranger companions that refuse ordinary rules?"
     ],
     hints: [
-      "The answer is a category, not one animal.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Rin's description is deliberately broader than the official label.",
       "Pyromane, Cosmo, and Elderclaw all point toward it.",
-      "Think of ASA's Fantastic Tames."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 28,
     notes: "Lore-rich ASA riddle • Fantastic Tames"
@@ -698,7 +698,7 @@ const RIDDLES: RiddleSeed[] = [
       "The clue points toward a story rather than a creature.",
       "Bob is the key name; the war is the setting.",
       "Armadoggo is one of the strongest breadcrumbs.",
-      "Think of the Wasteland War chapter of Bob's Tall Tales."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 27,
     notes: "Lore-rich ASA content riddle • Bob's Tall Tales: Wasteland War"
@@ -717,7 +717,7 @@ const RIDDLES: RiddleSeed[] = [
       "The answer can be mistaken for another desert predator if you only read the first line.",
       "Doxo's note suggests movement where survivors normally see terrain.",
       "Scorched Earth Ascended is the key Realm.",
-      "Think of the large burrowing predator introduced there."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Fasolasuchus"
@@ -736,7 +736,7 @@ const RIDDLES: RiddleSeed[] = [
       "The word 'mount' is intentionally too small for the answer.",
       "The Council records three clues: platform, sound, and depth.",
       "All three point toward The Center Ascended.",
-      "Think of the enormous aquatic platform creature."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 31,
     notes: "Lore-first ASA riddle • Shastasaurus"
@@ -755,7 +755,7 @@ const RIDDLES: RiddleSeed[] = [
       "Do not choose the answer merely because it is large.",
       "Heathen's note points toward a defense-breaking ability.",
       "Extinction Ascended is the Realm to investigate.",
-      "Think of the new Titan-hunting sauropod-like creature."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 32,
     notes: "Lore-first ASA riddle • Dreadnoughtus"
@@ -771,10 +771,10 @@ const RIDDLES: RiddleSeed[] = [
       "What guardian makes the forest feel like it has chosen a side?"
     ],
     hints: [
-      "The answer is not a dinosaur.",
+      "The first clue tells you what kind of thing you are seeking.",
       "Panda's warning says the strange behavior is intentional.",
       "The trail begins with Valguero Ascended and extends to other ASA Realms.",
-      "Think of the supernatural forest guardian known as Elderclaw."
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Elderclaw"
@@ -792,8 +792,8 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "A feather may be evidence, ammunition, or misdirection.",
       "Rin's records emphasize ranged danger rather than raw size.",
-      "The answer is tied strongly to Aberration Ascended.",
-      "Think of the feathered creature that fires its own feathers."
+      "The first clue tells you what kind of thing you are seeking.",
+      "The final clue points toward the subject's most distinctive trait."
     ],
     reward: 30,
     notes: "Lore-first ASA riddle • Yi Ling"
@@ -812,7 +812,7 @@ const RIDDLES: RiddleSeed[] = [
     "The horns are a distraction; think about the creature's place in a herd.",
     "Panda's note points toward quiet strength rather than aggression.",
     "The trail leads to Ragnarok Ascended.",
-    "Think of the new tameable bison added to Ragnarok Ascended."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Bison"
@@ -830,8 +830,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not solve the word dragon; solve what changes between them.",
     "Rin's phrase points toward utility hidden inside companionship.",
-    "Look toward Lost Colony Fantastic Tames.",
-    "Think of the four seasonal Drakeling variants."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Drakelings"
@@ -850,7 +850,7 @@ const RIDDLES: RiddleSeed[] = [
     "The body is the decoy; the effect is the clue.",
     "Wizard's note points toward buffs rather than direct attacks.",
     "Look to the Lost Colony Fantastic Tame content.",
-    "Think of the aura-based companion Veilwyn."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Veilwyn"
@@ -868,8 +868,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not search the creature catalogue for claws.",
     "Brendon's note points toward labor rather than battle.",
-    "The clue comes from Bob's Tall Tales Part Two content.",
-    "Think of the robot companion that can organize, repair, and harvest."
+    "The third clue points toward the wider lore surrounding the mystery.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • SIR-5rM8"
@@ -885,10 +885,10 @@ const RIDDLES: RiddleSeed[] = [
     "What swift creature turns hidden dens and temporary tunnels into movement?"
   ],
   "hints": [
-    "The answer is not a burrowing resource or cave.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward travel and misdirection.",
     "The creature was introduced as a Fantastic Tame in 2026.",
-    "Think of the creature that creates hidden dens, gateway tunnels, and dust-cloud escapes."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Burrowbuck"
@@ -907,7 +907,7 @@ const RIDDLES: RiddleSeed[] = [
     "The word boar is necessary but not sufficient.",
     "Heathen's note points toward a creature whose heat has practical uses too.",
     "Follow the final Astraeos update.",
-    "Think of the fiery new boar known as Boaratos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Boaratos"
@@ -923,10 +923,10 @@ const RIDDLES: RiddleSeed[] = [
     "Which custom Realm became a crowded chapter of new ARK mysteries?"
   ],
   "hints": [
-    "The answer is a Realm, not one of its bosses.",
+    "The first clue tells you what kind of thing you are seeking.",
     "EmilioTheGreat's note points toward a world with several distinct regions.",
-    "Look toward the official Astraeos updates.",
-    "Think of the map containing Abyssanthos, Helianthos, and Pyranthos."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos"
@@ -945,7 +945,7 @@ const RIDDLES: RiddleSeed[] = [
     "The clue sounds like a cave, but the scale is larger.",
     "Rin's note points toward underwater spaces that can be inhabited.",
     "The region belongs to Astraeos.",
-    "Think of the expansive deep-sea region called Abyssanthos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Abyssanthos"
@@ -964,7 +964,7 @@ const RIDDLES: RiddleSeed[] = [
     "Do not follow the combat clues first.",
     "Panda's note points toward scenery and peaceful wildlife.",
     "Look among Astraeos's named islands.",
-    "Think of the medium-sized island called Helianthos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Helianthos"
@@ -980,10 +980,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos desert landmass expanded the Realm's harsh side?"
   ],
   "hints": [
-    "The answer is a region, not the weather.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's warning points toward an unusually large desert.",
     "The landmass was added to Astraeos.",
-    "Think of the gigantic desert called Pyranthos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Pyranthos"
@@ -1002,7 +1002,7 @@ const RIDDLES: RiddleSeed[] = [
     "The word void is not metaphorical enough to solve this.",
     "Doxo's note points toward an underwater boss.",
     "Look to Astraeos's ascension encounters.",
-    "Think of Abyssalus the Void Beneath."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Abyssalus"
@@ -1018,10 +1018,10 @@ const RIDDLES: RiddleSeed[] = [
     "What boss rules the upper half of that paired mystery?"
   ],
   "hints": [
-    "The answer is paired with another void-themed encounter.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note suggests vertical contrast.",
-    "Look at Astraeos's ascension bosses.",
-    "Think of Shallocis the Void Above."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Shallocis"
@@ -1040,7 +1040,7 @@ const RIDDLES: RiddleSeed[] = [
     "The name is almost the clue, which is why it is a trap.",
     "Brendon's note says not to search for a hidden synonym.",
     "Look among Astraeos minibosses.",
-    "Think of the miniboss literally named Colossus."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Colossus"
@@ -1058,7 +1058,7 @@ const RIDDLES: RiddleSeed[] = [
     "The sound of the name is part of the misdirection.",
     "Panda's note suggests the title itself is a clue.",
     "Search Astraeos's miniboss records.",
-    "Think of Kroaratos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Kroaratos"
@@ -1077,7 +1077,7 @@ const RIDDLES: RiddleSeed[] = [
     "Do not stop at ordinary turtles.",
     "Wizard's note points toward scale and a special saddle.",
     "Look among Astraeos's new creatures and miniboss rewards.",
-    "Think of the Grand Tortugar."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Grand Tortugar"
@@ -1093,10 +1093,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos boss borrows from several nightmares at once?"
   ],
   "hints": [
-    "The answer is not any one of the three animals in the clue.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward a composite monster.",
-    "Look at Astraeos's added boss fights.",
-    "Think of the Manticore encounter."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Manticore"
@@ -1114,7 +1114,7 @@ const RIDDLES: RiddleSeed[] = [
     "The important word is not the creature's shape.",
     "Rin's underline points toward the title itself.",
     "Look among Astraeos's boss encounters.",
-    "Think of Hydraskos the Unbroken."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Hydraskos the Unbroken"
@@ -1132,7 +1132,7 @@ const RIDDLES: RiddleSeed[] = [
     "The maze is thematic, not necessarily the whole location clue.",
     "Panda's note points toward a crowned labyrinth monster.",
     "Look among Astraeos minibosses.",
-    "Think of Minotarchos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Minotarchos"
@@ -1150,7 +1150,7 @@ const RIDDLES: RiddleSeed[] = [
     "Do not answer with an ordinary scorpion.",
     "Heathen's warning points toward a named encounter.",
     "The title appears among Astraeos's special creatures and bosses.",
-    "Think of the Scorpion King."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Scorpion King"
@@ -1168,8 +1168,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue depends on pairing rather than anatomy.",
     "Panda's note suggests a second royal counterpart.",
-    "Look at Astraeos's special scorpion encounters.",
-    "Think of the Scorpion Queen."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Scorpion Queen"
@@ -1188,7 +1188,7 @@ const RIDDLES: RiddleSeed[] = [
     "The word tide matters more than the word pup.",
     "Rin's note points toward peaceful ocean life.",
     "Look among Astraeos's new spawner additions.",
-    "Think of Tidepups."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Tidepups"
@@ -1207,7 +1207,7 @@ const RIDDLES: RiddleSeed[] = [
     "Eight arms narrows the field but does not finish it.",
     "Brendon's note points toward the name's ancient meaning.",
     "Look among Astraeos ocean spawns.",
-    "Think of Palaeoctopus."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Palaeoctopus"
@@ -1223,10 +1223,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos vessel bears the ancient three-rowed name?"
   ],
   "hints": [
-    "The answer is not a creature or saddle.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's number clue refers to the historical meaning of the name.",
     "Look among Astraeos's new ship types.",
-    "Think of the Trireme."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Trireme"
@@ -1244,8 +1244,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The word souls is intentionally misleading if you expect a creature.",
     "Doxo's note points toward a reward rather than a tame.",
-    "Look at Astraeos's apex drops.",
-    "Think of Astral Souls."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Souls"
@@ -1261,10 +1261,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos apex drop carries the language of hexes?"
   ],
   "hints": [
-    "The answer is a reward, not a spell.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward the magical wording in its name.",
     "Look among Astraeos apex drops.",
-    "Think of Hex Coins."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Hex Coins"
@@ -1280,10 +1280,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Valguero feature remembers those who ascended?"
   ],
   "hints": [
-    "The answer is not a boss or creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward names being the important structure.",
-    "Look at Valguero Ascended's memorial feature.",
-    "Think of the Valguero Memorial."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Valguero Memorial"
@@ -1302,7 +1302,7 @@ const RIDDLES: RiddleSeed[] = [
     "The answer sounds like terrain, but it is an encounter.",
     "Heathen's note points toward a guardian rather than a location.",
     "Look among Ragnarok Ascended boss fights.",
-    "Think of Nunatak."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Nunatak"
@@ -1317,10 +1317,10 @@ const RIDDLES: RiddleSeed[] = [
     "What new creature made Ragnarok's herds feel different?"
   ],
   "hints": [
-    "The answer is not the map itself.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward a new creature in an old Realm.",
-    "Look at Ragnarok Ascended's creature additions.",
-    "Think of Bison."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ragnarok Bison"
@@ -1329,7 +1329,7 @@ const RIDDLES: RiddleSeed[] = [
   "answer": "Deinonychus Nest",
   "category": "item",
   "lines": [
-    "The answer is not the hunter, but the place where the hunter begins.",
+    "The first clue tells you what kind of thing you are seeking.",
     "A nest can look like scenery until someone understands what it protects.",
     "Valguero's cliffs keep more secrets than the Council first recorded.",
     "Rin wrote: 'Look down before you look up.'",
@@ -1338,8 +1338,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not solve the creature; solve what it leaves behind.",
     "Rin's note points toward reproduction and location.",
-    "The clue belongs to Valguero's Deinonychus.",
-    "Think of a Deinonychus nest."
+    "The third clue places the mystery in a particular part of the Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Deinonychus Nest"
@@ -1355,10 +1355,10 @@ const RIDDLES: RiddleSeed[] = [
     "What spectral hunter wore Yi Ling's shape?"
   ],
   "hints": [
-    "The answer is a seasonal variant, not the ordinary creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's warning points toward Fear Ascended.",
     "Look among the event's ghost creatures.",
-    "Think of Ghost Yi Ling."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ghost Yi Ling"
@@ -1377,7 +1377,7 @@ const RIDDLES: RiddleSeed[] = [
     "The size is the clue, but the season is the lock.",
     "Panda's note points toward Fear Ascended variants.",
     "Look among the ghost creatures.",
-    "Think of Ghost Gigantoraptor."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ghost Gigantoraptor"
@@ -1393,10 +1393,10 @@ const RIDDLES: RiddleSeed[] = [
     "What spectral predator borrowed the Ceratosaurus shape?"
   ],
   "hints": [
-    "The answer is a ghostly variant, not a new species.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward Fear Ascended.",
-    "Look at the event's wild ghost creatures.",
-    "Think of Ghost Ceratosaurus."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ghost Ceratosaurus"
@@ -1411,10 +1411,10 @@ const RIDDLES: RiddleSeed[] = [
     "What spectral bird of prey appeared during Fear?"
   ],
   "hints": [
-    "The answer is not a new flyer; it is an altered one.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's behavior is the clue to the season.",
     "Look among Fear Ascended ghost creatures.",
-    "Think of Ghost Argentavis."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ghost Argentavis"
@@ -1432,8 +1432,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The answer keeps the original creature's identity.",
     "Heathen's note points toward a ghost variant rather than a normal owl.",
-    "Look at Fear Ascended.",
-    "Think of Ghost Snow Owl."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ghost Snow Owl"
@@ -1449,10 +1449,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Fear Ascended tool weakens wild ghosts?"
   ],
   "hints": [
-    "The answer is a tool, not a creature or cosmetic.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward weakening rather than defeating.",
-    "Look at the Fear Ascended event gear.",
-    "Think of the Ecto Lantern."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ecto Lantern"
@@ -1468,10 +1468,10 @@ const RIDDLES: RiddleSeed[] = [
     "What event resource replaced direct ghost costume drops?"
   ],
   "hints": [
-    "The answer is a crafting material, not a ghost.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward turning an event creature into a resource.",
-    "Look at Fear Ascended crafting changes.",
-    "Think of Ectoplasm."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ectoplasm"
@@ -1489,8 +1489,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The silly wording is deliberate; the material is real.",
     "Doxo's note points toward a resource from event enemies.",
-    "Look at the TMNT Mouser event additions.",
-    "Think of Mutagen Ooze."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Mutagen Ooze"
@@ -1508,8 +1508,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not search only for a new species; the old one changed.",
     "Rin's note points toward a creature overhaul.",
-    "Look at the Araneo TLC in ASA.",
-    "Think of the remastered Araneo."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Araneo"
@@ -1525,10 +1525,10 @@ const RIDDLES: RiddleSeed[] = [
     "Which apex carnivore remains one of ARK's classic giants?"
   ],
   "hints": [
-    "The answer is deliberately not a new ASA creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward a classic ARK legend.",
     "Look among the major ASA creature TLC discussions.",
-    "Think of Giganotosaurus."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Giganotosaurus"
@@ -1544,10 +1544,10 @@ const RIDDLES: RiddleSeed[] = [
     "What nocturnal predator turns darkness into strength?"
   ],
   "hints": [
-    "The answer is about behavior more than appearance.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward nighttime advantage.",
-    "Think of ARK's cave-dwelling nocturnal giant.",
-    "Think of Megalosaurus."
+    "The final clue points toward the subject's most distinctive trait.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Megalosaurus"
@@ -1563,10 +1563,10 @@ const RIDDLES: RiddleSeed[] = [
     "What giant flyer carries the idea of a moving platform?"
   ],
   "hints": [
-    "The answer is a creature, but the platform is the important clue.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward utility through size.",
-    "Look toward the classic platform flyer of ARK.",
-    "Think of Quetzalcoatlus, commonly called the Quetzal."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Quetzalcoatlus"
@@ -1584,8 +1584,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue points toward vertical hunting rather than speed.",
     "Panda's branch is the important word.",
-    "Think of the classic tree-clinging ambush predator.",
-    "Think of Thylacoleo."
+    "The final clue points toward the subject's most distinctive trait.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Thylacoleo"
@@ -1601,10 +1601,10 @@ const RIDDLES: RiddleSeed[] = [
     "What enormous herbivore can carry a tribe through the wilderness?"
   ],
   "hints": [
-    "The answer is not merely 'large dinosaur.'",
+    "The first clue tells you what kind of thing you are seeking.'",
     "Rin's note points toward the platform saddle.",
-    "Think of the classic massive herbivore with a platform saddle.",
-    "Think of Brontosaurus."
+    "The final clue points toward the subject's most distinctive trait.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Brontosaurus"
@@ -1622,7 +1622,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The neck is more useful than the word sea.",
     "Doxo's note points toward a long-necked marine predator.",
-    "Think of the classic ARK Plesiosaur."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Plesiosaur"
@@ -1640,8 +1640,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue is deliberately simple; the history is the harder part.",
     "Heathen's note points toward the iconic ocean predator.",
-    "Think of ARK's original giant shark.",
-    "Think of Megalodon."
+    "The final clue points toward the subject's most distinctive trait.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Megalodon"
@@ -1657,10 +1657,10 @@ const RIDDLES: RiddleSeed[] = [
     "What little carnivore turns numbers into its weapon?"
   ],
   "hints": [
-    "The answer is not a large predator hiding nearby.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's warning is about numbers.",
-    "Think of the tiny pack-minded dinosaur of ARK.",
-    "Think of Compy."
+    "The final clue points toward the subject's most distinctive trait.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Compy"
@@ -1678,7 +1678,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Ignore the horns at first; think about the silhouette.",
     "Wizard's note points toward the facial horns.",
-    "Think of the classic Carnotaurus."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Carnotaurus"
@@ -1694,9 +1694,9 @@ const RIDDLES: RiddleSeed[] = [
     "What strange herbivore makes its claws the center of the clue?"
   ],
   "hints": [
-    "The answer is not a carnivore despite the threatening imagery.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward a herbivore with enormous claws.",
-    "Think of Therizinosaurus."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Therizinosaurus"
@@ -1712,9 +1712,9 @@ const RIDDLES: RiddleSeed[] = [
     "What giant insect turns parasitism into a chapter of ARK lore?"
   ],
   "hints": [
-    "The answer is not a bird or dragon despite the flight clue.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward unusual reproduction.",
-    "Think of Rhyniognatha."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Rhyniognatha"
@@ -1732,7 +1732,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The word oasis is the strongest clue, but not the whole answer.",
     "Heathen's note points toward a creature that provides survival utility.",
-    "Think of Oasisaur."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Oasisaur"
@@ -1750,7 +1750,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not solve this as an ordinary flying creature.",
     "Rin's note points toward climbing and camouflage.",
-    "Think of the Rock Drake."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Rock Drake"
@@ -1766,9 +1766,9 @@ const RIDDLES: RiddleSeed[] = [
     "What giant crustacean turns grabbing into utility?"
   ],
   "hints": [
-    "The answer is not a crab from ordinary beaches.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward grabbing rather than biting.",
-    "Think of Karkinos."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Karkinos"
@@ -1784,9 +1784,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Aberrant terror turns reproduction into a survival mechanic?"
   ],
   "hints": [
-    "The answer is a creature, but the life cycle is the real clue.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward implantation rather than eggs.",
-    "Think of the Reaper."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Reaper"
@@ -1804,7 +1804,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue points toward subterranean movement.",
     "Heathen's note says where to watch.",
-    "Think of the Basilisk."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Basilisk"
@@ -1820,9 +1820,9 @@ const RIDDLES: RiddleSeed[] = [
     "What shoulder companion became an icon of Aberration survival?"
   ],
   "hints": [
-    "The answer is not a lamp or structure.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward a living source of light.",
-    "Think of Bulbdog."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Bulbdog"
@@ -1838,9 +1838,9 @@ const RIDDLES: RiddleSeed[] = [
     "What glowpet turns illumination into awareness?"
   ],
   "hints": [
-    "The answer is a creature, not a tool.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward a light-producing shoulder pet.",
-    "Think of Featherlight."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Featherlight"
@@ -1858,7 +1858,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The horns are not for combat.",
     "Panda's note points toward a glowpet.",
-    "Think of Shinehorn."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Shinehorn"
@@ -1874,9 +1874,9 @@ const RIDDLES: RiddleSeed[] = [
     "What glowpet carries light behind it?"
   ],
   "hints": [
-    "The answer is in the name, but not the full reason.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward illumination in Aberration.",
-    "Think of Glowtail."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Glowtail"
@@ -1894,7 +1894,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not solve this as a flying reptile.",
     "Wizard's note points toward carrying babies and gliding.",
-    "Think of Maewing."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Maewing"
@@ -1912,7 +1912,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The word shadow is more useful than the word mane.",
     "Rin's note points toward stealth and group behavior.",
-    "Think of Shadowmane."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Shadowmane"
@@ -1928,9 +1928,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis companion turns a dolphin-like body into a spacefaring mount?"
   ],
   "hints": [
-    "The answer is not an ordinary dolphin.",
+    "The first clue tells you what kind of thing you are seeking.",
     "EmilioTheGreat's note points toward the spaceborne version.",
-    "Think of Astrodelphis."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astrodelphis"
@@ -1948,7 +1948,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not solve this as a normal tame.",
     "Brendon's note points toward a technological creature.",
-    "Think of the Tek Stryder."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Tek Stryder"
@@ -1966,7 +1966,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue is about control, not size.",
     "Doxo's note points toward mind manipulation.",
-    "Think of Noglin."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Noglin"
@@ -1982,9 +1982,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis creature changes dramatically after consuming its strange resource?"
   ],
   "hints": [
-    "The answer is a transformation, not a mutation.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's warning points toward two forms.",
-    "Think of Ferox."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Ferox"
@@ -2002,7 +2002,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The cold is only half the clue.",
     "Heathen's note points toward extraordinary mobility.",
-    "Think of Managarmr."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Managarmr"
@@ -2018,9 +2018,9 @@ const RIDDLES: RiddleSeed[] = [
     "What owl turns a frozen descent into aid?"
   ],
   "hints": [
-    "The answer is a bird with a support ability.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward healing rather than damage.",
-    "Think of Snow Owl."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Snow Owl"
@@ -2036,9 +2036,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Extinction creature turns stored gas into movement?"
   ],
   "hints": [
-    "The answer is not a hot-air balloon.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward a living gas-filled creature.",
-    "Think of Gasbags."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Gasbags"
@@ -2047,7 +2047,7 @@ const RIDDLES: RiddleSeed[] = [
   "answer": "Managarmr Ice Breath",
   "category": "ability",
   "lines": [
-    "The answer is cold, but it is not weather.",
+    "The first clue tells you what kind of thing you are seeking.",
     "It leaves the mouth and turns distance into a problem for whoever stands in its path.",
     "The Council's Extinction hunters learned that movement does not matter if the air itself becomes hostile.",
     "Heathen wrote: 'Run before the breath arrives.'",
@@ -2056,7 +2056,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue describes an attack, not the creature.",
     "Heathen's warning points toward ranged freezing.",
-    "Think of the Managarmr's ice breath."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Managarmr Ice Breath"
@@ -2072,10 +2072,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Wasteland War companion became a symbol of loyalty?"
   ],
   "hints": [
-    "The answer is not a dinosaur or robot.",
+    "The first clue tells you what kind of thing you are seeking.",
     "EmilioTheGreat's note points toward a canine companion.",
-    "Look toward Bob's Tall Tales: Wasteland War.",
-    "Think of Armadoggo."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Armadoggo"
@@ -2091,9 +2091,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Lost Colony companion handles routine work?"
   ],
   "hints": [
-    "The answer is a companion, not a crafting station.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward automation.",
-    "Think of SIR-5rM8."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • SIR-5rM8"
@@ -2111,7 +2111,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not answer with the web itself.",
     "Rin's note points toward information rather than movement.",
-    "Think of Cosmo's threat-sense ability."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Cosmo Threat Sense"
@@ -2127,10 +2127,10 @@ const RIDDLES: RiddleSeed[] = [
     "What form lets the Pyromane ride on a survivor's shoulder?"
   ],
   "hints": [
-    "The answer is a form, not the creature's name alone.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward the smaller silhouette.",
-    "Look at Pyromane's alternate form.",
-    "Think of the Pyromane shoulder form."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Pyromane Shoulder Form"
@@ -2146,10 +2146,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Fantastic Tame was described as a supernatural forest guardian?"
   ],
   "hints": [
-    "The answer is a title and a creature idea at once.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward lore surrounding Elderclaw.",
     "Look to the Elderclaw Fantastic Tame release.",
-    "Think of Elderclaw, the Forest Guardian."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Elderclaw Forest Guardian"
@@ -2168,7 +2168,7 @@ const RIDDLES: RiddleSeed[] = [
     "The creature and item are separate answers.",
     "Brendon's note points toward utility beyond riding.",
     "Look among Astraeos miniboss loot.",
-    "Think of the Grand Tortugar Saddle."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Grand Tortugar Saddle"
@@ -2184,10 +2184,10 @@ const RIDDLES: RiddleSeed[] = [
     "What rare saddle shares its name with Ossidon?"
   ],
   "hints": [
-    "The answer is an item, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward rare loot.",
-    "Look at Astraeos miniboss reward tables.",
-    "Think of the Ossidon Saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ossidon Saddle"
@@ -2198,15 +2198,15 @@ const RIDDLES: RiddleSeed[] = [
   "lines": [
     "A new predator needs a new way to carry a survivor.",
     "The Council's saddle ledger grew another line when Valguero Ascended opened.",
-    "The answer is simple in name and less simple in acquisition.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen wrote: 'New claws deserve new leather.'",
     "What saddle belongs to the Megaraptor?"
   ],
   "hints": [
     "The creature's name is only half the answer.",
     "Heathen's note points toward equipment.",
-    "Look at Valguero Ascended's special loot.",
-    "Think of the Megaraptor Saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Megaraptor Saddle"
@@ -2221,10 +2221,10 @@ const RIDDLES: RiddleSeed[] = [
     "What equipment belongs to the Fasolasuchus?"
   ],
   "hints": [
-    "The answer is equipment, not the burrowing creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward a saddle.",
-    "Look at Scorched Earth Ascended equipment.",
-    "Think of the Fasolasuchus Saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Fasolasuchus Saddle"
@@ -2241,8 +2241,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue is deliberately about the relationship between rider and weapon.",
     "Wizard's note points toward a creature-specific saddle.",
-    "Look at Yi Ling's ASA equipment.",
-    "Think of the Yi Ling Saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Yi Ling Saddle"
@@ -2258,10 +2258,10 @@ const RIDDLES: RiddleSeed[] = [
     "What platform equipment belongs to Dreadnoughtus?"
   ],
   "hints": [
-    "The answer is the platform equipment, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward mobile infrastructure.",
-    "Look at Dreadnoughtus's platform saddle.",
-    "Think of the Dreadnoughtus platform."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Dreadnoughtus Platform"
@@ -2279,8 +2279,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue is about building rather than swimming.",
     "Brendon's note points toward a platform saddle.",
-    "Look at Shastasaurus equipment on The Center Ascended.",
-    "Think of the Shastasaurus platform saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Shastasaurus Platform"
@@ -2296,10 +2296,10 @@ const RIDDLES: RiddleSeed[] = [
     "What remastered Realm received those additions?"
   ],
   "hints": [
-    "The answer is the map, not one of its creatures.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward a remaster rather than a new world.",
-    "Look at the ASA Ragnarok release.",
-    "Think of Ragnarok Ascended."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Ragnarok Ascended"
@@ -2314,10 +2314,10 @@ const RIDDLES: RiddleSeed[] = [
     "What remastered Realm opened that chapter?"
   ],
   "hints": [
-    "The answer is the map version, not the old map name alone.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward the Ascended remaster.",
-    "Look at the 2025 Valguero release.",
-    "Think of Valguero Ascended."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Valguero Ascended"
@@ -2335,7 +2335,7 @@ const RIDDLES: RiddleSeed[] = [
     "The word center is deliberately not a geography lesson.",
     "Rin's note points toward the remastered map.",
     "Follow the Shastasaurus trail.",
-    "Think of The Center Ascended."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • The Center Ascended"
@@ -2350,10 +2350,10 @@ const RIDDLES: RiddleSeed[] = [
     "Which remastered Realm received Dreadnoughtus?"
   ],
   "hints": [
-    "The answer is the map version, not the boss.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward a remastered apocalypse.",
     "Follow the Dreadnoughtus trail.",
-    "Think of Extinction Ascended."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Extinction Ascended"
@@ -2368,10 +2368,10 @@ const RIDDLES: RiddleSeed[] = [
     "Which remastered Realm received the buried hunter?"
   ],
   "hints": [
-    "The answer is the map version, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward the remastered desert.",
     "Follow the Fasolasuchus trail.",
-    "Think of Scorched Earth Ascended."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Scorched Earth Ascended"
@@ -2386,10 +2386,10 @@ const RIDDLES: RiddleSeed[] = [
     "Which expansion chapter houses these newer companions?"
   ],
   "hints": [
-    "The answer is a story chapter, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward the expansion's name and theme.",
-    "Look toward the Lost Colony content releases.",
-    "Think of Lost Colony."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Lost Colony"
@@ -2405,10 +2405,10 @@ const RIDDLES: RiddleSeed[] = [
     "What story series follows Bob through the new ARKs?"
   ],
   "hints": [
-    "The answer is a story series, not one chapter.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward the narrator at the center.",
-    "Look toward ASA's Bob's Tall Tales content.",
-    "Think of Bob's Tall Tales."
+    "The third clue narrows the era or Realm.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Bob's Tall Tales"
@@ -2424,10 +2424,10 @@ const RIDDLES: RiddleSeed[] = [
     "What environmental feature makes Abyssanthos unusually buildable underwater?"
   ],
   "hints": [
-    "The answer is an environmental feature, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward breathable spaces.",
-    "Look at Astraeos's Abyssanthos region.",
-    "Think of its underwater air pockets."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Abyssanthos Air Pockets"
@@ -2443,10 +2443,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Burrowbuck utility creates temporary travel tunnels?"
   ],
   "hints": [
-    "The answer is an ability, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward temporary routes.",
-    "Look at Burrowbuck's mobility utilities.",
-    "Think of its gateway tunnels."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Burrowbuck Gateway Tunnel"
@@ -2462,10 +2462,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Burrowbuck trick clouds the pursuit?"
   ],
   "hints": [
-    "The answer is not the tunnel.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward misdirection rather than distance.",
-    "Look at Burrowbuck's defensive abilities.",
-    "Think of its disorienting dust cloud."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Burrowbuck Dust Cloud"
@@ -2481,10 +2481,10 @@ const RIDDLES: RiddleSeed[] = [
     "What concealed Burrowbuck trick punishes reckless pursuit?"
   ],
   "hints": [
-    "The answer is not the dust cloud.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward a hazard left behind.",
-    "Look at Burrowbuck's ambush utilities.",
-    "Think of its concealed hazards."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Burrowbuck Hidden Hazard"
@@ -2500,10 +2500,10 @@ const RIDDLES: RiddleSeed[] = [
     "What lingering effect belongs to Boaratos?"
   ],
   "hints": [
-    "The answer is an effect, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward damage that persists.",
-    "Look at Boaratos's combat kit.",
-    "Think of its bleeding effect."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Boaratos Bleed"
@@ -2519,10 +2519,10 @@ const RIDDLES: RiddleSeed[] = [
     "What fiery utility lets Boaratos char vegetation?"
   ],
   "hints": [
-    "The answer is a utility effect, not its attack.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward gathering and fire.",
-    "Look at Boaratos's non-combat utility.",
-    "Think of its tree-charring ability."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Boaratos Charring"
@@ -2538,10 +2538,10 @@ const RIDDLES: RiddleSeed[] = [
     "What principle lies behind Elderclaw's unusual taming?"
   ],
   "hints": [
-    "The answer is the method, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward relationship rather than force.",
-    "Look at Elderclaw's special taming process.",
-    "Think of its trust-based taming."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Elderclaw Tame Trust"
@@ -2559,8 +2559,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The clue is about movement becoming an attack.",
     "Wizard's note points toward a gap-closing move.",
-    "Look at Megaraptor's combat abilities.",
-    "Think of its pounce."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Megaraptor Pounce"
@@ -2576,9 +2576,9 @@ const RIDDLES: RiddleSeed[] = [
     "What Deinonychus trick lets it cling to larger creatures?"
   ],
   "hints": [
-    "The answer is an ability, not the dinosaur.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward using the target as terrain.",
-    "Think of Deinonychus's cling mechanic."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Deinonychus Cling"
@@ -2594,10 +2594,10 @@ const RIDDLES: RiddleSeed[] = [
     "What ranged attack sends Yi Ling's feathers outward?"
   ],
   "hints": [
-    "The answer is not the individual feather item.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward a grouped projectile attack.",
-    "Look at Yi Ling's ranged combat kit.",
-    "Think of its feather volley."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Yi Ling Feather Volley"
@@ -2613,10 +2613,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Shastasaurus utility lets survivors build upon its platform?"
   ],
   "hints": [
-    "The answer is an ability/utility, not the saddle itself.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward construction on a living platform.",
-    "Look at Shastasaurus's platform utility.",
-    "Think of its ability to support structures."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Shastasaurus Platform Building"
@@ -2625,17 +2625,17 @@ const RIDDLES: RiddleSeed[] = [
   "answer": "Dreadnoughtus Anti-Titan Roar",
   "category": "ability",
   "lines": [
-    "The answer is neither a weapon nor a shield.",
+    "The first clue tells you what kind of thing you are seeking.",
     "It is a command delivered as sound to something that should not have to listen.",
     "The Council's Titan records changed after the roar was documented.",
     "EmilioTheGreat wrote: 'Make the giant answer the giant.'",
     "What Dreadnoughtus roar interferes with Titan protection?"
   ],
   "hints": [
-    "The answer is the roar's purpose, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "EmilioTheGreat's note points toward one giant countering another.",
-    "Look at Dreadnoughtus's Extinction role.",
-    "Think of its anti-Titan roar."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Dreadnoughtus Anti-Titan Roar"
@@ -2651,10 +2651,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Cosmo utility creates a web line for traversal?"
   ],
   "hints": [
-    "The answer is a traversal utility, not the creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward a fired or placed web line.",
-    "Look at Cosmo's web-slinging abilities.",
-    "Think of its web line."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Cosmo Web Line"
@@ -2670,10 +2670,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Cosmo action sends webbing outward?"
   ],
   "hints": [
-    "The answer is an action, not the resulting line.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward ranged webbing.",
-    "Look at Cosmo's traversal toolkit.",
-    "Think of Cosmo's web shot."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Cosmo Web Shot"
@@ -2689,10 +2689,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Araneo movement uses webs and elevated terrain?"
   ],
   "hints": [
-    "The answer is movement, not a new species.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward the TLC's traversal changes.",
-    "Look at the ASA Araneo TLC.",
-    "Think of its web-line traversal."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Araneo Web Traverse"
@@ -2708,10 +2708,10 @@ const RIDDLES: RiddleSeed[] = [
     "What server setting controls the names displayed on Valguero's memorial?"
   ],
   "hints": [
-    "The answer is a server configuration, not the memorial itself.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward administrator-controlled names.",
-    "Look at Valguero Ascended's memorial configuration.",
-    "Think of ValgueroMemorialEntries."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Valguero Memorial Entries"
@@ -2727,10 +2727,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos system changed how its ocean behaves?"
   ],
   "hints": [
-    "The answer is an environmental system, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward dynamic water behavior.",
-    "Look at Astraeos's ocean updates.",
-    "Think of its new ocean wave physics."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos Ocean Wave Physics"
@@ -2746,10 +2746,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos structure begins the path toward its boss encounters?"
   ],
   "hints": [
-    "The answer is a structure, not a boss.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward a terminal used for boss content.",
-    "Look at the Astraeos release additions.",
-    "Think of the western boss terminal."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos Boss Terminal"
@@ -2765,10 +2765,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos creature carries an astral identity and cave-loot purpose?"
   ],
   "hints": [
-    "The answer is not the ordinary wolf.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward the astral variant.",
-    "Look at Astraeos's added creatures.",
-    "Think of Astral Direwolf."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Astral Direwolf"
@@ -2786,8 +2786,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The word 'astral' matters more than the word mammoth.",
     "Panda's note points toward the prefix.",
-    "Look at Astraeos's astral creatures.",
-    "Think of Astral Mammoth."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Mammoth"
@@ -2805,8 +2805,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Do not answer with the ordinary giant shark.",
     "Doxo's note points toward the astral variant.",
-    "Look at Astraeos's custom ocean spawns.",
-    "Think of Astral Megalodon."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Megalodon"
@@ -2824,8 +2824,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The important clue is the prefix.",
     "Heathen's note points toward a named variant.",
-    "Look at Astraeos's astral ocean creatures.",
-    "Think of Astral Mosasaurus."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Mosasaurus"
@@ -2841,10 +2841,10 @@ const RIDDLES: RiddleSeed[] = [
     "What astral cephalopod haunts Astraeos?"
   ],
   "hints": [
-    "The answer is not ordinary Tusoteuthis.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward the variant name.",
-    "Look at Astraeos's astral ocean additions.",
-    "Think of Astral Tusoteuthis."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Tusoteuthis"
@@ -2856,14 +2856,14 @@ const RIDDLES: RiddleSeed[] = [
     "A river predator can become a myth without leaving the water.",
     "The Council's astral records add a celestial prefix to an ancient ambush.",
     "The jaws are ordinary enough to be the wrong clue.",
-    "Rin wrote: 'Look at the name before the teeth.'",
+    "Rin wrote: 'The third clue narrows the era, Realm, or context.'",
     "What astral crocodilian appears in Astraeos?"
   ],
   "hints": [
-    "The answer is the named variant, not the base creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward the prefix.",
-    "Look at Astraeos's custom creatures.",
-    "Think of Astral Deinosuchus."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astral Deinosuchus"
@@ -2879,10 +2879,10 @@ const RIDDLES: RiddleSeed[] = [
     "What biome becomes the defining stage of the Genesis Part 1 remaster?"
   ],
   "hints": [
-    "The answer is a biome concept rather than the entire map.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward the maritime redesign.",
-    "Look at the Genesis Part 1 future content description.",
-    "Think of the Genesis Ocean biome."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Genesis Ocean"
@@ -2898,10 +2898,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis ocean encounters scatter across the islands?"
   ],
   "hints": [
-    "The answer is a location type, not one specific camp.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward the difference between hostile and friendly camps.",
-    "Look at the Genesis Ocean pirate content.",
-    "Think of the Pirate Camps."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Pirate Camps"
@@ -2917,10 +2917,10 @@ const RIDDLES: RiddleSeed[] = [
     "What neutral outpost offers discounted goods in the Genesis ocean?"
   ],
   "hints": [
-    "The answer is a camp, not the entire pirate system.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward neutral merchants.",
-    "Look at the Genesis Ocean outposts.",
-    "Think of the Market Camp."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Market Camp"
@@ -2936,10 +2936,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis ocean encounter is built around a chained Megachelon?"
   ],
   "hints": [
-    "The answer is an encounter state, not a normal tame.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward the chained condition.",
-    "Look at the Genesis Ocean biome additions.",
-    "Think of the Chained Megachelon."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Chained Megachelon"
@@ -2955,10 +2955,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis Ocean location carries that sulfurous name?"
   ],
   "hints": [
-    "The answer is a location, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward the name's infernal meaning.",
     "Look among the Genesis Ocean named areas.",
-    "Think of Brimstone Bay."
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Brimstone Bay"
@@ -2974,10 +2974,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Genesis Ocean location serves as a market port?"
   ],
   "hints": [
-    "The answer is a named location.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward trade and travel.",
-    "Look at the Genesis Ocean additions.",
-    "Think of Market Port."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Market Port"
@@ -2993,10 +2993,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos landscape is known for flower-filled plains?"
   ],
   "hints": [
-    "The answer is a subregion, not the whole island.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward a peaceful landscape.",
-    "Look at Helianthos.",
-    "Think of the flower-filled plains there."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Helianthos Plains"
@@ -3012,10 +3012,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos location became known among the Realm's cave records?"
   ],
   "hints": [
-    "The answer is a location, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Brendon's note points toward a cave with its own history.",
-    "Look at Astraeos cave records.",
-    "Think of the Wyvern Cave."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Astraeos Wyvern Cave"
@@ -3033,8 +3033,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The number five is the clue to the feature, not a random count.",
     "Rin's note points toward artifact hunting.",
-    "Look at Astraeos's added caves.",
-    "Think of the five new Artifact Caves."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos Artifact Caves"
@@ -3050,10 +3050,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos cave hides a Rhyniognatha drone nest?"
   ],
   "hints": [
-    "The answer is a location built around a nest.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward a specialized cave.",
-    "Look at Astraeos cave additions.",
-    "Think of the Rhyniognatha Drone Nest Cave."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Rhyniognatha Drone Nest Cave"
@@ -3069,10 +3069,10 @@ const RIDDLES: RiddleSeed[] = [
     "What lightning-charged giant can appear in Astraeos's highest OSDs?"
   ],
   "hints": [
-    "The answer is a variant, not an ordinary Giga.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward an elemental version.",
-    "Look at Astraeos Legendary OSD enemies.",
-    "Think of Lightning Giga."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos Lightning Giga"
@@ -3088,10 +3088,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Astraeos defense tier carries the highest title?"
   ],
   "hints": [
-    "The answer is a defense tier, not a creature.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward the name of the tier.",
-    "Look at Astraeos OSD changes.",
-    "Think of Legendary OSDs."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Legendary OSD"
@@ -3107,10 +3107,10 @@ const RIDDLES: RiddleSeed[] = [
     "What defense activity received a custom Astraeos version?"
   ],
   "hints": [
-    "The answer is the defense event, not one enemy.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward waves around a protected objective.",
-    "Look at Astraeos's OSD changes.",
-    "Think of the Astraeos OSDs."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos OSD"
@@ -3126,10 +3126,10 @@ const RIDDLES: RiddleSeed[] = [
     "What reward pool gathers rare Astraeos miniboss prizes?"
   ],
   "hints": [
-    "The answer is a loot category, not a single item.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Wizard's note points toward rewards from special encounters.",
-    "Look at Astraeos miniboss reward tables.",
-    "Think of Astraeos miniboss loot."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Astraeos Miniboss Loot"
@@ -3145,10 +3145,10 @@ const RIDDLES: RiddleSeed[] = [
     "What rare loot item belongs to the Grand Tortugar?"
   ],
   "hints": [
-    "The answer is a reward item.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward miniboss loot.",
-    "Look at Astraeos special loot.",
-    "Think of the Grand Tortugar Saddle."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 31,
   "notes": "Lore-rich ASA riddle • Astraeos Grand Tortugar Saddle Loot"
@@ -3164,10 +3164,10 @@ const RIDDLES: RiddleSeed[] = [
     "What continuation follows Bob and Meeka toward the Evercave?"
   ],
   "hints": [
-    "The answer is a story title, not a map.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Rin's note points toward the next chapter of Bob's journey.",
-    "Look at the announced Tides of Fortune content.",
-    "Think of Bob's True Tales."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Bob's True Tales"
@@ -3183,10 +3183,10 @@ const RIDDLES: RiddleSeed[] = [
     "What Bob's True Tales chapter turns Genesis into a maritime adventure?"
   ],
   "hints": [
-    "The answer is a story chapter, not the ocean itself.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Doxo's note points toward a maritime expansion.",
-    "Look at Bob's True Tales: Tides of Fortune.",
-    "Think of Tides of Fortune."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Tides of Fortune"
@@ -3202,10 +3202,10 @@ const RIDDLES: RiddleSeed[] = [
     "What ancient destination are Bob and Meeka seeking?"
   ],
   "hints": [
-    "The answer is a destination, not a generic cave.",
+    "The first clue tells you what kind of thing you are seeking.",
     "EmilioTheGreat's note points toward a named story location.",
-    "Look at the Tides of Fortune story premise.",
-    "Think of the Evercave."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Evercave"
@@ -3222,8 +3222,8 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The unusual name is the strongest clue.",
     "Wizard's note points toward an official ASA creature addition.",
-    "Look at the 2026 ARK: Additions release.",
-    "Think of Concavenator."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Concavenator"
@@ -3239,10 +3239,10 @@ const RIDDLES: RiddleSeed[] = [
     "What ARK: Additions giant turns punishment into escalation?"
   ],
   "hints": [
-    "The answer is a creature whose danger increases during prolonged combat.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Heathen's note points toward resilience and momentum.",
-    "Look at the official ASA ARK: Additions creature release.",
-    "Think of Acrocanthosaurus."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Acrocanthosaurus"
@@ -3258,10 +3258,10 @@ const RIDDLES: RiddleSeed[] = [
     "What classic ARK creature received a later TLC in ASA?"
   ],
   "hints": [
-    "The answer is a creature update, not a new species.",
+    "The first clue tells you what kind of thing you are seeking.",
     "Panda's note points toward a TLC rather than a release.",
-    "Look at the recent ASA TLC additions.",
-    "Think of Therizinosaurus's TLC."
+    "The third clue narrows the era, Realm, or context.",
+    "The final clue points toward the subject's most distinctive trait."
   ],
   "reward": 28,
   "notes": "Lore-rich ASA riddle • Therizinosaurus TLC"
@@ -3278,7 +3278,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "Three is the obvious clue; the myth is the lock.",
     "Wizard's note points toward a multi-headed Fantastic Tame.",
-    "Look at Fantastic Tames Season 1.",
+    "The third clue narrows the era, Realm, or context.",
     "The final clue points toward the three-headed Fantastic Tame."
   ],
   "reward": 28,
@@ -3297,7 +3297,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The mouth is the clue, but the name is not simply 'giant.'",
     "Doxo's note points toward an unusual consumption ability.",
-    "Look at Fantastic Tames Season 1.",
+    "The third clue narrows the era, Realm, or context.",
     "The final clue points toward the Fantastic Tame whose appetite is part of its mystery."
   ],
   "reward": 28,
@@ -3316,7 +3316,7 @@ const RIDDLES: RiddleSeed[] = [
   "hints": [
     "The answer concerns a future map release rather than a current creature.",
     "Rin's note points toward the roadmap.",
-    "Look at the announced December 2026 ASA roadmap.",
+    "The third clue narrows the era, Realm, or context.",
     "The final clue points toward the northern Realm named in the roadmap."
   ],
   "reward": 28,
