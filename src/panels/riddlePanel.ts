@@ -363,10 +363,10 @@ export async function handleRiddleInteraction(interaction: Interaction): Promise
     const unlocked = hints[index];
     const remaining = Math.max(0, hints.length - hintNumber);
     const progress = remaining
-      ? "\\n\\n*The Realm will reveal a sharper clue after another wrong guess.*"
-      : "\\n\\n*That is the final clue. The answer is still yours to uncover.*";
+      ? "\n\n*The Realm will reveal a sharper clue after another wrong guess.*"
+      : "\n\n*That is the final clue. The answer is still yours to uncover.*";
     await interaction.reply({
-      content: "💡 **Arcane Hint " + hintNumber + "/" + hints.length + "**\\n" + unlocked + progress,
+      content: "💡 **Arcane Hint " + hintNumber + "/" + hints.length + "**\n" + unlocked + progress,
       ephemeral: true
     });
     return true;
