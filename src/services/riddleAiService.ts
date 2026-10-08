@@ -3432,3 +3432,39 @@ function buildProgressiveHints(seed: RiddleSeed): string[] {
       : hint;
   });
 }
+
+export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
+  const used = new Set(
+    (
+      await prisma.riddle.findMany({
+        select: { answer: true },
+        orderBy: { createdAt: "desc" },
+        take: RIDDLES.length * 2
+      })
+    ).map((row) => normalizeHintText(row.answer))
+  );
+
+  let candidate: RiddleSeed | undefined;
+  const available = [...RIDDLES];
+  const start = Math.floor(Math.random() * available.length);
+
+  for (let offset = 0; offset < available.length; offset += 1) {
+    const seed = available[(start + offset) % available.length];
+    if (!used.has(normalizeHintText(seed.answer))) {
+      candidate = seed;
+      break;
+    }
+  }
+
+  if (!candidate) {
+    candidate = available[start];
+  }
+
+  return {
+    question: candidate.lines.join("\n"),
+    answer: candidate.answer,
+    hint: JSON.stringify(buildProgressiveHints(candidate)),
+    reward: candidate.reward,
+    notes: "Local Arcane Scribe • " + candidate.notes
+  };
+}
