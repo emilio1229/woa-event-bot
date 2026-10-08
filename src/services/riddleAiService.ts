@@ -3332,235 +3332,103 @@ function normalizeHintText(value: string): string {
 }
 
 function buildProgressiveHints(seed: RiddleSeed): string[] {
-  // These hints deliberately point back into the riddle instead of naming its
-  // subject, map, species, item, or signature mechanic. The riddle itself
-  // contains the lore; the hint system should help players interpret it,
-  // not solve it for them.
+  // Hints are deliberately interpretive. They must not name the answer, map,
+  // creature class, signature ability, or an unmistakable mechanic.
   const banks: Record<RiddleCategory, string[][]> = {
     creature: [
       [
-        "One of the opening lines is more literal than it first appears.",
-        "The Council's note is a second lock; focus on what it observes, not who wrote it.",
-        "Do not chase the map yet. First decide what kind of behavior the riddle treats as unusual.",
-        "The defining trait is already in the riddle; the trick is recognizing which detail is the real clue."
+        "Do not read the images as decoration; one of them describes the answer's relationship with its surroundings.",
+        "A contradiction in the middle of the riddle matters more than the opening image.",
+        "You are looking for an identity, not a place. Treat the setting as atmosphere until the pattern is clear.",
+        "The answer is hidden in the behavior described, but not in the most obvious behavior."
       ],
       [
-        "The first half of the riddle is hiding a physical clue in plain sight.",
-        "Treat the witness's remark as evidence, not decoration.",
-        "The setting matters, but it is only useful after you identify the creature's unusual role.",
-        "Ignore the obvious silhouette and follow the behavior that would make a survivor remember it."
+        "One line is intentionally phrased as if something impossible were ordinary.",
+        "Compare the first and third images; they are closer than they appear.",
+        "The witness is useful only because they noticed a contradiction.",
+        "Think of what would make this entry unusual in a bestiary, without naming the trait."
       ],
       [
-        "Read the earliest image twice: one word in it is doing more work than it seems.",
-        "The named observer is pointing at a distinction between ordinary and unusual.",
-        "The world around the subject narrows the field, but it should not name the answer for you.",
-        "The last clue describes what makes this subject worth remembering rather than merely seeing."
+        "The riddle is built around a false assumption. Find it before searching the bestiary.",
+        "A physical image and a later action describe the same clue from different angles.",
+        "Ignore names, maps, and famous trivia. Follow the internal logic.",
+        "The last useful clue is about identity rather than location."
       ]
     ],
     item: [
       [
-        "The opening clue describes what the object changes, not what it is called.",
-        "The Council note is about purpose; treat it as a use-case rather than a label.",
-        "Separate the thing being used from the creature or encounter that may provide it.",
-        "The final clue points to what the object lets a survivor do differently."
+        "The object is being described by what it changes, not by its shape.",
+        "One line separates the tool from the thing it is normally associated with.",
+        "The setting is a filter, not the solution.",
+        "Ask what ordinary assumption about equipment the riddle is deliberately breaking."
       ],
       [
-        "One early line tells you why the object matters before telling you what it looks like.",
-        "Read the witness's remark as a clue about function.",
-        "The surrounding Realm is context, not the answer; keep the object itself in focus.",
-        "The strongest clue is the unusual job this item performs."
-      ],
-      [
-        "Do not solve the source before solving the thing in the riddle.",
-        "The Council's wording hints at a purpose hidden behind ordinary equipment language.",
-        "The setting can narrow the possibilities, but it should not be your first guess.",
-        "Ask what changes because this object exists; that is the intended lock."
+        "Look for the line that describes an outcome rather than an object.",
+        "The answer is closer to a function than a visual description.",
+        "A familiar category is being used as camouflage.",
+        "The strongest clue is the unusual relationship between the object and its user."
       ]
     ],
     ability: [
       [
-        "The first clue describes an effect before it describes an action.",
-        "The witness's words point toward what the ability changes, not its owner.",
-        "Keep the source separate from the effect; the answer is the thing that happens.",
-        "The final clue is about the result the ability creates, not the creature performing it."
+        "The answer is an event or effect, not the thing causing it.",
+        "One clue describes what changes immediately before the effect becomes useful.",
+        "Separate the source from the result; the riddle wants the result.",
+        "Look for the consequence that makes the preceding imagery necessary."
       ],
       [
-        "Look for the verb hidden inside the imagery.",
-        "Treat the Council note as a description of consequence rather than identity.",
-        "The Realm is only a filter; the real lock is the unusual effect.",
-        "Ask what changes immediately after the action occurs."
-      ],
-      [
-        "The riddle is describing something a survivor can witness rather than hold.",
-        "The named observer is hinting at the consequence of the action.",
-        "Context narrows the family of abilities without naming one.",
-        "The answer is the distinctive effect the riddle keeps circling."
+        "The important word is a verb disguised as an image.",
+        "Do not name the creature or tool behind the action.",
+        "The riddle is describing a change in state.",
+        "Follow what the world looks like after the clue happens."
       ]
     ],
     lore: [
       [
-        "The first clue points to a story detail rather than a physical object.",
-        "The Council's note matters because it identifies what changed in the story.",
-        "Do not hunt for a map name; find the event or chapter the wording keeps circling.",
-        "The answer is the piece of lore that makes the surrounding clues belong together."
+        "The literal reading is a decoy; the historical reading is not.",
+        "A repeated image is acting like a key, but it is not the answer itself.",
+        "The names in the story are witnesses, not the subject.",
+        "Solve the contradiction in the tale before searching the lore."
       ],
       [
-        "One phrase in the opening is historical rather than descriptive.",
-        "Read the witness's remark as a reference to an event, not a person.",
-        "The setting is a breadcrumb, not the destination.",
-        "The final lock is the story connection shared by the other clues."
-      ],
-      [
-        "The riddle hides its subject inside the history it describes.",
-        "The Council's wording is a clue to chronology or significance.",
-        "Think in terms of chapters, events, or records rather than creatures.",
-        "The answer is the missing link that makes the lore references agree."
+        "One detail belongs to the story and another belongs to the world beneath it.",
+        "Treat the wording like an old record with a missing entry.",
+        "The answer is what the record is avoiding naming.",
+        "The final lock is conceptual, not geographic."
       ]
     ],
     map: [
       [
-        "The opening lines describe a place without trusting you with its name.",
-        "The Council's observation is about what makes the location memorable.",
-        "Use the setting to narrow the kind of place, but do not guess from the Realm alone.",
-        "The final clue points to the landmark or function that distinguishes the location."
-      ],
-      [
-        "One early image is really a geographical clue wearing a metaphor.",
-        "The witness's note tells you what to notice about the landscape.",
-        "The broader Realm is only the outer lock; the location itself is the inner lock.",
-        "Look for the feature that separates this place from other places nearby."
-      ],
-      [
-        "The riddle gives you a shape, purpose, or atmosphere before it gives you a location.",
-        "Treat the Council note like a cartographer's margin mark.",
-        "Do not solve by map name alone; identify the kind of place first.",
-        "The answer is the specific landmark described by the combined clues."
+        "The landscape is speaking indirectly; do not search coordinates yet.",
+        "One environmental clue is deliberately broad enough to fit several places.",
+        "Look for the relationship between the environment and the mystery.",
+        "The location matters only after the object's identity becomes plausible."
       ]
     ],
     challenge: [
       [
-        "The first clue describes the situation you enter, not the prize you leave with.",
-        "The Council note is about the rules of the encounter.",
-        "Separate the location from the activity happening there.",
-        "The final clue points to what makes this challenge different from an ordinary fight or exploration."
-      ],
-      [
-        "One opening line is really describing a condition for participation.",
-        "Treat the witness's remark as a rule or consequence.",
-        "The setting narrows the encounter, but the activity itself is the real lock.",
-        "Ask what a survivor must actually do for the clue to make sense."
-      ],
-      [
-        "The riddle is hiding an activity inside its story.",
-        "The Council's note hints at what happens when the challenge is engaged.",
-        "Context helps, but do not let the Realm name solve the encounter.",
-        "The defining clue is the unusual condition, objective, or reward structure."
+        "Do not assume the riddle describes something you can simply tame or collect.",
+        "The important clue is the rule being imposed, not the creature or arena.",
+        "A familiar survival assumption is being turned against the solver.",
+        "Solve what kind of problem the Realm is asking you to overcome."
       ]
     ],
     mixed: [
       [
-        "The opening image contains the first real clue; the rest is camouflage.",
-        "The Council's note tells you which detail deserves suspicion.",
-        "Use the setting only after identifying what kind of answer you are seeking.",
-        "The final clue is the detail that makes all the others fit at once."
-      ],
-      [
-        "Read the first line literally once before reading it poetically.",
-        "The witness is pointing at a distinction, not giving you a name.",
-        "The broader context narrows the field without solving it.",
-        "Find the one unusual property that the riddle keeps approaching from different angles."
-      ],
-      [
-        "One phrase is doing double duty: story on the surface, clue underneath.",
-        "The Council record is evidence, not an answer.",
-        "Context is the third lock; it should confirm your theory rather than create it.",
-        "The last clue is meant to confirm the answer you already reasoned toward."
+        "The first interpretation is meant to be wrong.",
+        "Two clues that seem unrelated are actually describing the same property.",
+        "The setting narrows the search, but it should not give you the name.",
+        "The answer appears only when the contradictions are reconciled."
       ]
     ]
   };
 
-  const variants = banks[seed.category] ?? banks.mixed;
-  const hash = [...seed.answer].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return variants[hash % variants.length];
-}
-
-function hintsAreSafe(seed: RiddleSeed): boolean {
-  const answer = normalizeHintText(seed.answer);
-  return Boolean(answer) && seed.hints.length > 0 && seed.hints.every((hint) => {
-    const text = normalizeHintText(hint);
-    return !text.includes(answer);
+  const choices = banks[seed.category] ?? banks.mixed;
+  const bank = choices[Math.floor(Math.random() * choices.length)];
+  return bank.map((hint) => {
+    // Extra safety: never allow a hint to contain the normalized answer.
+    return normalizeHintText(hint).includes(normalizeHintText(seed.answer))
+      ? "Re-read the riddle for the contradiction between two of its images."
+      : hint;
   });
-}
-
-function refillShuffleBag(): void {
-  shuffleBag = RIDDLES.map((_, index) => index);
-  for (let i = shuffleBag.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffleBag[i], shuffleBag[j]] = [shuffleBag[j], shuffleBag[i]];
-  }
-}
-
-async function chooseSeed(): Promise<RiddleSeed> {
-  if (shuffleBag.length === 0) refillShuffleBag();
-
-  // Avoid repeating the same category back-to-back when another category exists.
-  const candidates = shuffleBag.filter((index) => {
-    const category = RIDDLES[index].category;
-    return recentCategories.length === 0 || category !== recentCategories[recentCategories.length - 1];
-  });
-
-  const pool = candidates.length > 0 ? candidates : shuffleBag;
-  const selectedIndex = pool[Math.floor(Math.random() * pool.length)];
-  shuffleBag = shuffleBag.filter((index) => index !== selectedIndex);
-
-  const seed = RIDDLES[selectedIndex];
-  recentCategories.push(seed.category);
-  if (recentCategories.length > 4) recentCategories.shift();
-
-  return seed;
-}
-
-export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
-  // Prefer riddles whose answer has not already been used in the persistent riddle archive.
-  // If the whole catalog has been used, the shuffle bag naturally starts a new cycle.
-  const used = new Set(
-    (
-      await prisma.riddle.findMany({
-        select: { answer: true },
-        orderBy: { createdAt: "desc" },
-        take: RIDDLES.length * 2
-      })
-    ).map((row) => row.answer.trim().toLowerCase())
-  );
-
-  let seed: RiddleSeed | undefined;
-  const attempts = Math.max(1, shuffleBag.length);
-
-  for (let i = 0; i < attempts; i += 1) {
-    const candidate = await chooseSeed();
-    if (!used.has(candidate.answer.trim().toLowerCase()) && hintsAreSafe(candidate)) {
-      seed = candidate;
-      break;
-    }
-  }
-
-  // If the persistent archive has exhausted the catalog, allow a new cycle.
-  if (!seed) {
-    for (let i = 0; i < RIDDLES.length; i += 1) {
-      const candidate = await chooseSeed();
-      if (hintsAreSafe(candidate)) {
-        seed = candidate;
-        break;
-      }
-    }
-  }
-  if (!seed) throw new Error("No riddle with safe hints is available.");
-
-  return {
-    question: seed.lines.join("\n"),
-    answer: seed.answer,
-    hint: JSON.stringify(buildProgressiveHints(seed)),
-    reward: seed.reward,
-    notes: "Local Arcane Scribe • " + seed.notes
-  };
 }
