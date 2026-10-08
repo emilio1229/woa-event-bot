@@ -227,7 +227,6 @@ const RIDDLES: RiddleSeed[] = [
   }
 ];
 
-];
 
 let cursor = 0;
 
