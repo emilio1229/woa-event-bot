@@ -66,7 +66,7 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
         .setStyle(ButtonStyle.Secondary)
       : null;
 
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    const row = new ActionRowBuilder().addComponents(
       answerButton,
       ...(hintButton ? [hintButton] : [])
     );
