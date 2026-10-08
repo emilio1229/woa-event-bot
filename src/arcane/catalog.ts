@@ -55,7 +55,7 @@ export const ARCANE_ITEMS:ArcaneItem[]=[
 {id:"sigil_tome",name:"Sigil Tome",emoji:"📖",kind:"focus",rarity:"rare",cost:110,description:"Deepens magical reserves.",stats:{power:3,maxMana:14}},
 {id:"emberglass",name:"Emberglass",emoji:"🔶",kind:"relic",rarity:"uncommon",cost:75,description:"A once-per-battle ward.",effect:{type:"shield",value:12}},
 {id:"feather_astraeos",name:"Feather of Astraeos",emoji:"🪶",kind:"relic",rarity:"rare",cost:125,description:"A rare evasive charm.",effect:{type:"evasion",value:10}},
-{id:"lunar_eye",name:"Lunar Eye",emoji:"🌙",kind:"relic",rarity:"epic",cost:175,description:"A relic that sharpens initiative.",effect:{type:"initiative",value:4}},
+{id:"lunar_eye",name:"Lunar Eye",emoji:"🌙",kind:"relic",rarity:"epic",cost:175,description:"Seize the initiative and act again immediately.",effect:{type:"initiative",value:4}},
 {id:"ember_aura",name:"Ember Aura",emoji:"🔥",kind:"cosmetic",rarity:"uncommon",cost:50,description:"A cosmetic ember aura."},
 {id:"astral_aura",name:"Astral Aura",emoji:"🌌",kind:"cosmetic",rarity:"rare",cost:100,description:"A cosmetic starlit aura."},
 {id:"void_mask",name:"Void Mask",emoji:"🎭",kind:"cosmetic",rarity:"epic",cost:150,description:"A mysterious cosmetic mask."}
