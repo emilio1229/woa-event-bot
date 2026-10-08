@@ -24,10 +24,10 @@ let items=getItems(kind).filter(x=>x.cost>0);
 if(kind==="spell")items=items.filter(x=>x.classId===c.classId);
 const available=items.filter(x=>!x.minLevel||c.level>=x.minLevel).filter(x=>!c.ownedItemIds.includes(x.id));
 const lines=items.map(x=>{
-if(x.minLevel&&c.level<x.minLevel)return "🔒 **"+x.name+"** — Level "+x.minLevel+" required\\n"+x.description+"\\n"+itemDetails(x);
-if(c.ownedItemIds.includes(x.id))return "✅ **"+x.name+"** — Learned\\n"+x.description+"\\n"+itemDetails(x);
-return "✨ **"+x.name+"** — "+x.cost+" Sigils\\n"+x.description+"\\n"+itemDetails(x);
-}).join("\\n\\n");
+if(x.minLevel&&c.level<x.minLevel)return "🔒 **"+x.name+"** — Level "+x.minLevel+" required\n"+x.description+"\n"+itemDetails(x);
+if(c.ownedItemIds.includes(x.id))return "✅ **"+x.name+"** — Learned\n"+x.description+"\n"+itemDetails(x);
+return "✨ **"+x.name+"** — "+x.cost+" Sigils\n"+x.description+"\n"+itemDetails(x);
+}).join("\n\n");
 const components:any[]=[];
 if(available.length){
 const menu=new StringSelectMenuBuilder()
