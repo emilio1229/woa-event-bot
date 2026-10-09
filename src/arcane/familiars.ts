@@ -5,6 +5,9 @@ import { arcaneStore } from "./store.js";
 import { sigilStore } from "../sigilStore.js";
 
 const PREFIX = "woa:arcane:familiar";
+async function respondUpdate(i: any, payload: any) {
+  return i.deferred || i.replied ? i.editReply(payload) : i.update(payload);
+}
 const PETS = [
   { id: "archive_wisp", name: "Archive Wisp", emoji: "✨", rarity: "Common", lore: "A mote of forgotten memory. It chimes near erased records.", unlockBond: 0 },
   { id: "ember_fox", name: "Ember Fox", emoji: "🔥", rarity: "Uncommon", lore: "A small fox-spirit whose paws leave sparks on stone.", unlockBond: 20 },
@@ -63,11 +66,11 @@ export async function handleFamiliarInteraction(i: Interaction) {
       const unlocked = PETS.filter(p => p.unlockBond <= nextBond && !r.ownedIds.includes(p.id));
       const newlyOwned = unlocked.length ? unlocked[0] : undefined;
       await prisma.arcaneFamiliarCollection.update({ where: { id: r.id }, data: { bond: nextBond, ...(newlyOwned ? { ownedIds: [...r.ownedIds, newlyOwned.id] } : {}) } });
-      await i.update(await buildFamiliarView(i.guildId, i.user.id));
+      await respondUpdate(i, await buildFamiliarView(i.guildId, i.user.id));
       if (newlyOwned) await i.followUp({ content: "🐾 New familiar discovered: " + newlyOwned.emoji + " **" + newlyOwned.name + "**!", flags: MessageFlags.Ephemeral });
       return true;
     } else throw new Error("That familiar action is not supported.");
-    await i.update(await buildFamiliarView(i.guildId, i.user.id));
+    await respondUpdate(i, await buildFamiliarView(i.guildId, i.user.id));
   } catch (error) {
     const message = "❌ " + (error instanceof Error ? error.message : "The familiar action failed.");
     if (i.isRepliable() && !i.replied && !i.deferred) await i.reply({ content: message, flags: MessageFlags.Ephemeral });
