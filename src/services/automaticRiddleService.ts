@@ -7,6 +7,49 @@ import { logError, logInfo } from "../utils/logger.js";
 
 let started = false;
 
+function normalizeRiddleText(value: string): string {
+  return value.toLocaleLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+function answerLeaksInto(text: string, answer: string): boolean {
+  const normalizedText = normalizeRiddleText(text);
+  const normalizedAnswer = normalizeRiddleText(answer);
+  if (!normalizedAnswer) return true;
+  if (normalizedText.includes(normalizedAnswer)) return true;
+
+  // Reject recognizable answer components too, so a clue cannot simply name
+  // the creature/item while omitting only the second word of its answer.
+  const answerWords = answer.toLocaleLowerCase().replace(/[^a-z0-9\\s]/g, " ").split(/\\s+/).filter(word => word.length >= 5);
+  return answerWords.some(word => normalizedText.includes(normalizeRiddleText(word)));
+}
+
+function safeHints(raw: string | undefined, answer: string): string {
+  let hints: string[] = [];
+  if (raw) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      hints = Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    } catch {
+      hints = [];
+    }
+  }
+
+  const guarded = hints.map((hint, index) => answerLeaksInto(hint, answer)
+    ? [
+        "Separate the images in the riddle; one is evidence and another is misdirection.",
+        "Look for the contradiction between what the subject appears to be and what it allows someone to do.",
+        "The setting narrows the possibilities, but does not identify the answer by itself.",
+        "Return to the least literal line; its meaning matters more than its nouns."
+      ][Math.min(index, 3)]
+    : hint);
+
+  return JSON.stringify(guarded.length ? guarded : [
+    "Separate the images in the riddle; one is evidence and another is misdirection.",
+    "Look for the contradiction between appearance and purpose.",
+    "The setting narrows the possibilities, but does not identify the answer by itself."
+  ]);
+}
+
 export async function publishAutomaticRiddle(client: BotClient): Promise<boolean> {
   const channelId = env.riddleAutoChannelId;
   if (!channelId) return false;
@@ -20,7 +63,19 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
   const active = await riddleStore.getActive(channel.guildId);
   if (active) return false;
 
-  const draft = await generateArcaneRiddle();
+  let draft = await generateArcaneRiddle();
+  // Fail closed: never publish a riddle that names its answer or one of its
+  // distinctive answer words. Try fresh seeds before skipping this scheduler run.
+  let attempts = 0;
+  while (answerLeaksInto(draft.question, draft.answer) && attempts < 5) {
+    attempts += 1;
+    draft = await generateArcaneRiddle();
+  }
+  if (answerLeaksInto(draft.question, draft.answer)) {
+    logError("Automatic riddle rejected because its answer leaked into the question.", new Error("Riddle answer leak guard"));
+    return false;
+  }
+  draft = { ...draft, hint: safeHints(draft.hint, draft.answer) };
   const rewardRange = Math.max(0, env.riddleAutoRewardMax - env.riddleAutoRewardMin);
   const reward = env.riddleAutoRewardMin + Math.floor(Math.random() * (rewardRange + 1));
 
