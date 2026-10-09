@@ -110,6 +110,20 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
       )
       .setFooter({ text: "The first correct answer claims the reward." });
 
+    // A rare, in-world administrator cameo: never a permanent panel entry.
+    if (Math.random() < 0.22) {
+      const whispers = [
+        "*A violet spark gathers into EmilioTheGreat's sigil, then vanishes before it can be read.*",
+        "*Rin's handwriting appears in the margin: “Do not trust the first meaning.”*",
+        "*Doxo's lantern flickers once. Somewhere beyond the veil, a page turns.*",
+        "*Heathen leaves a single mark in the dust: a warning, not an answer.*",
+        "*Wizard's voice drifts through the hall: “Patience is part of the spell.”*",
+        "*Brendon's quill scratches across an unseen page, then falls silent.*",
+        "*Panda's shadow crosses the rune circle. No explanation follows.*"
+      ];
+      embed.addFields({ name: "🜂 A Passing Presence", value: whispers[Math.floor(Math.random() * whispers.length)] });
+    }
+
     const answerButton = new ButtonBuilder()
       .setLabel("🗝️ Submit Answer")
       .setCustomId("woa:riddle:answer:" + riddle.id)
