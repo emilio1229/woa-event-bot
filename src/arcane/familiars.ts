@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, type Interaction } from "discord.js";
 import { prisma } from "../database/prisma.js";
 import { arcaneStore } from "./store.js";
+import { sigilStore } from "../sigilStore.js";
 
 const PREFIX = "woa:arcane:familiar";
 const PETS = [
@@ -38,7 +39,7 @@ export async function buildFamiliarView(guildId: string, userId: string) {
   const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: p.name, value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped" : p.rarity }));
   const rows: any[] = [];
   if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new (await import("discord.js")).StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Strengthen Bond").setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return to Hall").setStyle(ButtonStyle.Secondary)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Train Familiar • 5 Sigils").setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return to Hall").setStyle(ButtonStyle.Secondary)));
   return { embeds: [e], components: rows };
 }
 
@@ -56,6 +57,8 @@ export async function handleFamiliarInteraction(i: Interaction) {
       if (!r.ownedIds.includes(id)) throw new Error("You have not discovered that familiar yet.");
       await prisma.arcaneFamiliarCollection.update({ where: { id: r.id }, data: { equippedId: id } });
     } else if (action === "bond" && i.isButton()) {
+      if (await sigilStore.getBalance(i.guildId, i.user.id) < 5) throw new Error("Familiar training costs 5 Sigils. Earn more through Realm activities or Trials.");
+      await sigilStore.addTransaction(i.guildId, i.user.id, -5, "Arcane Familiar Bond Training", { type: "redeem" });
       const nextBond = Math.min(120, r.bond + 10);
       const unlocked = PETS.filter(p => p.unlockBond <= nextBond && !r.ownedIds.includes(p.id));
       const newlyOwned = unlocked.length ? unlocked[0] : undefined;
