@@ -179,13 +179,13 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
   if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":repost") {
     const guildId = interaction.guildId;
     if (!guildId) {
-      await interaction.reply({ content: "❌ Active riddles can only be reposted inside a server.", ephemeral: true });
+      await interaction.reply({ content: "❌ Active riddles can only be refreshed inside a server.", ephemeral: true });
       return true;
     }
 
     const riddle = await riddleStore.getActive(guildId);
     if (!riddle) {
-      await interaction.reply({ content: "🕯️ There is no active riddle to repost right now.", ephemeral: true });
+      await interaction.reply({ content: "🕯️ There is no active riddle to refresh right now.", ephemeral: true });
       return true;
     }
 
@@ -201,14 +201,28 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
       return true;
     }
 
+    // Replace the old Discord post with a fresh one so it returns to the bottom
+    // of chat. The riddle record and all guesses/entries remain untouched.
+    const buttons = [button("🗝️ Submit Answer", RIDDLE_PREFIX + ":answer:" + riddle.id)];
+    if (riddle.hint) buttons.push(button("💡 Seek a Hint", RIDDLE_PREFIX + ":hint:" + riddle.id, ButtonStyle.Secondary));
+
     try {
-      await channel.send({
-        content: "📣 **The Council has brought the active riddle back into view!**",
-        embeds: [embed]
+      const refreshed = await channel.send({ embeds: [embed], components: [row(...buttons)] });
+      await riddleStore.setMessageId(riddle.id, refreshed.id);
+
+      // Only remove the previous canonical post after the replacement is live
+      // and the database points to it, so the active riddle is never left blank.
+      if (riddle.messageId && riddle.messageId !== refreshed.id && "messages" in channel) {
+        const previous = await channel.messages.fetch(riddle.messageId).catch(() => null);
+        if (previous) await previous.delete().catch(() => undefined);
+      }
+
+      await interaction.reply({
+        content: "✅ Refreshed the active riddle in <#" + riddle.channelId + ">. All entries, guesses, and progress have been preserved.",
+        ephemeral: true
       });
-      await interaction.reply({ content: "✅ The active riddle has been reposted in <#" + riddle.channelId + ">. No progress was reset.", ephemeral: true });
     } catch (error) {
-      await interaction.reply({ content: "❌ I couldn't repost the riddle: " + (error instanceof Error ? error.message : "Unknown error"), ephemeral: true });
+      await interaction.reply({ content: "❌ I couldn't refresh the riddle: " + (error instanceof Error ? error.message : "Unknown error"), ephemeral: true });
     }
     return true;
   }
