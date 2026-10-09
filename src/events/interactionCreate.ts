@@ -80,7 +80,7 @@ export function registerInteractionCreateHandler(client: BotClient) {
 
       const errorNotice = {
         content: "❌ The arcane weave faltered while handling that interaction. Please try again.",
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral as const
       };
 
       // Arcane components are deferred before their handlers run. If a handler
