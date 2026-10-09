@@ -28,17 +28,17 @@ const RIDDLES: RiddleSeed[] = [
     answer: "Pyromane Shoulder Form",
     category: "ability",
     lines: [
-      "A bond was once measured by the length of a leash.",
-      "Then the Council recorded a companion that could travel without following a single step behind.",
-      "No saddle was needed, and no flame had to be held in the hand.",
-      "The trick was not a new creature, but a new way for an old one to remain close.",
-      "What altered state lets a wandering blaze accompany its keeper?"
+      "A pact was once measured in distance: one set of footsteps behind another.",
+      "The Council found a second arrangement in which the smaller shadow no longer crossed the ground after its keeper.",
+      "No new name entered the bestiary, yet the old entry no longer described every way the bond could appear.",
+      "The creature had not changed its loyalty; only the arrangement had changed.",
+      "What uncommon state did the Scribe fail to file under ordinary travel?"
     ],
     hints: [
-      "The riddle asks for a change in how a familiar tame is carried, not for a new species.",
-      "Think of a transformation that changes the creature's place relative to its survivor.",
-      "The result is a companion-sized state, not equipment crafted for riding.",
-      "Join the creature's alternate state with the place a companion can rest while its keeper travels."
+      "The opening image is about proximity, but distance is only the surface of the clue.",
+      "The bestiary entry stays the same even though the relationship looks different.",
+      "Look for a named configuration of an existing tame, rather than a saddle or a separate item.",
+      "Do not answer with the creature alone; the full name describes an alternate arrangement."
     ],
     reward: 70,
     notes: "The solution depends on distinguishing a creature's alternate state from a separate item."
