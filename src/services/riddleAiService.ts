@@ -355,7 +355,619 @@ const RIDDLES: RiddleSeed[] = [
     reward: 65,
     notes: "WoA community lore: the administrative circle."
   }
-
+,
+  {
+    "answer": "Artifact of the Clever",
+    "category": "item",
+    "lines": [
+      "The first test is not strength, but whether a traveler can tell a shortcut from a trap.",
+      "Its resting place favors those who study a passage before entering it.",
+      "The prize bears a name that praises a mind, though it waits far from a library.",
+      "Which relic is earned by surviving a trial of narrow ways?"
+    ],
+    "hints": [
+      "The answer is an artifact, not a creature or crafted tool.",
+      "Its title praises thought rather than physical power.",
+      "Match that idea to one of the Island's cave relics."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Artifact of the Devourer",
+    "category": "item",
+    "lines": [
+      "Some relics wait where the world becomes hostile.",
+      "Its title belongs to a hunger that does not negotiate.",
+      "The path tests whether a survivor can endure a place that punishes hesitation.",
+      "Which Island artifact takes its name from something that consumes?"
+    ],
+    "hints": [
+      "Look among the Island's cave artifacts.",
+      "The title evokes consuming, not wisdom or stealth.",
+      "Match that meaning to the artifact list."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Artifact of the Immune",
+    "category": "item",
+    "lines": [
+      "The air itself becomes an opponent, yet the sought prize is not a mask.",
+      "A name associated with resistance marks the end of the descent.",
+      "Those who mistake the clue for a potion search the wrong inventory.",
+      "Which relic is named for one who can withstand what harms others?"
+    ],
+    "hints": [
+      "The answer is a cave artifact, not protective equipment.",
+      "The title describes a quality of the survivor.",
+      "Look for the Island relic whose name evokes resistance to harm."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Tek Transmitter",
+    "category": "item",
+    "lines": [
+      "A tribe may cross a world without asking a mount to carry the distance.",
+      "This device makes a meeting point out of a place that once held only walls.",
+      "It is not the gateway itself, yet it can send a traveler toward one.",
+      "What advanced structure helps survivors move between distant realms?"
+    ],
+    "hints": [
+      "The answer is a placeable high-technology structure.",
+      "Its purpose concerns travel between maps.",
+      "Think of the device that opens transfer options from a base."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Cryopod",
+    "category": "item",
+    "lines": [
+      "A living companion waits inside a pause that can be carried.",
+      "The container is neither cage nor grave; time resumes when the keeper permits it.",
+      "Its convenience has rules, and careless use can turn preparation into a mistake.",
+      "What portable device stores a tame in suspended stasis?"
+    ],
+    "hints": [
+      "The answer is portable, not a building.",
+      "It stores a creature rather than ordinary inventory.",
+      "Its purpose is to carry and redeploy tames through stasis."
+    ],
+    "reward": 65,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Wyvern Milk",
+    "category": "item",
+    "lines": [
+      "A hatchling's first danger is not always a rival; sometimes it is the clock.",
+      "The remedy comes from a dangerous source and serves a very particular appetite.",
+      "It is not a potion brewed by a survivor, nor a meal fit for every tame.",
+      "What rare resource helps a young drake survive its earliest hours?"
+    ],
+    "hints": [
+      "The answer is a resource, not a saddle or weapon.",
+      "It is associated with raising a specific hatchling.",
+      "The source is dangerous, and the resource is used during raising."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Nameless",
+    "category": "creature",
+    "lines": [
+      "The warning comes before the shape, and the shape often comes too late.",
+      "A light carried by a survivor can change whether the dark remains empty.",
+      "It is less a ruler of the deep than a punishment for entering unprepared.",
+      "What Aberration threat makes illumination more than a convenience?"
+    ],
+    "hints": [
+      "The answer is a hostile creature associated with Aberration.",
+      "The clue centers on darkness and a light source.",
+      "Find the underground enemy whose behavior makes charge light strategic."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Reaper Queen",
+    "category": "creature",
+    "lines": [
+      "One victory can leave a survivor carrying a second battle beneath their ribs.",
+      "The process is not a simple tame, and the offspring does not arrive by ordinary breeding.",
+      "A dangerous encounter becomes a timer that follows you home.",
+      "Which Aberration predator is central to this unusual way of obtaining its kin?"
+    ],
+    "hints": [
+      "The answer is the creature, not the resulting young.",
+      "The clue describes a distinctive acquisition mechanic.",
+      "Look to Aberration's subterranean predators and unusual reproductive process."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Rock Drake",
+    "category": "creature",
+    "lines": [
+      "It treats a sheer wall as a road and the air between ledges as a promise.",
+      "Its disguise can turn a moving hunter into a missing detail in the scenery.",
+      "A survivor who watches only the ground has already lost the argument.",
+      "Which Aberration mount makes climbing and gliding one journey?"
+    ],
+    "hints": [
+      "The answer is a mount associated with Aberration.",
+      "Its signature movement combines vertical surfaces and long glides.",
+      "Camouflage is another defining clue; it is not a conventional flyer."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Charge Node",
+    "category": "map",
+    "lines": [
+      "In a realm where the sun is absent, stored brightness becomes a resource.",
+      "The survivor does not craft this source from a pocket lamp; they find a fixed point that answers a device's need.",
+      "It is a station of power, not a creature and not a weapon.",
+      "What Aberration structure restores charge to compatible equipment?"
+    ],
+    "hints": [
+      "The answer is a fixed environmental structure.",
+      "It is connected to charge-based technology, not ordinary fuel.",
+      "Find the map feature used to recharge compatible items."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • map knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Gasbags",
+    "category": "creature",
+    "lines": [
+      "A battlefield may be crossed by something that seems to have borrowed its shape from a storm cloud.",
+      "It turns a sudden intake into a long journey, then spends that reserve to change its momentum.",
+      "It is not a flyer in the usual sense, though gravity can seem negotiable.",
+      "Which Extinction creature travels by managing stored air?"
+    ],
+    "hints": [
+      "The answer is an Extinction creature.",
+      "Its movement depends on inhaling and expelling gas.",
+      "Find the creature used for buoyant travel and bursts of movement."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Orbital Supply Drop",
+    "category": "challenge",
+    "lines": [
+      "The sky opens over the ruined world, but the prize does not simply fall into waiting hands.",
+      "A claim must be defended in waves, and each pause is only the next test in disguise.",
+      "The treasure is less a chest than a temporary siege.",
+      "What Extinction event asks survivors to protect a falling cache from repeated attacks?"
+    ],
+    "hints": [
+      "The answer is a timed world event, not a boss.",
+      "It involves defending a supply point against successive waves.",
+      "Look to Extinction's falling caches and the combat encounter around them."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Element Vein",
+    "category": "challenge",
+    "lines": [
+      "The wasteland's power does not arrive polished or safe.",
+      "A tribe must hold a wound in the earth while hostile forces try to end the bargain early.",
+      "The reward is gathered from the ground, but the real test is keeping the ground yours.",
+      "What Extinction encounter asks survivors to defend a source of raw power?"
+    ],
+    "hints": [
+      "The answer is a defendable world encounter.",
+      "Its objective is tied to collecting a valuable resource from the ground.",
+      "Find the staged defense of a raw-power deposit."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Desert Titan",
+    "category": "creature",
+    "lines": [
+      "A storm has learned to carry a heartbeat.",
+      "The sky is not its home so much as its territory, and the ruined city watches it pass like an omen.",
+      "It is too vast for ordinary taming and too deliberate to mistake for weather.",
+      "Which colossal Extinction guardian commands the desert air?"
+    ],
+    "hints": [
+      "The answer is one of Extinction's Titans.",
+      "The clues point to the desert and aerial movement.",
+      "Choose the Titan associated with the desert biome."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Forest Titan",
+    "category": "creature",
+    "lines": [
+      "The canopy has no need of a throne when the trees themselves can rise.",
+      "Its body makes the border between creature and landscape difficult to draw.",
+      "The ruined world gave its woodland a guardian too large to hide behind a trunk.",
+      "Which Titan is bound to Extinction's overgrown green heart?"
+    ],
+    "hints": [
+      "The answer is an Extinction Titan.",
+      "The imagery is forest and living vegetation, not ice or desert.",
+      "Identify the guardian of the forested region."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Ice Titan",
+    "category": "creature",
+    "lines": [
+      "The cold here is more than weather; it has learned to advance.",
+      "A frozen giant carries the silence of a biome where ordinary tracks vanish quickly.",
+      "Its name is plain, but earning the right to face it is not.",
+      "Which Titan embodies Extinction's frozen domain?"
+    ],
+    "hints": [
+      "The answer is an Extinction Titan.",
+      "The setting is a frozen biome.",
+      "Distinguish it from the desert and forest counterparts."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Oasisaur",
+    "category": "creature",
+    "lines": [
+      "A refuge crosses the dry world without leaving the dunes behind.",
+      "Its back can become shelter, making a living landscape out of a journey.",
+      "The answer is not a place on a map, though travelers may treat it as one.",
+      "What colossal creature carries an oasis across the sands?"
+    ],
+    "hints": [
+      "The answer is a creature with a mobile habitat-like role.",
+      "Its defining feature is a living oasis.",
+      "Look among newer creatures connected to desert oasis mechanics."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Maewing",
+    "category": "creature",
+    "lines": [
+      "It is no parent by blood, yet it can ease the burden of raising a nursery.",
+      "Its care is broad enough to serve more than one youngling.",
+      "It is a mount, but its most valuable work may happen when no rider is watching.",
+      "Which creature helps tend and feed nearby young?"
+    ],
+    "hints": [
+      "The answer is a creature known for raising young.",
+      "Its nursery role can help multiple babies.",
+      "Find the unusual gliding creature with a nursing mechanic."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Noglin",
+    "category": "creature",
+    "lines": [
+      "The body you see may not be the will that moves it.",
+      "A brief invasion of thought can turn an enemy's strength into an unfamiliar instrument.",
+      "It wins not by overpowering every target, but by borrowing the target's choices.",
+      "Which Extinction creature can take control of another survivor or creature?"
+    ],
+    "hints": [
+      "The answer is a creature with a control-based ability.",
+      "Its power concerns directing another being rather than ordinary damage.",
+      "Find Extinction's creature associated with mind control."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Ferox",
+    "category": "creature",
+    "lines": [
+      "A small companion carries a secret that changes the scale of the room.",
+      "The transformation is tied to a substance survivors covet for other reasons.",
+      "Do not judge its danger by the form that first accepts your attention.",
+      "Which creature can change dramatically after exposure to a rare power source?"
+    ],
+    "hints": [
+      "The answer is a creature with two notably different forms.",
+      "The transformation is associated with Element.",
+      "Look among Aberration's unusual tames, not ordinary predators."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Shadowmane",
+    "category": "creature",
+    "lines": [
+      "It arrives without the usual promise of saddle and reins.",
+      "Water is part of its mystery, and a group can make its presence more dangerous than one silhouette suggests.",
+      "Its first lesson is that some hunters do not need to announce themselves.",
+      "Which stealthy creature blends mobility with sudden attacks?"
+    ],
+    "hints": [
+      "The answer is a creature, not an item or ability.",
+      "The clues emphasize stealth, water, and group behavior.",
+      "Look among the distinctive tames associated with Genesis Part 2."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Desmodus",
+    "category": "creature",
+    "lines": [
+      "A cave's ceiling becomes a road, and night becomes an ally.",
+      "It can carry a survivor through darkness while turning the hunt into a source of useful essence.",
+      "Its silhouette recalls old folklore, but its place in the bestiary is real.",
+      "Which creature makes blood, flight, and the cavern one connected clue?"
+    ],
+    "hints": [
+      "The answer is a flying creature associated with caves.",
+      "Blood collection and unusual mobility are important mechanics.",
+      "Look among the creatures introduced with Fjordur."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Rhyniognatha",
+    "category": "creature",
+    "lines": [
+      "A fortress may be born from a process that looks more like a bargain than a breeding plan.",
+      "The path asks for a host and a resource few tribes keep casually at hand.",
+      "Its silhouette recalls an ancient insect, but its utility is measured in what it can carry.",
+      "Which giant insect requires an unusual impregnation process to obtain?"
+    ],
+    "hints": [
+      "The answer is a creature with a nonstandard acquisition method.",
+      "The process involves a host and a rare resource.",
+      "Find the unusual giant insect with a specialized reproduction mechanic."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Artifact of the Strong",
+    "category": "item",
+    "lines": [
+      "A name promises brute force, but the path to it asks for careful movement.",
+      "The prize is not a weapon and does not strike on its own.",
+      "Those who search the arena for it arrive after the test has already begun.",
+      "Which Island relic praises power while waiting at the end of a cave trial?"
+    ],
+    "hints": [
+      "The answer is a cave artifact.",
+      "Its title describes physical might.",
+      "Use the Island artifact names to find the relic associated with strength."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Explorer Notes",
+    "category": "lore",
+    "lines": [
+      "The dead leave no council meeting, yet their observations continue to change the living.",
+      "A scrap of the past can reveal a voice, a discovery, or a history the map never tells directly.",
+      "They are scattered like breadcrumbs, but their purpose is not to feed anything.",
+      "What hidden records reward discovery with fragments of the world's story?"
+    ],
+    "hints": [
+      "The answer is a collectible lore feature, not a crafting material.",
+      "Finding them reveals records from past survivors.",
+      "Look for scattered discoveries that document the world's history."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • lore knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Tek Cave",
+    "category": "challenge",
+    "lines": [
+      "The final ascent begins where ordinary survival stops being enough.",
+      "Heat and hostile guardians narrow the route, and the destination is not a supply cache.",
+      "The entrance is a test of preparation before it becomes a test of endurance.",
+      "What Island challenge leads survivors toward the final overseer?"
+    ],
+    "hints": [
+      "The answer is a major endgame challenge location.",
+      "It is on the Island and leads to a final boss encounter.",
+      "Find the cave whose completion grants access to the Overseer."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Broodmother Lysrix",
+    "category": "challenge",
+    "lines": [
+      "The first warning may arrive on many legs, but the arena is not an ordinary nest.",
+      "A relic opens the way to a battle where small shapes can fill the ground.",
+      "The name belongs to a guardian whose brood is part of the threat.",
+      "Which Island boss rules the spider-themed arena?"
+    ],
+    "hints": [
+      "The answer is an Island boss.",
+      "Its theme centers on spiders and a brood.",
+      "Match the arachnid imagery to the Island's boss roster."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Megapithecus",
+    "category": "challenge",
+    "lines": [
+      "A ruined gateway frames a foe whose strength is easier to recognize than its title.",
+      "The arena's danger is not only the opponent but the ground that may fail beneath a careless step.",
+      "A great ape stands where the cold approaches the end of the trial.",
+      "Which Island boss turns a frozen arena into a test of footing?"
+    ],
+    "hints": [
+      "The answer is an Island boss.",
+      "The clues point to an ape-like opponent and a hazardous arena.",
+      "Choose the boss associated with the snowy arena."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Dragon",
+    "category": "challenge",
+    "lines": [
+      "The arena borrows the shape of a legend, and the air itself becomes part of the danger.",
+      "A survivor who prepares only for claws may overlook what falls from above.",
+      "Its title is shorter than its shadow, and its trial is among the Island's final tests.",
+      "Which Island boss makes flight and fire central to the battle?"
+    ],
+    "hints": [
+      "The answer is an Island boss, not a wild encounter.",
+      "Its defining threat includes aerial attacks and fire.",
+      "Match those clues to the Island's major boss arenas."
+    ],
+    "reward": 75,
+    "notes": "Arcane Scribe • challenge knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Tek Replicator",
+    "category": "item",
+    "lines": [
+      "A workbench for the age after metal, it does not merely improve the old craft.",
+      "Its size and appetite for power announce that the tribe has crossed into another tier.",
+      "The result may be equipment, but the station itself is the achievement.",
+      "What advanced crafting station produces high-tier technology?"
+    ],
+    "hints": [
+      "The answer is a crafting structure.",
+      "It belongs to the Tek tier and is used for advanced crafting.",
+      "Do not confuse it with a transmitter or generator."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Gacha",
+    "category": "creature",
+    "lines": [
+      "A gift may appear after the keeper has learned not to ask too directly.",
+      "It consumes ordinary offerings, then leaves behind a result shaped by its strange appetite.",
+      "A tribe may call it a producer, but its moods are part of the machine.",
+      "Which creature turns selected resources into collectible outputs?"
+    ],
+    "hints": [
+      "The answer is a creature used for resource production.",
+      "Its output is not guaranteed by ordinary crafting recipes.",
+      "Find Extinction's tame associated with producing crystals or resources."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Tek Bridge",
+    "category": "item",
+    "lines": [
+      "A gap becomes a decision rather than a barrier when a tribe carries the right technology.",
+      "It does not fly the builder across, and it does not leave a living creature behind.",
+      "The structure's purpose is to make two sides behave as one route.",
+      "What advanced build piece creates a crossing over open space?"
+    ],
+    "hints": [
+      "The answer is a structure piece, not a mount or traversal tool.",
+      "Its purpose is to span a gap and create a walkable route.",
+      "Look for the Tek building piece designed as a bridge."
+    ],
+    "reward": 65,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Water Vein",
+    "category": "map",
+    "lines": [
+      "The desert hides its most important resource beneath a surface that gives little away.",
+      "A survivor may carry a container, but the land must first reveal where it can be filled.",
+      "It is not a river, and its usefulness depends on bringing the right structure to it.",
+      "What Scorched Earth feature lets a tribe draw water from the ground?"
+    ],
+    "hints": [
+      "The answer is a map feature rather than a creature.",
+      "It is associated with Scorched Earth's water scarcity.",
+      "Find the underground water source that can be tapped."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • map knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Phoenix",
+    "category": "creature",
+    "lines": [
+      "Most survivors search for a body; this one may announce itself as a column of flame.",
+      "Its appearance obeys a harsh cycle, and a storm can matter more than a trap.",
+      "It is not simply a bird that prefers warm places; the desert writes its rules into the encounter.",
+      "Which rare Scorched Earth creature is tied to extreme heat and firestorms?"
+    ],
+    "hints": [
+      "The answer is a rare creature, not a weather event.",
+      "Its appearance is associated with extreme heat on Scorched Earth.",
+      "Find the legendary fire bird whose availability depends on the heat cycle."
+    ],
+    "reward": 80,
+    "notes": "Arcane Scribe • creature knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Charge Lantern",
+    "category": "item",
+    "lines": [
+      "A hand-held answer to the dark does more than illuminate a path.",
+      "Its glow can change the balance between a survivor and something that should not be approached unprepared.",
+      "It is not the source of power, but a tool that spends it to shape the encounter.",
+      "What portable Aberration tool projects charge light?"
+    ],
+    "hints": [
+      "The answer is a portable item.",
+      "Its light is tied to charge mechanics rather than ordinary fuel.",
+      "Find the handheld tool used to illuminate and repel certain underground threats."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  },
+  {
+    "answer": "Tek Generator",
+    "category": "item",
+    "lines": [
+      "A base grows beyond the age of wires, but it still needs a heart.",
+      "This heart does not eat ordinary fuel, and its reach can make distant devices feel connected.",
+      "It is not a crafting station, nor the device that moves a survivor between worlds.",
+      "What advanced power source runs nearby Tek structures?"
+    ],
+    "hints": [
+      "The answer is a power-generating structure.",
+      "It uses advanced technology rather than gasoline.",
+      "Distinguish the power source from a replicator or transmitter."
+    ],
+    "reward": 70,
+    "notes": "Arcane Scribe • item knowledge: solve the defining mechanic before naming the subject."
+  }
 ];
 
 function normalize(value: string): string {
