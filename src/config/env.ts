@@ -30,8 +30,8 @@ export const env = {
   riddleAutoEnabled: /^true$/i.test(process.env.RIDDLE_AUTO_ENABLED?.trim() || ""),
   riddleAutoChannelId: process.env.RIDDLE_AUTO_CHANNEL_ID?.trim() || null,
   riddleAutoIntervalMinutes: Math.max(15, Number.parseInt(process.env.RIDDLE_AUTO_INTERVAL_MINUTES?.trim() || "360", 10)),
-  riddleAutoRewardMin: Math.max(1, Number.parseInt(process.env.RIDDLE_AUTO_REWARD_MIN?.trim() || "15", 10)),
-  riddleAutoRewardMax: Math.max(1, Number.parseInt(process.env.RIDDLE_AUTO_REWARD_MAX?.trim() || "35", 10))
+  riddleAutoRewardMin: Math.max(50, Number.parseInt(process.env.RIDDLE_AUTO_REWARD_MIN?.trim() || "50", 10)),
+  riddleAutoRewardMax: Math.max(100, Number.parseInt(process.env.RIDDLE_AUTO_REWARD_MAX?.trim() || "100", 10))
 };
 
 export function assertDiscordEnv() {
