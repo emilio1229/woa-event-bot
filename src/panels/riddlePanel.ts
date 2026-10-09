@@ -99,7 +99,8 @@ export function buildRiddlePanel() {
     embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")],
     components: [
       row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")),
-      row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), back())
+      row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), button("📣 Repost Active Riddle", RIDDLE_PREFIX + ":repost", ButtonStyle.Success)),
+      row(back())
     ]
   };
 }
@@ -175,6 +176,43 @@ async function postRiddle(interaction: Interaction, draft: { guildId: string; ch
 export async function handleRiddlePanel(interaction: Interaction): Promise<boolean> {
   if (!interaction.isButton() && !interaction.isChannelSelectMenu() && !interaction.isModalSubmit()) return false;
   if (!interaction.customId.startsWith(RIDDLE_PREFIX + ":")) return false;
+  if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":repost") {
+    const guildId = interaction.guildId;
+    if (!guildId) {
+      await interaction.reply({ content: "❌ Active riddles can only be reposted inside a server.", ephemeral: true });
+      return true;
+    }
+
+    const riddle = await riddleStore.getActive(guildId);
+    if (!riddle) {
+      await interaction.reply({ content: "🕯️ There is no active riddle to repost right now.", ephemeral: true });
+      return true;
+    }
+
+    const channel = await interaction.client.channels.fetch(riddle.channelId).catch(() => null);
+    if (!channel || !channel.isSendable()) {
+      await interaction.reply({ content: "❌ I cannot send messages to the active riddle's channel.", ephemeral: true });
+      return true;
+    }
+
+    const embed = await buildLiveRiddleEmbed(riddle.id);
+    if (!embed) {
+      await interaction.reply({ content: "❌ I could not load the active riddle. Please refresh and try again.", ephemeral: true });
+      return true;
+    }
+
+    try {
+      await channel.send({
+        content: "📣 **The Council has brought the active riddle back into view!**",
+        embeds: [embed]
+      });
+      await interaction.reply({ content: "✅ The active riddle has been reposted in <#" + riddle.channelId + ">. No progress was reset.", ephemeral: true });
+    } catch (error) {
+      await interaction.reply({ content: "❌ I couldn't repost the riddle: " + (error instanceof Error ? error.message : "Unknown error"), ephemeral: true });
+    }
+    return true;
+  }
+
   if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":active") {
     const guildId = interaction.guildId;
     if (!guildId) {
