@@ -8,6 +8,9 @@ const PREFIX = "woa:arcane:familiar";
 async function respondUpdate(i: any, payload: any) {
   return i.deferred || i.replied ? i.editReply(payload) : i.update(payload);
 }
+async function respondReply(i: any, payload: any) {
+  return i.deferred || i.replied ? i.followUp(payload) : i.reply(payload);
+}
 const PETS = [
   { id: "archive_wisp", name: "Archive Wisp", emoji: "✨", rarity: "Common", lore: "A mote of forgotten memory. It chimes near erased records.", unlockBond: 0 },
   { id: "ember_fox", name: "Ember Fox", emoji: "🔥", rarity: "Uncommon", lore: "A small fox-spirit whose paws leave sparks on stone.", unlockBond: 20 },
@@ -49,10 +52,10 @@ export async function buildFamiliarView(guildId: string, userId: string) {
 export async function handleFamiliarInteraction(i: Interaction) {
   if (!("customId" in i) || typeof i.customId !== "string" || !i.customId.startsWith(PREFIX + ":")) return false;
   if (!i.isMessageComponent()) return true;
-  if (!i.guildId) { if (i.isRepliable()) await i.reply({ content: "The Familiar Sanctum is server-only.", flags: MessageFlags.Ephemeral }); return true; }
+  if (!i.guildId) { if (i.isRepliable()) await respondReply(i, { content: "The Familiar Sanctum is server-only.", flags: MessageFlags.Ephemeral }); return true; }
   try {
     const c = await arcaneStore.get(i.guildId, i.user.id);
-    if (!c) { if (i.isRepliable()) await i.reply({ content: "Create your Wizard first.", flags: MessageFlags.Ephemeral }); return true; }
+    if (!c) { if (i.isRepliable()) await respondReply(i, { content: "Create your Wizard first.", flags: MessageFlags.Ephemeral }); return true; }
     const action = i.customId.slice((PREFIX + ":").length);
     const r = await record(i.guildId, i.user.id);
     if (action === "equip" && i.isStringSelectMenu()) {
