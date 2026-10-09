@@ -44,17 +44,30 @@ export async function handleArcaneStoryInteraction(i:Interaction){
  if(!("customId" in i)||typeof i.customId!=="string"||!i.customId.startsWith(STORY_PREFIX+":"))return false;
  if(!i.isButton())return true;
  if(!i.guildId){await i.reply({content:"The Chronicle can only be read inside a server.",flags:MessageFlags.Ephemeral});return true;}
- const c=await arcaneStore.get(i.guildId,i.user.id);
- if(!c){await i.reply({content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
- const s=await getState(i.guildId,i.user.id),action=i.customId.slice((STORY_PREFIX+":").length);
- if(action==="restart"){s.step=0;await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
- if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
- if(action==="next"){
-  if(s.step===4&&s.route==="unselected"){await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
-  if(s.step===3)s.familiar="archive_wisp";
-  s.step=Math.min(s.step+1,scenes.length-1);
-  if(s.step===scenes.length-1&&!s.claimed){s.claimed=true;await arcaneStore.addXp(c,75);await sigilStore.addTransaction(i.guildId,i.user.id,15,"Arcane Chronicle: The Page That Never Was",{type:"award"});}
-  await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;
+ try {
+  const c=await arcaneStore.get(i.guildId,i.user.id);
+  if(!c){await i.reply({content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
+  const s=await getState(i.guildId,i.user.id),action=i.customId.slice((STORY_PREFIX+":").length);
+  if(action==="restart"){s.step=0;await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
+  if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
+  if(action==="next"){
+   if(s.step===4&&s.route==="unselected"){await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
+   if(s.step===3)s.familiar="archive_wisp";
+   s.step=Math.min(s.step+1,scenes.length-1);
+   if(s.step===scenes.length-1&&!s.claimed){
+    await arcaneStore.addXp(c,75);
+    await sigilStore.addTransaction(i.guildId,i.user.id,15,"Arcane Chronicle: The Page That Never Was",{type:"award"});
+    s.claimed=true;
+   }
+   await saveState(i.guildId,i.user.id,s);
+   await i.update(await buildStoryView(i.guildId,i.user.id));
+   return true;
+  }
+  await i.reply({content:"That Chronicle action is no longer available. Reopen the Chronicle from the Hall.",flags:MessageFlags.Ephemeral});
+ } catch(error) {
+  const message="The Chronicle could not advance: "+(error instanceof Error?error.message:"an unexpected error occurred")+". Please reopen it from the Hall.";
+  if(!i.replied&&!i.deferred) await i.reply({content:message,flags:MessageFlags.Ephemeral});
+  else await i.followUp({content:message,flags:MessageFlags.Ephemeral});
  }
  return true;
 }
