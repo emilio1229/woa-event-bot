@@ -4,6 +4,9 @@ import { arcaneStore } from "./store.js";
 import { sigilStore } from "../sigilStore.js";
 
 export const STORY_PREFIX = "woa:arcane:story";
+async function respondUpdate(i: any, payload: any) {
+ return i.deferred || i.replied ? i.editReply(payload) : i.update(payload);
+}
 const btn=(label:string,id:string,style:ButtonStyle=ButtonStyle.Primary)=>new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row=(...b:ButtonBuilder[])=>new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 type StoryState={step:number;route:string;familiar:string;claimed:boolean};
@@ -48,10 +51,10 @@ export async function handleArcaneStoryInteraction(i:Interaction){
   const c=await arcaneStore.get(i.guildId,i.user.id);
   if(!c){await i.reply({content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
   const s=await getState(i.guildId,i.user.id),action=i.customId.slice((STORY_PREFIX+":").length);
-  if(action==="restart"){s.step=0;await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
-  if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
+  if(action==="restart"){s.step=0;await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
+  if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
   if(action==="next"){
-   if(s.step===4&&s.route==="unselected"){await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
+   if(s.step===4&&s.route==="unselected"){await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
    if(s.step===3)s.familiar="archive_wisp";
    s.step=Math.min(s.step+1,scenes.length-1);
    if(s.step===scenes.length-1&&!s.claimed){
@@ -60,7 +63,7 @@ export async function handleArcaneStoryInteraction(i:Interaction){
     s.claimed=true;
    }
    await saveState(i.guildId,i.user.id,s);
-   await i.update(await buildStoryView(i.guildId,i.user.id));
+   await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));
    return true;
   }
   await i.reply({content:"That Chronicle action is no longer available. Reopen the Chronicle from the Hall.",flags:MessageFlags.Ephemeral});
