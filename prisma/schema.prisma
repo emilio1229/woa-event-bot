@@ -212,3 +212,16 @@ model ArcaneBattle {
   @@index([guildId, challengerId, status])
   @@index([guildId, opponentId, status])
 }
+
+model ArcaneFamiliarCollection {
+  id        String   @id
+  guildId   String
+  userId    String
+  ownedIds  String[] @default(["archive_wisp"])
+  equippedId String @default("archive_wisp")
+  bond      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([guildId, userId])
+  @@index([guildId, bond])
+}
