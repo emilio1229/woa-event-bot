@@ -183,6 +183,19 @@ model ArcaneCharacter {
   @@index([guildId, level, xp])
 }
 
+model ArcaneQuestProgress {
+  id        String   @id
+  guildId   String
+  userId    String
+  chapter   String   @default("hollow_crown_1")
+  step      Int      @default(0)
+  state     Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([guildId, userId])
+  @@index([guildId, chapter])
+}
+
 model ArcaneBattle {
   id           String   @id
   guildId      String
