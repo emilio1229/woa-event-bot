@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, type Interaction } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, StringSelectMenuBuilder, type Interaction } from "discord.js";
 import { prisma } from "../database/prisma.js";
 import { arcaneStore } from "./store.js";
 import { sigilStore } from "../sigilStore.js";
@@ -38,7 +38,7 @@ export async function buildFamiliarView(guildId: string, userId: string) {
     .setFooter({ text: "Companions are cosmetic/lore companions for now; they do not alter battle balance." });
   const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: p.name, value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped" : p.rarity }));
   const rows: any[] = [];
-  if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new (await import("discord.js")).StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
+  if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Train Familiar • 5 Sigils").setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return to Hall").setStyle(ButtonStyle.Secondary)));
   return { embeds: [e], components: rows };
 }
