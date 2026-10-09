@@ -7,6 +7,9 @@ export const STORY_PREFIX = "woa:arcane:story";
 async function respondUpdate(i: any, payload: any) {
  return i.deferred || i.replied ? i.editReply(payload) : i.update(payload);
 }
+async function respondReply(i: any, payload: any) {
+ return i.deferred || i.replied ? i.followUp(payload) : i.reply(payload);
+}
 const btn=(label:string,id:string,style:ButtonStyle=ButtonStyle.Primary)=>new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row=(...b:ButtonBuilder[])=>new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 type StoryState={step:number;route:string;familiar:string;claimed:boolean};
@@ -46,10 +49,10 @@ export async function buildStoryView(guildId:string,userId:string){
 export async function handleArcaneStoryInteraction(i:Interaction){
  if(!("customId" in i)||typeof i.customId!=="string"||!i.customId.startsWith(STORY_PREFIX+":"))return false;
  if(!i.isButton())return true;
- if(!i.guildId){await i.reply({content:"The Chronicle can only be read inside a server.",flags:MessageFlags.Ephemeral});return true;}
+ if(!i.guildId){await respondReply(i,{content:"The Chronicle can only be read inside a server.",flags:MessageFlags.Ephemeral});return true;}
  try {
   const c=await arcaneStore.get(i.guildId,i.user.id);
-  if(!c){await i.reply({content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
+  if(!c){await respondReply(i,{content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
   const s=await getState(i.guildId,i.user.id),action=i.customId.slice((STORY_PREFIX+":").length);
   if(action==="restart"){s.step=0;await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
   if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
@@ -66,7 +69,7 @@ export async function handleArcaneStoryInteraction(i:Interaction){
    await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));
    return true;
   }
-  await i.reply({content:"That Chronicle action is no longer available. Reopen the Chronicle from the Hall.",flags:MessageFlags.Ephemeral});
+  await respondReply(i,{content:"That Chronicle action is no longer available. Reopen the Chronicle from the Hall.",flags:MessageFlags.Ephemeral});
  } catch(error) {
   const message="The Chronicle could not advance: "+(error instanceof Error?error.message:"an unexpected error occurred")+". Please reopen it from the Hall.";
   if(!i.replied&&!i.deferred) await i.reply({content:message,flags:MessageFlags.Ephemeral});
