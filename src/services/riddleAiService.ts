@@ -252,6 +252,110 @@ const RIDDLES: RiddleSeed[] = [
     reward: 65,
     notes: "Keep the maker, tool, and effect separate."
   }
+  ,
+  {
+    answer: "The Sigil Era",
+    category: "lore",
+    lines: [
+      "A realm does not change when a crown is polished; it changes when its people begin to leave new marks.",
+      "The old pages still exist, but the Council has begun reading them through a different sign.",
+      "It is neither a map nor a spell, yet it gives this chapter its name.",
+      "What title belongs to the age now being written by the Wizards of Ark?"
+    ],
+    hints: [
+      "The answer names a chapter in the community's story, not a place or a person.",
+      "Think of the current era and the mark that represents it.",
+      "The title has two parts: one is a magical symbol, the other is a period of history."
+    ],
+    reward: 75,
+    notes: "WoA lore: identify the name of the current chapter without spelling it out in the clues."
+  },
+  {
+    answer: "Grand Sigil Exchange",
+    category: "lore",
+    lines: [
+      "Here, a deed can become a treasure, and a treasure can become a new beginning.",
+      "No merchant weighs gold on these scales; the currency is earned through the realm's trials.",
+      "Its doors are opened by a single mark, but the shelves hold many kinds of wonder.",
+      "What hall lets a wizard trade hard-won symbols for useful magic?"
+    ],
+    hints: [
+      "The answer is a place in the community's game, not a person.",
+      "Its visitors spend the reward earned from riddles and events.",
+      "The name combines a grand place of trade with the realm's magical currency."
+    ],
+    reward: 70,
+    notes: "WoA community lore: the player-facing shop."
+  },
+  {
+    answer: "Emilio the Great",
+    category: "lore",
+    lines: [
+      "When the hall grows quiet, a certain title may still echo from the rafters.",
+      "The name is spoken with ceremony, though the bearer is known to leave mischief in the margins.",
+      "Not every legend needs a dragon; some require only a quill, a decree, and a flair for the dramatic.",
+      "Which grand persona signs the stranger pages of this realm?"
+    ],
+    hints: [
+      "The answer is a persona associated with the community, not an ARK creature.",
+      "The title is deliberately theatrical.",
+      "Look for the name paired with a boastful royal-sounding honorific."
+    ],
+    reward: 65,
+    notes: "WoA in-joke: the server's grand wizard persona."
+  },
+  {
+    answer: "High Wizards",
+    category: "lore",
+    lines: [
+      "They do not rule by the height of a tower, nor by the length of a spell.",
+      "Their standing is marked by trust, counsel, and the duty to keep the circle steady.",
+      "Two seats may bear the title, yet the title itself belongs to a station, not a single name.",
+      "What are the realm's senior councilors called?"
+    ],
+    hints: [
+      "The answer is a council title, not a player name.",
+      "It describes senior members trusted with guiding the community.",
+      "The title joins a rank of mastery with practitioners of magic."
+    ],
+    reward: 70,
+    notes: "WoA community lore: council leadership."
+  },
+  {
+    answer: "Wizards, Warlocks & Witches",
+    category: "lore",
+    lines: [
+      "Three paths enter the same hall, each bearing a different tradition of the unseen.",
+      "One studies the art, one binds power by another road, and one follows an older craft.",
+      "Together they are not a spell, a faction, or a map, but the words beneath the realm's banner.",
+      "What three callings complete the community's motto?"
+    ],
+    hints: [
+      "The answer is a phrase used as a motto, not a list of game classes.",
+      "It contains three magical callings joined together.",
+      "The phrase appears beneath the community's name."
+    ],
+    reward: 75,
+    notes: "WoA identity: the community motto."
+  },
+  {
+    answer: "The Council",
+    category: "lore",
+    lines: [
+      "When a riddle is sealed, a reward weighed, or a realm's rules need a keeper, a circle gathers.",
+      "Its members are not all the same, and its purpose is larger than any one voice.",
+      "It can guide an event without being the event, and guard a law without being the law.",
+      "What circle helps steer the Wizards of Ark?"
+    ],
+    hints: [
+      "The answer is a group within the community, not a place on an ARK map.",
+      "Its work includes guidance and administration.",
+      "Think of a gathering of trusted advisors rather than one leader."
+    ],
+    reward: 65,
+    notes: "WoA community lore: the administrative circle."
+  }
+
 ];
 
 function normalize(value: string): string {
