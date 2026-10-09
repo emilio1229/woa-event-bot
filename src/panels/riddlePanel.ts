@@ -68,6 +68,7 @@ function solvedEmbed(riddle: Awaited<ReturnType<typeof riddleStore.getById>>, wi
       { name: "🔮 Answer", value: "**" + riddle.answer + "**", inline: true },
       { name: "👑 Riddlebreaker", value: "<@" + winnerId + ">", inline: true },
       { name: "💠 Reward", value: riddle.reward + " Sigils", inline: true },
+      { name: "🎁 Award Status", value: "<@" + winnerId + "> has been awarded " + riddle.reward + " Sigils.", inline: true },
       { name: "📊 Hunt Results", value: attempts + " guesses • " + participants + " wizards • solved in " + duration },
       { name: "📜 Final Guesses", value: finalGuesses }
     )
@@ -420,5 +421,10 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
       if (message) await message.edit({ embeds:[embed!], components:[row(button("📜 View Full Guess History", RIDDLE_PREFIX + ":history:" + riddle.id, ButtonStyle.Secondary))] }).catch(() => undefined);
     }
   }
-  await interaction.reply({ content:"✨ The sigils recognize you, Riddlebreaker. You earned " + riddle.reward + " Sigils. Your balance is now " + user.balance + ".", ephemeral:true }); return true;
+  const awardNotice = "✨ The sigils recognize you, Riddlebreaker! **" + riddle.reward + " Sigils have been awarded** to your account. Your new balance is **" + user.balance + " Sigils**.";
+  await interaction.reply({ content: awardNotice, ephemeral: true });
+  // The ephemeral confirmation always reaches the winner; send a DM as a second
+  // receipt when their privacy settings allow messages from the bot.
+  await interaction.user.send({ content: "🏆 **The Wizards of Ark — Riddle Reward**\nYou solved the Arcane Riddle and have been awarded **" + riddle.reward + " Sigils**.\nYour new balance is **" + user.balance + " Sigils**." }).catch(() => undefined);
+  return true;
 }
