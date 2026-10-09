@@ -37,7 +37,7 @@ const RIDDLES: RiddleSeed[] = [
     hints: [
       "The opening image is about proximity, but distance is only the surface of the clue.",
       "The bestiary entry stays the same even though the relationship looks different.",
-      "Look for a named configuration of an existing tame, rather than a saddle or a separate item.",
+      "Look for a named configuration of an existing tame, rather than riding gear or a separate item.",
       "Do not answer with the creature alone; the full name describes an alternate arrangement."
     ],
     reward: 70,
