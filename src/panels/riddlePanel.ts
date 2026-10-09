@@ -410,16 +410,29 @@ export async function handleRiddleInteraction(interaction: Interaction): Promise
       return true;
     }
     const hints = parseHintSequence(riddle.hint);
-    const stats = await riddleStore.getStats(riddle.id);
-    const index = Math.min(stats.attempts, hints.length - 1);
-    const hintNumber = index + 1;
-    const unlocked = hints[index];
-    const remaining = Math.max(0, hints.length - hintNumber);
-    const progress = remaining
-      ? "\n\n*The Realm will reveal a sharper clue after another wrong guess.*"
-      : "\n\n*That is the final clue. The answer is still yours to uncover.*";
+    // Hint progress belongs to each wizard, not the whole riddle. Only that
+    // player's incorrect guesses unlock clues; another player's guesses never
+    // reveal hints on their behalf.
+    const guesses = await riddleStore.getAllGuesses(riddle.id);
+    const personalAttempts = guesses.filter(guess => guess.userId === interaction.user.id && !guess.correct).length;
+    const unlockedCount = Math.min(personalAttempts, hints.length);
+
+    if (unlockedCount === 0) {
+      await interaction.reply({
+        content: "🔒 **Your hints remain sealed.** Submit a guess first to unlock Hint 1.",
+        ephemeral: true
+      });
+      return true;
+    }
+
+    const unlockedHints = hints.slice(0, unlockedCount)
+      .map((hint, index) => "**Hint " + (index + 1) + "/" + hints.length + ":** " + hint)
+      .join("\n\n");
+    const progress = unlockedCount < hints.length
+      ? "\n\n*You have unlocked " + unlockedCount + " of " + hints.length + " hints. Each additional incorrect guess unlocks the next clue.*"
+      : "\n\n✨ *All four arcane hints are now yours to read.*";
     await interaction.reply({
-      content: "💡 **Arcane Hint " + hintNumber + "/" + hints.length + "**\n" + unlocked + progress,
+      content: "💡 **YOUR ARCANE HINTS — " + unlockedCount + "/" + hints.length + " UNLOCKED**\n\n" + unlockedHints + progress,
       ephemeral: true
     });
     return true;
