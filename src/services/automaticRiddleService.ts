@@ -12,15 +12,13 @@ function normalizeRiddleText(value: string): string {
 }
 
 function answerLeaksInto(text: string, answer: string): boolean {
-  const normalizedText = normalizeRiddleText(text);
+  const normalizedText = " " + normalizeRiddleText(text) + " ";
   const normalizedAnswer = normalizeRiddleText(answer);
   if (!normalizedAnswer) return true;
-  if (normalizedText.includes(normalizedAnswer)) return true;
 
-  // Reject recognizable answer components too, so a clue cannot simply name
-  // the creature/item while omitting only the second word of its answer.
-  const answerWords = answer.toLocaleLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(word => word.length >= 5);
-  return answerWords.some(word => normalizedText.includes(normalizeRiddleText(word)));
+  // Reject the complete answer phrase without treating common words inside
+  // a title as leaks; otherwise legitimate lore riddles get discarded.
+  return normalizedText.includes(" " + normalizedAnswer + " ");
 }
 
 function safeHints(raw: string | undefined, answer: string): string {
