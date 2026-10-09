@@ -53,7 +53,7 @@ export async function handleArcaneStoryInteraction(i:Interaction){
   if(s.step===4&&s.route==="unselected"){await i.update(await buildStoryView(i.guildId,i.user.id));return true;}
   if(s.step===3)s.familiar="archive_wisp";
   s.step=Math.min(s.step+1,scenes.length-1);
-  if(s.step===scenes.length-1&&!s.claimed){s.claimed=true;await arcaneStore.addXp(c,75);await sigilStore.addTransaction(i.guildId,i.user.id,15,"Arcane Chronicle: The Page That Never Was",{type:"reward"});}
+  if(s.step===scenes.length-1&&!s.claimed){s.claimed=true;await arcaneStore.addXp(c,75);await sigilStore.addTransaction(i.guildId,i.user.id,15,"Arcane Chronicle: The Page That Never Was",{type:"award"});}
   await saveState(i.guildId,i.user.id,s);await i.update(await buildStoryView(i.guildId,i.user.id));return true;
  }
  return true;
