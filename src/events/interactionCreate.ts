@@ -74,14 +74,23 @@ export function registerInteractionCreateHandler(client: BotClient) {
         customId: interaction.isMessageComponent() || interaction.isModalSubmit() ? interaction.customId : null
       });
 
-      if (!interaction.isRepliable() || interaction.replied || interaction.deferred) {
+      if (!interaction.isRepliable() || interaction.replied) {
         return;
       }
 
-      await interaction.reply({
-        content: "❌ The arcane weave faltered while handling that interaction.",
+      const errorNotice = {
+        content: "❌ The arcane weave faltered while handling that interaction. Please try again.",
         flags: MessageFlags.Ephemeral
-      });
+      };
+
+      // Arcane components are deferred before their handlers run. If a handler
+      // throws, send an ephemeral follow-up instead of silently leaving the
+      // acknowledged interaction without useful feedback.
+      if (interaction.deferred) {
+        await interaction.followUp(errorNotice);
+      } else {
+        await interaction.reply(errorNotice);
+      }
     }
   });
 }
