@@ -363,14 +363,13 @@ function normalize(value: string): string {
 }
 
 function answerLeaksInto(text: string, answer: string): boolean {
-  const normalizedText = normalize(text);
+  const normalizedText = " " + normalize(text) + " ";
   const normalizedAnswer = normalize(answer);
   if (!normalizedAnswer) return true;
-  if ((" " + normalizedText + " ").includes(" " + normalizedAnswer + " ")) return true;
 
-  const answerWords = normalizedAnswer.split(/\s+/).filter(word => word.length >= 5);
-  const textWords = new Set(normalizedText.split(/\s+/));
-  return answerWords.some(word => textWords.has(word));
+  // Reject the complete answer phrase, but do not reject ordinary clue words
+  // that happen to overlap with part of a title (e.g. "grand" or "council").
+  return normalizedText.includes(" " + normalizedAnswer + " ");
 }
 
 function isSafeSeed(seed: RiddleSeed): boolean {
@@ -395,7 +394,7 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
     (await prisma.riddle.findMany({
       select: { answer: true },
       orderBy: { createdAt: "desc" },
-      take: RIDDLES.length * 2
+      take: Math.min(8, RIDDLES.length * 2)
     })).map(row => normalize(row.answer))
   );
 
