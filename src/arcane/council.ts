@@ -9,7 +9,7 @@ const button=(label:string,id:string,style:ButtonStyle=ButtonStyle.Primary)=>new
 const back=()=>new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Council","woa:council:home",ButtonStyle.Secondary));
 
 export function buildArcaneCouncilPanel(){
-  return {embeds:[new EmbedBuilder().setColor(0x4B0082).setTitle("🔮 ARCANE COUNCIL").setDescription("The Council chamber for the Arcane Realm. Monitor Wizards, Trials, progression and the game's original content without leaving the Council panel.").addFields(
+  return {embeds:[new EmbedBuilder().setColor(0x4B0082).setTitle("🔮 ARCANE COUNCIL").setImage("https://raw.githubusercontent.com/emilio1229/woa-event-bot/main/assets/woa_ritual_bg.png").setDescription("The Council chamber for the Arcane Realm. Monitor Wizards, Trials, progression and the game's original content without leaving the Council panel.\n\n*The realm is watched. The Chronicle remembers.*").addFields(
     {name:"🧙 Wizards",value:"Inspect players and grant progression.",inline:true},{name:"⚔️ Trials",value:"Monitor and close active battles.",inline:true},{name:"📚 Codex",value:"Review classes, spells, relics and gear.",inline:true})],
     components:[new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧙 Manage Wizards",ARCANE_COUNCIL_PREFIX+":players"),button("⚔️ Active Trials",ARCANE_COUNCIL_PREFIX+":battles"),button("📚 Codex",ARCANE_COUNCIL_PREFIX+":codex")),new ActionRowBuilder<ButtonBuilder>().addComponents(button("📊 Realm Stats",ARCANE_COUNCIL_PREFIX+":stats"),button("◀ Council","woa:council:home",ButtonStyle.Secondary))]};
 }
