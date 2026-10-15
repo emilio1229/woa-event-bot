@@ -13,7 +13,7 @@ const btn=(l:string,id:string,s=ButtonStyle.Primary)=>new ButtonBuilder().setLab
 const row=(...b:ButtonBuilder[])=>new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 const WOA_VIOLET=0x7B2CBF;
 const WOA_GOLD=0xD4AF37;
-const ARCANE_ART="https://raw.githubusercontent.com/emilio1229/woa-event-bot/main/assets/woa_ritual_bg.png";
+const ARCANE_ART="https://raw.githubusercontent.com/emilio1229/woa-event-bot/main/assets/Arcane%20Realm%20Panel.png";
 const arcaneFooter=(e:EmbedBuilder)=>e.setFooter({text:"THE WIZARDS OF ARK  ✦  WIZARDS, WARLOCKS & WITCHES"});
 const createView=()=>({embeds:[new EmbedBuilder().setColor(0x4B0082).setTitle("🧙 BEGIN YOUR ARCANE TRIALS").setDescription("Choose a class. Each path has different stats, starter spells and a unique special move. Select one to inspect its full details before you commit.")],components:[new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(new StringSelectMenuBuilder().setCustomId(ARCANE_PREFIX+":class").setPlaceholder("Choose your class").addOptions(ARCANE_CLASSES.map(c=>({label:c.name,value:c.id,description:(c.role+" • HP "+c.base.maxHp+" • Mana "+c.base.maxMana+" • "+c.special.name).slice(0,100),emoji:c.emoji}))))]});
 export function buildArcaneEntry(has:boolean){return {embeds:[new EmbedBuilder().setColor(0x4B0082).setTitle("🔮 THE ARCANE TRIALS").setDescription("A turn-based WoA mini-RPG built around Wizards, Sigils, spells, armor, relics and strategy.\n\n*Your legend begins beyond the veil.*").setImage(ARCANE_ART)],components:[row(btn(has?"🔮 Enter the Arcane Hall":"🧙 Create Wizard",has?ARCANE_PREFIX+":open":ARCANE_PREFIX+":create"))]};}

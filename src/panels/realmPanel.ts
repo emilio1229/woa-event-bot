@@ -20,6 +20,7 @@ import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 
 export const REALM_PREFIX = "woa:realm";
+const BOUNTY_ART = "https://raw.githubusercontent.com/emilio1229/woa-event-bot/main/assets/Bounty%20board%20panel.png";
 
 async function getVisibleRaffles(interaction: ButtonInteraction) {
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
@@ -42,7 +43,7 @@ async function showRaffles(interaction: ButtonInteraction) {
 
 async function showBounties(interaction: ButtonInteraction) {
   const bounties = await bountyStore.getActive(interaction.guild!.id);
-  const embed = new EmbedBuilder().setTitle("📜 THE BOUNTY BOARD").setFooter({ text: "The Wizards of Ark • Weekly Hunt" });
+  const embed = new EmbedBuilder().setTitle("📜 THE BOUNTY BOARD").setImage(BOUNTY_ART).setFooter({ text: "The Wizards of Ark • Weekly Hunt" });
   if (!bounties.length) embed.setDescription("No active bounties are posted right now. The Council will inscribe the next hunt soon.");
   else embed.setDescription(bounties.slice(0, 5).map((bounty, index) => `**${index + 1}. Weekly Hunt**\n${bounty.dinos.map((dino, i) => `• **${dino}** — ${bounty.stats[i] ?? "Any stat"} ▸ 40–50`).join("\n")}${bounty.bonus ? `\n⚡ **Bonus:** ${bounty.bonus}` : ""}\n🗓️ Posted <t:${Math.floor(bounty.createdAt / 1000)}:R>`).join("\n\n"));
   await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
