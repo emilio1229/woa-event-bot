@@ -97,16 +97,17 @@ async function showHome(interaction: ButtonInteraction) {
     : "No active bounties right now.";
 
   const embed = new EmbedBuilder()
-    .setColor(0x4B0082)
+    .setColor(0x7B2CBF)
+    .setAuthor({ name: "✦ THE WIZARDS OF ARK  /  REALM PORTAL" })
     .setTitle("🌌 THE WIZARDS OF ARK REALM")
-    .setDescription("*A living portal to the community — and now, the gateway to the Arcane Realm.*")
+    .setDescription("*Wizards, Warlocks & Witches — your portal to the living realms of WoA.*\n\n╭────────────── ✧ ──────────────╮\n**CHOOSE YOUR PATH**\n╰────────────── ✧ ──────────────╯")
     .addFields(
       { name: "🔮 Arcane Realm", value: "Create your Wizard, cast spells, duel other Wizards, collect relics and climb the Trials.", inline: false },
       { name: "🎟️ Raffles", value: "Active community giveaways", inline: true },
       { name: "📜 Bounties", value: bountySummary, inline: true },
       { name: "🏆 Events", value: "Upcoming gatherings — mark yourself Going from the Events panel.", inline: true }
     )
-    .setFooter({ text: "The Wizards of Ark • Realm Portal" });
+    .setFooter({ text: "WIZARDS, WARLOCKS & WITCHES  ✦  THE REALM AWAITS" });
 
   const components = [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -126,7 +127,7 @@ async function showUnknown(interaction: ButtonInteraction, section: string) { aw
 
 function button(label: string, customId: string, style: ButtonStyle = ButtonStyle.Primary) { return new ButtonBuilder().setLabel(label).setCustomId(customId).setStyle(style); }
 
-function realmCodexHome() { return { embeds: [new EmbedBuilder().setColor(0x6A0DAD).setTitle("📚 THE REALM CODEX").setDescription("A guide to everything inside the Wizards of Ark Realm. Choose a chamber below to learn what it does and what you can do there.")], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${REALM_PREFIX}:codex:arcane`), button("🎟️ Raffles", `${REALM_PREFIX}:codex:raffles`), button("📜 Bounties", `${REALM_PREFIX}:codex:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:codex:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }; }
+function realmCodexHome() { return { embeds: [new EmbedBuilder().setColor(0x6A0DAD).setAuthor({ name: "✦ WIZARDS OF ARK  /  FIELD GUIDE" }).setTitle("📚 THE REALM CODEX").setDescription("*The field guide to the realms, written for those who dare to explore.*\n\nChoose a chamber below and uncover its secrets.").setFooter({ text: "CODEX OF THE REALM  ✦  KNOWLEDGE IS POWER" })], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${REALM_PREFIX}:codex:arcane`), button("🎟️ Raffles", `${REALM_PREFIX}:codex:raffles`), button("📜 Bounties", `${REALM_PREFIX}:codex:bounties`)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 Events", `${REALM_PREFIX}:codex:events`), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] }; }
 
 function realmCodexSection(section: string) {
   const data: Record<string,{title:string;description:string}> = {
