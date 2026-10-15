@@ -4,7 +4,6 @@ import { sigilStore } from "../sigilStore.js";
 import { generateArcaneRiddle } from "../services/riddleAiService.js";
 
 export const RIDDLE_PREFIX = "woa:riddle";
-const RIDDLE_ART = "https://raw.githubusercontent.com/emilio1229/woa-event-bot/main/assets/Riddles.png";
 const drafts = new Map<string, { guildId: string; channelId: string }>();
 const aiDrafts = new Map<string, { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number; notes: string }>();
 const button = (label: string, id: string, style = ButtonStyle.Primary) => new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
@@ -45,7 +44,7 @@ async function buildLiveRiddleEmbed(riddleId: string) {
   const embed = new EmbedBuilder()
     .setColor(0x4B0082)
     .setTitle("🧩 THE ARCANE RIDDLE")
-    .setImage(RIDDLE_ART)
+    
     .setDescription(riddle.question)
     .addFields(
       { name: "💠 Reward", value: riddle.reward + " Sigils", inline: true },
@@ -65,7 +64,7 @@ function solvedEmbed(riddle: Awaited<ReturnType<typeof riddleStore.getById>>, wi
   return new EmbedBuilder()
     .setColor(0xFFD700)
     .setTitle("✨ THE RIDDLE HAS BEEN BROKEN ✨")
-    .setImage(RIDDLE_ART)
+    
     .setDescription(riddle.question)
     .addFields(
       { name: "🔮 Answer", value: "**" + riddle.answer + "**", inline: true },
@@ -82,7 +81,7 @@ function buildActiveRiddlesEmbed(riddles: Awaited<ReturnType<typeof riddleStore.
   const embed = new EmbedBuilder()
     .setColor(0x4B0082)
     .setTitle("📋 ACTIVE ARCANE RIDDLES")
-    .setImage(RIDDLE_ART)
+    
     .setDescription(riddles.length
       ? "These riddles are currently live. End one here if it needs to be closed before posting another."
       : "There are no active riddles in this server.");
@@ -100,7 +99,7 @@ function buildActiveRiddlesEmbed(riddles: Awaited<ReturnType<typeof riddleStore.
 
 export function buildRiddlePanel() {
   return {
-    embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setImage(RIDDLE_ART).setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")],
+    embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")],
     components: [
       row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")),
       row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), button("📣 Repost Active Riddle", RIDDLE_PREFIX + ":repost", ButtonStyle.Success)),
