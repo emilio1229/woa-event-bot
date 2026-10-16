@@ -9,9 +9,9 @@ This folder separates the current curated library from proposed expansion drafts
 - [Wizards of Ark Lore](./woa-lore.md) — 7 entries
 
 ## Proposed expansion sections
-- [Wizard & Magical Knowledge](./wizard-knowledge.md) — 8 draft ideas
-- [Real-World Knowledge](./real-world-knowledge.md) — 10 draft ideas
 - [Logic, Wordplay & Arcane Wildcards](./logic-and-wildcards.md) — 8 draft ideas, several need revision
 - [Expansion & Automation Roadmap](./expansion-roadmap.md) — approval workflow, no-repeat design, and future controls
+
+The riddle direction is focused on ARK knowledge, WoA community lore, and carefully reviewed logic/wordplay—not wizard/magic trivia or general real-world knowledge.
 
 **Before publishing:** verify facts, tighten answer keys, add progressive hints and stable IDs, and approve entries before automated rotation. The current rotation only checks a small recent-answer window; permanent no-repeat tracking still needs code changes.
