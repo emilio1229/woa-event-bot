@@ -26,7 +26,7 @@ export async function showRiddleAutoControls(interaction: Interaction) {
     row(btn("⏱ Schedule & Rewards", PREFIX + ":edit"), btn("🔄 Refresh", PREFIX + ":open")),
     row(btn("◀ Back to Riddles", "woa:council:riddles"))
   ];
-  if (interaction.isButton()) await interaction.update({ embeds: [embed], components });
+  if (interaction.isMessageComponent()) await interaction.update({ embeds: [embed], components });
   else await interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
 }
 
