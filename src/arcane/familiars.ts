@@ -12,11 +12,11 @@ async function respondReply(i: any, payload: any) {
   return i.deferred || i.replied ? i.followUp(payload) : i.reply(payload);
 }
 const PETS = [
-  { id: "archive_wisp", name: "Archive Wisp", emoji: "✨", rarity: "Common", lore: "A mote of forgotten memory. It chimes near erased records.", unlockBond: 0 },
-  { id: "ember_fox", name: "Ember Fox", emoji: "🔥", rarity: "Uncommon", lore: "A small fox-spirit whose paws leave sparks on stone.", unlockBond: 20 },
-  { id: "moon_moth", name: "Moon Moth", emoji: "🌙", rarity: "Rare", lore: "A silent moth that gathers light from places where stars have vanished.", unlockBond: 45 },
-  { id: "rune_tortoise", name: "Rune Tortoise", emoji: "🔷", rarity: "Rare", lore: "Its shell bears shifting runes that settle when its keeper is calm.", unlockBond: 75 },
-  { id: "voidling", name: "Voidling", emoji: "🌑", rarity: "Epic", lore: "A harmless fragment of the dark between stars, drawn to brave hearts.", unlockBond: 120 }
+  { id: "archive_wisp", name: "Archive Wisp", emoji: "✨", rarity: "Common", lore: "A mote of forgotten memory. It chimes near erased records.", perk: "Begin each Trial with +5 Mana.", unlockBond: 0 },
+  { id: "ember_fox", name: "Ember Fox", emoji: "🔥", rarity: "Uncommon", lore: "A small fox-spirit whose paws leave sparks on stone.", perk: "Your attacks deal +3 damage.", unlockBond: 20 },
+  { id: "moon_moth", name: "Moon Moth", emoji: "🌙", rarity: "Rare", lore: "A silent moth that gathers light from places where stars have vanished.", perk: "An 8% chance to evade an enemy strike.", unlockBond: 45 },
+  { id: "rune_tortoise", name: "Rune Tortoise", emoji: "🔷", rarity: "Rare", lore: "Its shell bears shifting runes that settle when its keeper is calm.", perk: "Defending grants +6 additional Ward.", unlockBond: 75 },
+  { id: "voidling", name: "Voidling", emoji: "🌑", rarity: "Epic", lore: "A harmless fragment of the dark between stars, drawn to brave hearts.", perk: "Your attacks gain +2 arcane force.", unlockBond: 120 }
 ] as const;
 type PetId = typeof PETS[number]["id"];
 
@@ -37,11 +37,11 @@ export async function buildFamiliarView(guildId: string, userId: string) {
   const list = PETS.map(p => {
     const owned = r.ownedIds.includes(p.id);
     const unlocked = r.bond >= p.unlockBond;
-    return (owned ? "✅" : unlocked ? "🔓" : "🔒") + " " + p.emoji + " **" + p.name + "** — " + (owned ? "Owned" : unlocked ? "Ready to discover" : "Bond " + p.unlockBond + " required") + "\n" + p.lore;
+    return (owned ? "✅" : unlocked ? "🔓" : "🔒") + " " + p.emoji + " **" + p.name + "** — " + (owned ? "Owned" : unlocked ? "Ready to discover" : "Bond " + p.unlockBond + " required") + "\n" + p.lore + "\n**Battle perk:** " + p.perk;
   }).join("\n\n");
   const e = new EmbedBuilder().setColor(0x6A0DAD).setTitle("🐾 THE FAMILIAR SANCTUM")
-    .setDescription("Your companions are story-bound allies. Equip one to carry its presence into your Chronicle. Familiar bond grows as you advance the saga.\n\n**Equipped:** " + (equipped ? equipped.emoji + " **" + equipped.name + "**" : "None") + "\n**Bond:** " + r.bond + " / 120\n\n" + list)
-    .setFooter({ text: "Companions are cosmetic/lore companions for now; they do not alter battle balance." });
+    .setDescription("Your companions are story-bound allies with unique combat perks. Equip one before entering a Trial; victories increase Bond and can awaken new familiars.\n\n**Equipped:** " + (equipped ? equipped.emoji + " **" + equipped.name + "**" : "None") + "\n**Bond:** " + r.bond + " / 120\n\n" + list)
+    .setFooter({ text: "Your equipped familiar’s passive perk applies in PvE Trials." });
   const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: p.name, value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped" : p.rarity }));
   const rows: any[] = [];
   if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
