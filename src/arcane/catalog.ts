@@ -24,6 +24,8 @@ export const ARCANE_PVE_ENEMIES:ArcanePveEnemy[]=[
 {id:"cursed_knight",name:"Cursed Knight",emoji:"🛡️",rarity:"Rare",description:"A fallen guardian bound to an ancient sorcerer's oath.",maxHp:165,maxMana:40,power:17,defense:13,speed:8,rewardXp:95,rewardSigils:13},
 {id:"bog_witch",name:"Bog Witch",emoji:"🧙",rarity:"Rare",description:"A swamp-dwelling spellcaster whose curses linger long after the duel.",maxHp:130,maxMana:90,power:17,defense:8,speed:10,rewardXp:100,rewardSigils:14},
 {id:"tower_chimera",name:"Tower Chimera",emoji:"🐲",rarity:"Epic",description:"A magical beast stitched from the nightmares of an abandoned wizard tower.",maxHp:195,maxMana:70,power:20,defense:12,speed:12,rewardXp:135,rewardSigils:19},
+{id:"corrupted_apprentice",name:"Corrupted Apprentice",emoji:"🧙‍♂️",rarity:"Uncommon",description:"A former archive student twisted by the silver ink, guarding the sealed stairwell.",maxHp:100,maxMana:55,power:12,defense:7,speed:10,rewardXp:60,rewardSigils:8},
+{id:"hollow_crown_guardian",name:"Hollow Crown Guardian",emoji:"👑",rarity:"Legendary",description:"A three-phase sentinel bound to the empty center of the Hollow Crown. Its defeat will open the path beyond the first seal.",maxHp:150,maxMana:120,power:10,defense:6,speed:12,rewardXp:240,rewardSigils:35},
 {id:"fallen_apprentice",name:"Fallen Apprentice",emoji:"🧙‍♂️",rarity:"Epic",description:"A rogue apprentice wielding unstable magic stolen from the Grand Archive.",maxHp:180,maxMana:110,power:21,defense:10,speed:14,rewardXp:150,rewardSigils:21},
 {id:"ancient_spellwyrm",name:"Ancient Spellwyrm",emoji:"🐉",rarity:"Legendary",description:"A dragon that fed for centuries on raw arcane energy.",maxHp:260,maxMana:120,power:24,defense:16,speed:13,rewardXp:220,rewardSigils:30}
 ];
