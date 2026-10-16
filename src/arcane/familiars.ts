@@ -52,7 +52,7 @@ export async function buildFamiliarView(guildId: string, userId: string) {
   const e = new EmbedBuilder().setColor(0x6A0DAD).setTitle("🐾 THE FAMILIAR SANCTUM")
     .setDescription("Your companions are story-bound allies with unique combat perks. Equip one before entering a Trial; victories increase Bond and can awaken new familiars. Give your companion a name of its own, too!\n\n**Equipped:** " + (equipped ? equipped.emoji + " **" + escapeDiscordMarkdown(displayPetName(equipped)) + "**" + (nicknames[equipped.id] ? " *(" + equipped.name + ")*" : "") : "None") + "\n**Bond:** " + r.bond + " / 120\n\n" + list)
     .setFooter({ text: "Your equipped familiar’s passive perk applies in PvE Trials." });
-  const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: p.name, value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped" : p.rarity }));
+  const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: displayPetName(p).slice(0, 100), value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped • " + p.name : p.rarity }));
   const rows: any[] = [];
   if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -60,6 +60,7 @@ export async function buildFamiliarView(guildId: string, userId: string) {
     new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Train • 5 Sigils").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return").setStyle(ButtonStyle.Secondary)
   ));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":refresh").setLabel("🔄 Refresh Sanctum").setStyle(ButtonStyle.Secondary)));
   return { embeds: [e], components: rows };
 }
 
@@ -93,6 +94,10 @@ export async function handleFamiliarInteraction(i: Interaction) {
         new TextInputBuilder().setCustomId("familiar_name").setLabel("What will you call your " + familiar.name + "?").setPlaceholder("A name worthy of a tiny legend").setValue(nicknames[familiar.id] || familiar.name).setRequired(true).setMinLength(1).setMaxLength(24).setStyle(TextInputStyle.Short)
       ));
       await i.showModal(modal);
+      return true;
+    }
+    if (action === "refresh" && i.isButton()) {
+      await respondUpdate(i, await buildFamiliarView(i.guildId, i.user.id));
       return true;
     }
     if (action === "equip" && i.isStringSelectMenu()) {
