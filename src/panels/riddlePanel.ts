@@ -9,7 +9,7 @@ const aiDrafts = new Map<string, { guildId: string; channelId: string; question:
 const button = (label: string, id: string, style = ButtonStyle.Primary) => new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row = (...b: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 const back = () => button("◀ Council", "woa:council:home", ButtonStyle.Secondary);
-const input = (id: string, label: string, placeholder: string, style: TextInputStyle, required = true) => new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required));
+const input = (id: string, label: string, placeholder: string, style: TextInputStyle, required = true, initialValue?: string) => { const field = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required); if (initialValue?.length) field.setValue(initialValue.slice(0, 4000)); return new ActionRowBuilder<TextInputBuilder>().addComponents(field); };
 
 function formatGuess(answer: string) {
   const clean = answer.trim().replace(/\s+/g, " ");
@@ -26,6 +26,8 @@ function parseHintSequence(hint?: string) {
   }
   return [hint.trim()];
 }
+
+function formatHintsForEditing(hint?: string) { return parseHintSequence(hint).join("\n"); }
 
 function formatHintReview(hint?: string) {
   const hints = parseHintSequence(hint);
@@ -369,7 +371,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const draft = aiDrafts.get(interaction.user.id);
     if (!draft) { await interaction.reply({ content: "❌ That AI riddle review expired.", ephemeral: true }); return true; }
     const modal = new ModalBuilder().setCustomId(RIDDLE_PREFIX + ":ai:editModal:" + interaction.user.id).setTitle("Edit AI Riddle");
-    modal.addComponents(input("question","Riddle","Edit the generated riddle",TextInputStyle.Paragraph), input("answer","Answer","Edit the correct answer",TextInputStyle.Short), input("reward","Sigil reward","5–50",TextInputStyle.Short), input("hint","Optional hint","Edit or leave blank",TextInputStyle.Paragraph,false));
+    modal.addComponents(input("question","Riddle","Edit only what you want to change",TextInputStyle.Paragraph,true,draft.question), input("answer","Answer","Leave unchanged to keep this answer",TextInputStyle.Short,true,draft.answer), input("reward","Sigil reward","Leave unchanged to keep this reward",TextInputStyle.Short,true,String(draft.reward)), input("hint","Hint path","One hint per line; leave blank for none",TextInputStyle.Paragraph,false,formatHintsForEditing(draft.hint)));
     await interaction.showModal(modal);
     return true;
   }
@@ -379,9 +381,11 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const question = interaction.fields.getTextInputValue("question").trim();
     const answer = interaction.fields.getTextInputValue("answer").trim();
     const reward = Number.parseInt(interaction.fields.getTextInputValue("reward").trim(), 10);
-    const hint = interaction.fields.getTextInputValue("hint").trim();
+    const hintText = interaction.fields.getTextInputValue("hint").trim();
     if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
-    const updated = { ...draft, question, answer, reward, hint: hint || undefined };
+    const hintLines = hintText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    const hint = hintLines.length > 1 ? JSON.stringify(hintLines) : (hintLines[0] || undefined);
+    const updated = { ...draft, question, answer, reward, hint };
     aiDrafts.set(interaction.user.id, updated);
     await interaction.reply(buildAiReview(updated));
     return true;
