@@ -28,7 +28,7 @@ class RiddleAutoSettingsStore {
   }
 
   async update(guildId: string, data: Partial<Pick<RiddleAutoSettingsRecord, "enabled" | "channelId" | "intervalMinutes" | "rewardMin" | "rewardMax">>) {
-    const current = await this.get(guildId);
+    await this.get(guildId);
     return prisma.riddleAutoSettings.update({ where: { guildId }, data: { ...data } });
   }
 
