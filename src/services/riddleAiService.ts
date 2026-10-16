@@ -462,9 +462,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Nameless",
     "category": "creature",
     "lines": [
-      "The warning comes before the shape, and the shape often comes too late.",
-      "A light carried by a survivor can change whether the dark remains empty.",
-      "It is less a ruler of the deep than a punishment for entering unprepared.",
+      "In the deep places, the first sign of danger may be a change in the rules rather than a visible body.",
+      "One portable source of borrowed daylight changes what is willing to approach.",
+      "It does not need a throne to make an entire expedition regret its route.",
       "What Aberration threat makes illumination more than a convenience?"
     ],
     "hints": [
@@ -581,9 +581,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Desert Titan",
     "category": "creature",
     "lines": [
-      "A storm has learned to carry a heartbeat.",
-      "The sky is not its home so much as its territory, and the ruined city watches it pass like an omen.",
-      "It is too vast for ordinary taming and too deliberate to mistake for weather.",
+      "The weather seems to gather its own will, then keep it moving above the broken world.",
+      "Its territory is measured from above, while the ruins below serve as witnesses rather than shelter.",
+      "Its scale rules out an ordinary mount, but its movements are far too deliberate to be a storm.",
       "Which colossal Extinction guardian commands the desert air?"
     ],
     "hints": [
@@ -598,9 +598,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Forest Titan",
     "category": "creature",
     "lines": [
-      "The canopy has no need of a throne when the trees themselves can rise.",
-      "Its body makes the border between creature and landscape difficult to draw.",
-      "The ruined world gave its woodland a guardian too large to hide behind a trunk.",
+      "In this territory, the old boundary between root and guardian has stopped holding.",
+      "The forest's outline becomes unreliable when its protector chooses to move.",
+      "Its domain is the green refuge that survived the fall of the old world.",
       "Which Titan is bound to Extinction's overgrown green heart?"
     ],
     "hints": [
@@ -615,9 +615,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Ice Titan",
     "category": "creature",
     "lines": [
-      "The cold here is more than weather; it has learned to advance.",
-      "A frozen giant carries the silence of a biome where ordinary tracks vanish quickly.",
-      "Its name is plain, but earning the right to face it is not.",
+      "The stillness of the frozen wastes can gather itself and begin to march.",
+      "Its passage belongs to a place where footprints are temporary, but the damage is not.",
+      "The title is simple; reaching the encounter is the true test of preparation.",
       "Which Titan embodies Extinction's frozen domain?"
     ],
     "hints": [
@@ -666,9 +666,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Noglin",
     "category": "creature",
     "lines": [
-      "The body you see may not be the will that moves it.",
-      "A brief invasion of thought can turn an enemy's strength into an unfamiliar instrument.",
-      "It wins not by overpowering every target, but by borrowing the target's choices.",
+      "The most important command in a battle may come from something too small to hold the weapon.",
+      "For a short time, an opponent's own power can be made to serve a different intent.",
+      "Its advantage is not force, but the unsettling question of who is choosing the next move.",
       "Which Extinction creature can take control of another survivor or creature?"
     ],
     "hints": [
@@ -717,9 +717,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Desmodus",
     "category": "creature",
     "lines": [
-      "A cave's ceiling becomes a road, and night becomes an ally.",
-      "It can carry a survivor through darkness while turning the hunt into a source of useful essence.",
-      "Its silhouette recalls old folklore, but its place in the bestiary is real.",
+      "The safest route through a cavern may run above the path everyone else follows.",
+      "Its strange harvest comes from the hunt itself, and the darkness offers it more than cover.",
+      "An old superstition has acquired a place in the Council's field records.",
       "Which creature makes blood, flight, and the cavern one connected clue?"
     ],
     "hints": [
@@ -734,9 +734,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Rhyniognatha",
     "category": "creature",
     "lines": [
-      "A fortress may be born from a process that looks more like a bargain than a breeding plan.",
-      "The path asks for a host and a resource few tribes keep casually at hand.",
-      "Its silhouette recalls an ancient insect, but its utility is measured in what it can carry.",
+      "Some living fortresses begin with an exchange no ordinary breeder would call routine.",
+      "The process requires both a living intermediary and a costly offering that cannot be improvised at the last moment.",
+      "Its wings suggest an old kind of hunter; its value is revealed by the weight it can bear.",
       "Which giant insect requires an unusual impregnation process to obtain?"
     ],
     "hints": [
@@ -785,9 +785,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Tek Cave",
     "category": "challenge",
     "lines": [
-      "The final ascent begins where ordinary survival stops being enough.",
-      "Heat and hostile guardians narrow the route, and the destination is not a supply cache.",
-      "The entrance is a test of preparation before it becomes a test of endurance.",
+      "The last climb begins at a threshold where preparation matters more than exploration.",
+      "The passage punishes hesitation with heat and pressure, and its end is a gateway to a greater trial.",
+      "The approach tests a tribe's readiness before the destination tests its ability to endure.",
       "What Island challenge leads survivors toward the final overseer?"
     ],
     "hints": [
@@ -802,9 +802,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Broodmother Lysrix",
     "category": "challenge",
     "lines": [
-      "The first warning may arrive on many legs, but the arena is not an ordinary nest.",
-      "A relic opens the way to a battle where small shapes can fill the ground.",
-      "The name belongs to a guardian whose brood is part of the threat.",
+      "The arena's smallest threats arrive in numbers, but the true danger is the source that keeps sending them.",
+      "The entrance requires proof of prior trials, and the floor can become crowded before the main foe is understood.",
+      "Its title points to a lineage, and that lineage is not merely ceremonial.",
       "Which Island boss rules the spider-themed arena?"
     ],
     "hints": [
@@ -819,9 +819,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Megapithecus",
     "category": "challenge",
     "lines": [
-      "A ruined gateway frames a foe whose strength is easier to recognize than its title.",
-      "The arena's danger is not only the opponent but the ground that may fail beneath a careless step.",
-      "A great ape stands where the cold approaches the end of the trial.",
+      "The arena's architecture offers a clue, but the danger is a living opponent rather than the broken stone.",
+      "Position matters as much as strength; one mistake can turn the arena itself against a prepared team.",
+      "Its shape belongs to a familiar family of primates, while the trial around it is anything but familiar.",
       "Which Island boss turns a frozen arena into a test of footing?"
     ],
     "hints": [
@@ -836,9 +836,9 @@ const RIDDLES: RiddleSeed[] = [
     "answer": "Dragon",
     "category": "challenge",
     "lines": [
-      "The arena borrows the shape of a legend, and the air itself becomes part of the danger.",
-      "A survivor who prepares only for claws may overlook what falls from above.",
-      "Its title is shorter than its shadow, and its trial is among the Island's final tests.",
+      "The battlefield refuses to stay on the ground, forcing survivors to account for threats that arrive from above.",
+      "Armor against a close strike does little for a team that ignores the danger carried through the air.",
+      "The name is almost too ordinary for a creature tied to one of the Island's defining trials.",
       "Which Island boss makes flight and fire central to the battle?"
     ],
     "hints": [
