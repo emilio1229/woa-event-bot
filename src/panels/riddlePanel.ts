@@ -383,7 +383,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const reward = Number.parseInt(interaction.fields.getTextInputValue("reward").trim(), 10);
     const hintText = interaction.fields.getTextInputValue("hint").trim();
     if (!question || !answer || !Number.isInteger(reward) || reward < 1 || reward > 10000) { await interaction.reply({ content: "❌ Enter a riddle, answer, and reward from 1–10,000.", ephemeral: true }); return true; }
-    const hintLines = hintText.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
+    const hintLines = hintText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const hint = hintLines.length > 1 ? JSON.stringify(hintLines) : (hintLines[0] || undefined);
     const updated = { ...draft, question, answer, reward, hint };
     aiDrafts.set(interaction.user.id, updated);
