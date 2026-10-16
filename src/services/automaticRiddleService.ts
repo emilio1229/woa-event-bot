@@ -173,6 +173,9 @@ export function startAutomaticRiddleLoop(client: BotClient): void {
   // Poll persisted per-server settings so Council changes take effect without a restart.
   const run = async () => {
     try {
+      for (const guild of client.guilds.cache.values()) {
+        await riddleAutoSettingsStore.get(guild.id);
+      }
       const guilds = await riddleAutoSettingsStore.enabledGuilds();
       for (const settings of guilds) {
         if (!await riddleAutoSettingsStore.due(settings.guildId)) continue;
