@@ -33,7 +33,7 @@ function nicknameMap(value: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 }
 function escapeDiscordMarkdown(value: string): string {
-  return value.replace(/([\\\\`*_{}\\[\\]()<>#+\\-.!|~])/g, "\\\\$1");
+  return value.replace(/[*_~|`]/g, "").replace(/[<>]/g, "");
 }
 
 export async function buildFamiliarView(guildId: string, userId: string) {
@@ -75,7 +75,7 @@ export async function handleFamiliarInteraction(i: Interaction) {
     if (action === "rename_submit" && i.isModalSubmit()) {
       const familiar = pet(r.equippedId || "");
       if (!familiar || !r.ownedIds.includes(familiar.id)) throw new Error("Equip a familiar before naming it.");
-      const rawName = i.fields.getTextInputValue("familiar_name").trim().replace(/[\r\n]+/g, " ");
+      const rawName = i.fields.getTextInputValue("familiar_name").trim().replace(/[\r\n]+/g, " ").replace(/[*_~|`<>]/g, "");
       if (rawName.length < 1 || rawName.length > 24) throw new Error("Choose a name between 1 and 24 characters.");
       if (/@everyone|@here|<@/i.test(rawName)) throw new Error("Familiar names cannot contain Discord mentions.");
       const nicknames = nicknameMap(r.nicknames);
