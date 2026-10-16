@@ -433,7 +433,7 @@ export async function handleRiddleInteraction(interaction: Interaction): Promise
       .join("\n\n");
     const progress = unlockedCount < hints.length
       ? "\n\n*You have unlocked " + unlockedCount + " of " + hints.length + " hints. Each additional incorrect guess unlocks the next clue.*"
-      : "\n\n✨ *All four arcane hints are now yours to read.*";
+      : "\n\n✨ *All " + hints.length + " arcane hints are now yours to read.*";
     await interaction.reply({
       content: "💡 **YOUR ARCANE HINTS — " + unlockedCount + "/" + hints.length + " UNLOCKED**\n\n" + unlockedHints + progress,
       ephemeral: true
