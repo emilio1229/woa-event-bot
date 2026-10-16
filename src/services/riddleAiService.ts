@@ -1020,9 +1020,11 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
   const candidate = pool[Math.floor(Math.random() * pool.length)];
 
   return {
-    question: candidate.lines.join("\n"),
+    // Reveal only the opening clues publicly. The remaining two lines become
+    // progressive hints, unlocked only after this wizard makes incorrect guesses.
+    question: candidate.lines.slice(0, 3).join("\n") + "\n\nWhat is the Scribe asking you to identify?",
     answer: candidate.answer,
-    hint: JSON.stringify(buildHints(candidate)),
+    hint: JSON.stringify([...candidate.lines.slice(3), ...buildHints(candidate)]),
     reward: candidate.reward,
     notes: "Arcane Scribe • " + candidate.notes
   };
