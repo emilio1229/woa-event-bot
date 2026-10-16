@@ -108,18 +108,26 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
       )
       .setFooter({ text: "The first correct answer claims the reward." });
 
-    // A rare, in-world administrator cameo: never a permanent panel entry.
-    if (Math.random() < 0.22) {
+    // A rare, in-world administrator cameo: a little lore, a little chaos, never a permanent panel entry.
+    if (Math.random() < 0.28) {
       const whispers = [
-        "*A violet spark gathers into EmilioTheGreat's sigil, then vanishes before it can be read.*",
-        "*Rin's handwriting appears in the margin: “Do not trust the first meaning.”*",
-        "*Doxo's lantern flickers once. Somewhere beyond the veil, a page turns.*",
-        "*Heathen leaves a single mark in the dust: a warning, not an answer.*",
-        "*Wizard's voice drifts through the hall: “Patience is part of the spell.”*",
-        "*Brendon's quill scratches across an unseen page, then falls silent.*",
-        "*Panda's shadow crosses the rune circle. No explanation follows.*"
+        "*EmilioTheGreat appears in a violet flash, points dramatically at the riddle, whispers “I have absolutely no idea,” then vanishes.*",
+        "*Rin has written “READ CAREFULLY” in the margin. Underneath, in smaller writing: “Yes, this means you.”*",
+        "*Doxo's lantern flickers. A tiny sign appears: “The light is on. The wizard is buffering.”*",
+        "*Heathen has left a warning in the dust: “Do not touch the cursed artifact.” The dust is shaped like a handprint.*",
+        "*Wizard's voice booms through the hall: “I have mastered every spell!” A distant crash follows. “That one was experimental.”*",
+        "*Brendon's quill writes “This was definitely part of the plan.” It then sets the plan on fire.*",
+        "*Panda's shadow crosses the rune circle carrying a tiny clipboard. The shadow marks everyone as “probably suspicious.”*",
+        "*A Realm Master storms in, declares the situation under control, trips over a harmless rune, and leaves with great dignity.*",
+        "*A glowing memo appears: “Official Council ruling: if the artifact screams, stop poking it.” Someone has already poked it three times.*",
+        "*The High Council's emergency meeting concludes with a unanimous decision to blame the nearest dinosaur.*",
+        "*A mysterious voice announces, “The Realm is safe!” Immediately, somewhere, a cupboard explodes into glitter.*",
+        "*A wizard-shaped silhouette mutters, “I could solve this instantly.” The silhouette opens the wrong door and politely closes it again.*",
+        "*A note signed “Definitely Not the Voidling” reads: “I did not eat the council's emergency snacks.” Tiny bite marks cover the page.*",
+        "*A stern message from the Council reads: “No experimental spells before breakfast.” The scorch marks suggest this policy arrived too late.*",
+        "*Somewhere beyond the veil, a familiar steals an administrator's hat. The administrator pretends this was a planned ceremony.*"
       ];
-      embed.addFields({ name: "🜂 A Passing Presence", value: whispers[Math.floor(Math.random() * whispers.length)] });
+      embed.addFields({ name: "🜂 Unscheduled Council Nonsense", value: whispers[Math.floor(Math.random() * whispers.length)] });
     }
 
     const answerButton = new ButtonBuilder()
