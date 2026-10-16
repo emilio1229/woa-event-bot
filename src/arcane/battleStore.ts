@@ -47,7 +47,7 @@ foe.shield-=familiarBlocked;
 const dealt=familiarDamage-familiarBlocked;
 foe.hp=Math.max(0,foe.hp-dealt);
 const familiarText=companion.emoji+" **"+companion.name+"** "+companion.verb+" for **"+dealt+"** damage!"+(familiarBlocked?" "+familiarBlocked+" was absorbed by the enemy's ward.":"");
-text+="\\n"+familiarText;
+text+="\n"+familiarText;
 me.log=[...(me.log||[]),familiarText].slice(-6);
 s.__battleLog=[...(s.__battleLog||[]),familiarText].slice(-5);
 }
