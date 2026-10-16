@@ -1,6 +1,5 @@
 import type { TextChannel, MessageActionRowComponentBuilder } from "discord.js";
 import type { BotClient } from "../index.js";
-import { env } from "../config/env.js";
 import { riddleStore } from "../riddleStore.js";
 import { riddleAutoSettingsStore } from "../riddleAutoSettingsStore.js";
 import { generateArcaneRiddle } from "./riddleAiService.js";
