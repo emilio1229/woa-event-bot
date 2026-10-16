@@ -1,7 +1,7 @@
 import type { TextChannel, MessageActionRowComponentBuilder } from "discord.js";
 import type { BotClient } from "../index.js";
-import { env } from "../config/env.js";
 import { riddleStore } from "../riddleStore.js";
+import { riddleAutoSettingsStore } from "../riddleAutoSettingsStore.js";
 import { generateArcaneRiddle } from "./riddleAiService.js";
 import { logError, logInfo } from "../utils/logger.js";
 
@@ -48,13 +48,19 @@ function safeHints(raw: string | undefined, answer: string): string {
   ]);
 }
 
-export async function publishAutomaticRiddle(client: BotClient): Promise<boolean> {
-  const channelId = env.riddleAutoChannelId;
-  if (!channelId) return false;
+export async function publishAutomaticRiddle(client: BotClient, guildId: string): Promise<boolean> {
+  const settings = await riddleAutoSettingsStore.get(guildId);
+  const channelId = settings.channelId;
+  if (!settings.enabled || !channelId) return false;
 
   const channel = await client.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased() || !channel.isSendable() || !("guildId" in channel) || !channel.guildId) {
     logError("Automatic riddle channel is invalid or not a guild text channel.", new Error("Invalid automatic riddle channel"));
+    return false;
+  }
+
+  if (channel.guildId !== guildId) {
+    logError("Automatic riddle channel belongs to a different guild.", new Error("Riddle channel guild mismatch"));
     return false;
   }
 
@@ -74,8 +80,8 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
     return false;
   }
   draft = { ...draft, hint: safeHints(draft.hint, draft.answer) };
-  const rewardRange = Math.max(0, env.riddleAutoRewardMax - env.riddleAutoRewardMin);
-  const reward = env.riddleAutoRewardMin + Math.floor(Math.random() * (rewardRange + 1));
+  const rewardRange = Math.max(0, settings.rewardMax - settings.rewardMin);
+  const reward = settings.rewardMin + Math.floor(Math.random() * (rewardRange + 1));
 
   const riddle = await riddleStore.create({
     guildId: channel.guildId,
@@ -161,22 +167,30 @@ export async function publishAutomaticRiddle(client: BotClient): Promise<boolean
 }
 
 export function startAutomaticRiddleLoop(client: BotClient): void {
-  if (started || !env.riddleAutoEnabled || !env.riddleAutoChannelId) return;
+  if (started) return;
   started = true;
 
-  const intervalMs = env.riddleAutoIntervalMinutes * 60_000;
+  // Poll persisted per-server settings so Council changes take effect without a restart.
   const run = async () => {
     try {
-      await publishAutomaticRiddle(client);
+      for (const guild of client.guilds.cache.values()) {
+        await riddleAutoSettingsStore.get(guild.id);
+      }
+      const guilds = await riddleAutoSettingsStore.enabledGuilds();
+      for (const settings of guilds) {
+        if (!await riddleAutoSettingsStore.due(settings.guildId)) continue;
+        try {
+          await publishAutomaticRiddle(client, settings.guildId);
+        } finally {
+          await riddleAutoSettingsStore.markRun(settings.guildId);
+        }
+      }
     } catch (error) {
       logError("Automatic riddle loop failed:", error);
     }
   };
 
   void run();
-  setInterval(() => void run(), intervalMs);
-  logInfo("Automatic riddle loop enabled.", {
-    channelId: env.riddleAutoChannelId,
-    intervalMinutes: env.riddleAutoIntervalMinutes
-  });
+  setInterval(() => void run(), 60_000);
+  logInfo("Automatic riddle loop enabled; polling persisted server settings every minute.");
 }

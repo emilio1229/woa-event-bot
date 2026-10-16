@@ -105,6 +105,7 @@ export function buildRiddlePanel() {
     components: [
       row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")),
       row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), button("📣 Repost Active Riddle", RIDDLE_PREFIX + ":repost", ButtonStyle.Success)),
+      row(button("⚙️ Automatic Riddle Controls", "woa:riddle:auto:open", ButtonStyle.Secondary)),
       row(back())
     ]
   };

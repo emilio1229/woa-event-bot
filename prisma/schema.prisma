@@ -226,3 +226,15 @@ model ArcaneFamiliarCollection {
   @@unique([guildId, userId])
   @@index([guildId, bond])
 }
+
+
+model RiddleAutoSettings {
+  guildId          String   @id
+  enabled          Boolean  @default(false)
+  channelId        String?
+  intervalMinutes  Int      @default(360)
+  rewardMin        Int      @default(50)
+  rewardMax        Int      @default(100)
+  lastRunAt        DateTime?
+  updatedAt        DateTime @updatedAt
+}

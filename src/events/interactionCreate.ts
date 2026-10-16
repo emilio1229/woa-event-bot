@@ -5,6 +5,7 @@ import { handleEventBountyManagement } from "../panels/eventBountyManagement.js"
 import { handleCouncilPanel } from "../panels/councilPanel.js";
 import { handleRealmPanel } from "../panels/realmPanel.js";
 import { handleRiddleAnswerModal, handleRiddleInteraction, handleRiddlePanel } from "../panels/riddlePanel.js";
+import { handleRiddleAutoControls } from "../panels/riddleAutoControls.js";
 import { handleInteraction as handleLegacyInteraction } from "../interactionCreate.js";
 import { logError } from "../utils/logger.js";
 import { handleArcaneInteraction } from "../arcane/panel.js";
@@ -28,6 +29,7 @@ export function registerInteractionCreateHandler(client: BotClient) {
       // Pre-defering these interactions causes Discord to reject their response and
       // can make the generic riddle fallback report that the riddle is no longer active.
       if (interaction.isMessageComponent() && interaction.customId.startsWith("woa:riddle:")) {
+        if (await handleRiddleAutoControls(interaction)) return;
         if (await handleRiddlePanel(interaction)) return;
         if (await handleRiddleInteraction(interaction)) return;
         return;
@@ -54,6 +56,7 @@ export function registerInteractionCreateHandler(client: BotClient) {
 
       if (await handleArcaneInteraction(interaction)) return;
 
+      if (await handleRiddleAutoControls(interaction)) return;
       if (await handleRiddlePanel(interaction)) return;
 
       if (await handleRiddleInteraction(interaction)) return;
