@@ -12,8 +12,8 @@ async function respondReply(i: any, payload: any) {
 }
 const btn=(label:string,id:string,style:ButtonStyle=ButtonStyle.Primary)=>new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row=(...b:ButtonBuilder[])=>new ActionRowBuilder<ButtonBuilder>().addComponents(b);
-type StoryState={step:number;route:string;familiar:string;claimed:boolean;encounterCleared:boolean;bossCleared:boolean};
-const defaults:StoryState={step:0,route:"unselected",familiar:"archive_wisp",claimed:false,encounterCleared:false,bossCleared:false};
+type StoryState={step:number;route:string;familiar:string;claimed:boolean;encounterCleared:boolean;bossCleared:boolean;bossRewardClaimed:boolean};
+const defaults:StoryState={step:0,route:"unselected",familiar:"archive_wisp",claimed:false,encounterCleared:false,bossCleared:false,bossRewardClaimed:false};
 async function getState(guildId:string,userId:string):Promise<StoryState>{
  const record=await prisma.arcaneQuestProgress.findUnique({where:{guildId_userId:{guildId,userId}}});
  return {...defaults,...(record?.state as Partial<StoryState>|null||{})};
@@ -43,7 +43,7 @@ export async function buildStoryView(guildId:string,userId:string){
  const s=await getState(guildId,userId),components:any[]=[];
  if(s.step===2&&!s.encounterCleared)components.push(row(btn("⚔️ Enter the Undercroft",STORY_PREFIX+":encounter:corrupted_apprentice",ButtonStyle.Danger)));
  else if(s.step===6&&!s.bossCleared)components.push(row(btn("👑 Challenge the Guardian",STORY_PREFIX+":encounter:hollow_crown_guardian",ButtonStyle.Danger)));
- else if(s.step===6&&s.bossCleared)components.push(row(btn("◀ Return to Hall","woa:arcane:open",ButtonStyle.Secondary),btn("📖 Read Chapter Again",STORY_PREFIX+":restart")));
+ else if(s.step===6&&s.bossCleared)components.push(row(btn("📖 Read Chapter Again",STORY_PREFIX+":restart")));
  else if(s.step===4&&s.route==="unselected")components.push(row(btn("📚 Follow the Archive",STORY_PREFIX+":route:archive"),btn("🕯️ Guard the Veil",STORY_PREFIX+":route:veil")));
  else if(s.step<scenes.length-1)components.push(row(btn(scenes[s.step].action,STORY_PREFIX+":next")));
  else components.push(row(btn("📖 Read Chapter Again",STORY_PREFIX+":restart")));
@@ -59,7 +59,7 @@ export async function isStoryEncounterAvailable(guildId:string,userId:string,enc
 export async function completeStoryEncounter(guildId:string,userId:string,encounterId:string){
  const s=await getState(guildId,userId);
  if(encounterId==="corrupted_apprentice"&&s.step===2&&!s.encounterCleared){s.encounterCleared=true;await saveState(guildId,userId,s);return {completed:true,boss:false};}
- if(encounterId==="hollow_crown_guardian"&&s.step===6&&!s.bossCleared){s.bossCleared=true;if(!s.claimed){const c=await arcaneStore.get(guildId,userId);if(c)await arcaneStore.addXp(c,75);await sigilStore.addTransaction(guildId,userId,15,"Arcane Chronicle: The Hollow Crown",{type:"award"});s.claimed=true;}await saveState(guildId,userId,s);return {completed:true,boss:true};}
+ if(encounterId==="hollow_crown_guardian"&&s.step===6&&!s.bossCleared){s.bossCleared=true;if(!s.bossRewardClaimed){const c=await arcaneStore.get(guildId,userId);if(c)await arcaneStore.addXp(c,75);await sigilStore.addTransaction(guildId,userId,15,"Arcane Chronicle: The Hollow Crown",{type:"award"});s.bossRewardClaimed=true;}await saveState(guildId,userId,s);return {completed:true,boss:true};}
  return {completed:false,boss:encounterId==="hollow_crown_guardian"};
 }
 export async function handleArcaneStoryInteraction(i:Interaction){
@@ -70,7 +70,7 @@ export async function handleArcaneStoryInteraction(i:Interaction){
   const c=await arcaneStore.get(i.guildId,i.user.id);
   if(!c){await respondReply(i,{content:"Create your Wizard before beginning the Chronicle.",flags:MessageFlags.Ephemeral});return true;}
   const s=await getState(i.guildId,i.user.id),action=i.customId.slice((STORY_PREFIX+":").length);
-  if(action==="restart"){s.step=0;s.route="unselected";s.familiar="archive_wisp";s.encounterCleared=false;s.bossCleared=false;await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
+  if(action==="restart"){s.step=0;s.route="unselected";s.familiar="archive_wisp";s.encounterCleared=false;s.bossCleared=false;s.bossRewardClaimed=false;await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
   if(action.startsWith("encounter:")){await respondReply(i,{content:"Preparing your encounter…",flags:MessageFlags.Ephemeral});return true;}
   if(action.startsWith("route:")){s.route=action.slice(6);await saveState(i.guildId,i.user.id,s);await respondUpdate(i,await buildStoryView(i.guildId,i.user.id));return true;}
   if(action==="next"){
