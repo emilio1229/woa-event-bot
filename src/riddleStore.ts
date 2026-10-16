@@ -10,7 +10,7 @@ export interface RiddleGuessRecord {
   id: string; riddleId: string; userId: string; answer: string;
   correct: boolean; createdAt: Date;
 }
-function normalize(value: string) { return value.trim().replace(/\s+/g, " ").toLocaleLowerCase(); }
+function normalize(value: string) { return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " "); }
 function toRecord(r: any): RiddleRecord {
   return { ...r, messageId: r.messageId ?? undefined, hint: r.hint ?? undefined, winnerId: r.winnerId ?? undefined };
 }
