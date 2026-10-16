@@ -36,7 +36,7 @@ function sceneEmbed(s:StoryState){
  if(s.step===3)e.addFields({name:"🪄 Your Familiar",value:"**Archive Wisp** • Memory-light familiar\nIt chimes near erased records. Its bond grows as you uncover the Chronicle; it grants no extra combat turn."});
  if(s.step===2)e.addFields({name:s.encounterCleared?"⚔️ Undercroft secured":"⚔️ Hostile presence detected",value:s.encounterCleared?"The corrupted apprentice has been defeated. The stairwell is clear, and the Chronicle can continue.":"A corrupted apprentice is guarding the sealed stairwell. Defeat it to continue the investigation."});
  if(s.step===4)e.addFields({name:"Choose your lead",value:"**Archive faction:** preserve forbidden knowledge.\n**Veil faction:** protect the Realm from dangerous truths.\nYour choice changes optional quests, not the shared main saga."});
- if(s.step===6)e.addFields({name:s.bossCleared?"👑 The Guardian has fallen":"👑 The Hollow Crown Guardian",value:s.bossCleared?"The Guardian is defeated. The first chapter's threat has been contained; your chapter rewards are recorded.":"The Unwritten's voice awakens the Guardian beyond the door. Defeat this ancient sentinel to finish Chapter I."});
+ if(s.step===6)e.addFields({name:s.bossCleared?"👑 The Guardian has fallen":"👑 The Hollow Crown Guardian",value:s.bossCleared?"The Guardian is defeated. The first chapter's threat has been contained; your enhanced chapter rewards are recorded.":"The Unwritten's voice awakens the Guardian beyond the door. Defeat this ancient sentinel to finish Chapter I."});
  return e;
 }
 export async function buildStoryView(guildId:string,userId:string){
@@ -59,7 +59,7 @@ export async function isStoryEncounterAvailable(guildId:string,userId:string,enc
 export async function completeStoryEncounter(guildId:string,userId:string,encounterId:string){
  const s=await getState(guildId,userId);
  if(encounterId==="corrupted_apprentice"&&s.step===2&&!s.encounterCleared){s.encounterCleared=true;await saveState(guildId,userId,s);return {completed:true,boss:false};}
- if(encounterId==="hollow_crown_guardian"&&s.step===6&&!s.bossCleared){s.bossCleared=true;if(!s.bossRewardClaimed){const c=await arcaneStore.get(guildId,userId);if(c)await arcaneStore.addXp(c,75);await sigilStore.addTransaction(guildId,userId,15,"Arcane Chronicle: The Hollow Crown",{type:"award"});s.bossRewardClaimed=true;}await saveState(guildId,userId,s);return {completed:true,boss:true};}
+ if(encounterId==="hollow_crown_guardian"&&s.step===6&&!s.bossCleared){s.bossCleared=true;if(!s.bossRewardClaimed){const c=await arcaneStore.get(guildId,userId);if(c)await arcaneStore.addXp(c,150);await sigilStore.addTransaction(guildId,userId,35,"Arcane Chronicle: The Hollow Crown",{type:"award"});s.bossRewardClaimed=true;}await saveState(guildId,userId,s);return {completed:true,boss:true};}
  return {completed:false,boss:encounterId==="hollow_crown_guardian"};
 }
 export async function handleArcaneStoryInteraction(i:Interaction){
