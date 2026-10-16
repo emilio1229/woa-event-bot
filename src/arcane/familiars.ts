@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, StringSelectMenuBuilder, type Interaction } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle, type Interaction } from "discord.js";
 import { prisma } from "../database/prisma.js";
 import { arcaneStore } from "./store.js";
 import { sigilStore } from "../sigilStore.js";
@@ -28,36 +28,78 @@ async function record(guildId: string, userId: string) {
   });
 }
 const pet = (id: string) => PETS.find(p => p.id === id);
+function nicknameMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+function escapeDiscordMarkdown(value: string): string {
+  return value.replace(/[*_~|`]/g, "").replace(/[<>]/g, "");
+}
 
 export async function buildFamiliarView(guildId: string, userId: string) {
   const c = await arcaneStore.get(guildId, userId);
   if (!c) return { content: "Create your Wizard before visiting the Familiar Sanctum.", embeds: [], components: [] };
   const r = await record(guildId, userId);
   const equipped = pet(r.equippedId || "");
+  const nicknames = nicknameMap(r.nicknames);
+  const displayPetName = (p: typeof PETS[number]) => nicknames[p.id] || p.name;
   const list = PETS.map(p => {
     const owned = r.ownedIds.includes(p.id);
     const unlocked = r.bond >= p.unlockBond;
-    return (owned ? "✅" : unlocked ? "🔓" : "🔒") + " " + p.emoji + " **" + p.name + "** — " + (owned ? "Owned" : unlocked ? "Ready to discover" : "Bond " + p.unlockBond + " required") + "\n" + p.lore + "\n**Battle perk:** " + p.perk;
+    const displayName = escapeDiscordMarkdown(displayPetName(p));
+    return (owned ? "✅" : unlocked ? "🔓" : "🔒") + " " + p.emoji + " **" + displayName + "**" + (owned && nicknames[p.id] ? " *(" + p.name + ")*" : "") + " — " + (owned ? "Owned" : unlocked ? "Ready to discover" : "Bond " + p.unlockBond + " required") + "\n" + p.lore + "\n**Battle perk:** " + p.perk;
   }).join("\n\n");
   const e = new EmbedBuilder().setColor(0x6A0DAD).setTitle("🐾 THE FAMILIAR SANCTUM")
-    .setDescription("Your companions are story-bound allies with unique combat perks. Equip one before entering a Trial; victories increase Bond and can awaken new familiars.\n\n**Equipped:** " + (equipped ? equipped.emoji + " **" + equipped.name + "**" : "None") + "\n**Bond:** " + r.bond + " / 120\n\n" + list)
+    .setDescription("Your companions are story-bound allies with unique combat perks. Equip one before entering a Trial; victories increase Bond and can awaken new familiars. Give your companion a name of its own, too!\n\n**Equipped:** " + (equipped ? equipped.emoji + " **" + escapeDiscordMarkdown(displayPetName(equipped)) + "**" + (nicknames[equipped.id] ? " *(" + equipped.name + ")*" : "") : "None") + "\n**Bond:** " + r.bond + " / 120\n\n" + list)
     .setFooter({ text: "Your equipped familiar’s passive perk applies in PvE Trials." });
-  const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: p.name, value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped" : p.rarity }));
+  const options = PETS.filter(p => r.ownedIds.includes(p.id)).map(p => ({ label: displayPetName(p).slice(0, 100), value: p.id, emoji: p.emoji, description: p.id === r.equippedId ? "Currently equipped • " + p.name : p.rarity }));
   const rows: any[] = [];
   if (options.length) rows.push(new ActionRowBuilder<any>().addComponents(new StringSelectMenuBuilder().setCustomId(PREFIX + ":equip").setPlaceholder("Choose your companion").addOptions(options)));
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Train Familiar • 5 Sigils").setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return to Hall").setStyle(ButtonStyle.Secondary)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(PREFIX + ":rename").setLabel("✍️ Name Familiar").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(PREFIX + ":bond").setLabel("✨ Train • 5 Sigils").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("woa:arcane:open").setLabel("◀ Return").setStyle(ButtonStyle.Secondary)
+  ));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setCustomId(PREFIX + ":refresh").setLabel("🔄 Refresh Sanctum").setStyle(ButtonStyle.Secondary)));
   return { embeds: [e], components: rows };
 }
 
 export async function handleFamiliarInteraction(i: Interaction) {
   if (!("customId" in i) || typeof i.customId !== "string" || !i.customId.startsWith(PREFIX + ":")) return false;
-  if (!i.isMessageComponent()) return true;
+  if (!i.isMessageComponent() && !i.isModalSubmit()) return true;
   if (!i.guildId) { if (i.isRepliable()) await respondReply(i, { content: "The Familiar Sanctum is server-only.", flags: MessageFlags.Ephemeral }); return true; }
   try {
     const c = await arcaneStore.get(i.guildId, i.user.id);
     if (!c) { if (i.isRepliable()) await respondReply(i, { content: "Create your Wizard first.", flags: MessageFlags.Ephemeral }); return true; }
     const action = i.customId.slice((PREFIX + ":").length);
     const r = await record(i.guildId, i.user.id);
+    if (action === "rename_submit" && i.isModalSubmit()) {
+      const familiar = pet(r.equippedId || "");
+      if (!familiar || !r.ownedIds.includes(familiar.id)) throw new Error("Equip a familiar before naming it.");
+      const rawName = i.fields.getTextInputValue("familiar_name").trim().replace(/[\r\n]+/g, " ").replace(/[*_~|`<>]/g, "");
+      if (rawName.length < 1 || rawName.length > 24) throw new Error("Choose a name between 1 and 24 characters.");
+      if (/@everyone|@here|<@/i.test(rawName)) throw new Error("Familiar names cannot contain Discord mentions.");
+      const nicknames = nicknameMap(r.nicknames);
+      nicknames[familiar.id] = rawName;
+      await prisma.arcaneFamiliarCollection.update({ where: { id: r.id }, data: { nicknames: nicknames as any } });
+      await respondReply(i, { content: "🐾 **" + escapeDiscordMarkdown(rawName) + "** is now the name of your " + familiar.name + "! Your companion will use it in the Familiar Sanctum and battle logs.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    if (action === "rename" && i.isButton()) {
+      const familiar = pet(r.equippedId || "");
+      if (!familiar || !r.ownedIds.includes(familiar.id)) throw new Error("Equip a familiar before naming it.");
+      const nicknames = nicknameMap(r.nicknames);
+      const modal = new ModalBuilder().setCustomId(PREFIX + ":rename_submit").setTitle("Name Your Familiar");
+      modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder().setCustomId("familiar_name").setLabel("What will you call your " + familiar.name + "?").setPlaceholder("A name worthy of a tiny legend").setValue(nicknames[familiar.id] || familiar.name).setRequired(true).setMinLength(1).setMaxLength(24).setStyle(TextInputStyle.Short)
+      ));
+      await i.showModal(modal);
+      return true;
+    }
+    if (action === "refresh" && i.isButton()) {
+      await respondUpdate(i, await buildFamiliarView(i.guildId, i.user.id));
+      return true;
+    }
     if (action === "equip" && i.isStringSelectMenu()) {
       const id = i.values[0];
       if (!r.ownedIds.includes(id)) throw new Error("You have not discovered that familiar yet.");

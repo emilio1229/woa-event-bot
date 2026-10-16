@@ -39,7 +39,7 @@ export function registerInteractionCreateHandler(client: BotClient) {
       if (
         interaction.isMessageComponent() &&
         interaction.customId.startsWith("woa:arcane:") &&
-        !(interaction.isButton() && interaction.customId.split(":")[2] === "classconfirm")
+        !(interaction.isButton() && (interaction.customId.split(":")[2] === "classconfirm" || interaction.customId === "woa:arcane:familiar:rename"))
       ) {
         await interaction.deferUpdate();
       }
