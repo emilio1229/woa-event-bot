@@ -1,5 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, MessageFlags, type Interaction } from "discord.js";
 import { riddleAutoSettingsStore } from "../riddleAutoSettingsStore.js";
+import { publishAutomaticRiddle } from "../services/automaticRiddleService.js";
 import { isCouncilMember } from "./councilPanel.js";
 
 const PREFIX = "woa:riddle:auto";
@@ -41,8 +42,33 @@ export async function handleRiddleAutoControls(interaction: Interaction): Promis
   if (interaction.isButton() && interaction.customId === PREFIX + ":toggle") {
     const current = await riddleAutoSettingsStore.get(guildId);
     const next = !current.enabled;
+
+    if (next && !current.channelId) {
+      await interaction.reply({
+        content: "📍 Set the automatic riddle posting channel first, then enable auto riddles.",
+        flags: MessageFlags.Ephemeral
+      });
+      return true;
+    }
+
     await riddleAutoSettingsStore.update(guildId, { enabled: next });
-    await showRiddleAutoControls(interaction);
+
+    if (next) {
+      // Publish the first automatic riddle immediately instead of making admins
+      // wait for the next interval. Mark the attempt first to avoid the minute
+      // scheduler racing this button and publishing twice.
+      await riddleAutoSettingsStore.markRun(guildId);
+      const posted = await publishAutomaticRiddle(interaction.client, guildId);
+      await showRiddleAutoControls(interaction);
+      await interaction.followUp({
+        content: posted
+          ? "🧩 Auto riddles are enabled, and the first riddle has been posted."
+          : "🟢 Auto riddles are enabled. The first riddle was not posted because a riddle may already be active or the channel could not be reached. Check the selected channel and bot permissions; the scheduler will try again at the next interval.",
+        flags: MessageFlags.Ephemeral
+      });
+    } else {
+      await showRiddleAutoControls(interaction);
+    }
     return true;
   }
   if (interaction.isButton() && interaction.customId === PREFIX + ":channel") {
