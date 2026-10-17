@@ -47,3 +47,28 @@ test("keeps supported natural-language formats", () => {
     assert.notEqual(parseTime(input, "America/Los_Angeles"), null, input);
   }
 });
+
+test("accepts compact and compound duration formats", () => {
+  for (const input of ["1m", "10min", "2h", "3 days", "1w", "2h30m", "in 45 sec", "for 2 hours"]) {
+    assert.notEqual(parseTime(input, "America/Phoenix"), null, input);
+  }
+});
+
+test("accepts common absolute date and clock formats", () => {
+  for (const input of [
+    "10/20/2026 5pm",
+    "10/20/2026 17:30",
+    "Oct 20 2026 5pm",
+    "October 20, 2026 at 5:30 PM",
+    "2026-10-20T17:30:00-07:00",
+    "2026-10-20 17:30"
+  ]) {
+    assert.notEqual(parseTime(input, "America/Phoenix"), null, input);
+  }
+});
+
+test("a bare clock time means the next occurrence in the admin timezone", () => {
+  const result = parseTime("11:30pm", "America/Phoenix");
+  assert.notEqual(result, null);
+  assert.ok(result > Date.now());
+});
