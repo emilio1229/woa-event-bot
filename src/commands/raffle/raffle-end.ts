@@ -10,6 +10,7 @@ import {
   type Message
 } from "discord.js";
 import { raffleStore } from "../../raffleStore.js";
+import { chooseRaffleWinner } from "../../services/raffleWinnerService.js";
 import type { Raffle } from "../../types/legacy.js";
 import type { CommandModule } from "../../utils/commandLoader.js";
 
@@ -79,14 +80,7 @@ const command: CommandModule = {
 };
 
 async function executeRaffleEnd(interaction: ChatInputCommandInteraction, raffle: Raffle): Promise<void> {
-  let winnerId = raffle.winnerId ?? null;
-
-  if (!winnerId && raffle.entries.length > 0) {
-    const randomIndex = Math.floor(Math.random() * raffle.entries.length);
-    winnerId = raffle.entries[randomIndex];
-    raffle.winnerId = winnerId;
-    await raffleStore.save(raffle);
-  }
+  const winnerId = await chooseRaffleWinner(raffle);
 
 
   const glow = ["🔮✨", "🔮💫", "🔮🌌", "🔮⚡"];
