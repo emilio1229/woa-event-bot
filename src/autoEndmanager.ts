@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { AttachmentBuilder, EmbedBuilder, type Message } from "discord.js";
 import type { BotClient } from "./index.js";
 import { raffleStore } from "./raffleStore.js";
+import { chooseRaffleWinner } from "./services/raffleWinnerService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,14 +41,11 @@ export function startAutoEndLoop(client: BotClient): void {
         console.log(`[autoEndManager] Ending raffle ${raffle.id} (guild=${raffle.guildId})`);
 
         const entries = raffle.entries ?? [];
-        let winnerId = raffle.winnerId ?? null;
+        const winnerId = await chooseRaffleWinner(raffle);
 
-        if (!winnerId && entries.length > 0) {
-          winnerId = entries[Math.floor(Math.random() * entries.length)];
-          raffle.winnerId = winnerId;
-          await raffleStore.save(raffle);
+        if (winnerId) {
           console.log(`[autoEndManager] Chosen winner: ${winnerId}`);
-        } else if (!winnerId) {
+        } else {
           console.log(`[autoEndManager] No entries for raffle ${raffle.id}`);
         }
 
