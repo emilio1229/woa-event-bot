@@ -51,13 +51,16 @@ export async function handleRiddleAutoControls(interaction: Interaction): Promis
       return true;
     }
 
+    if (next) {
+      // Mark the attempt before enabling, so the minute scheduler cannot race
+      // the button and publish a duplicate while this immediate post is running.
+      await riddleAutoSettingsStore.markRun(guildId);
+    }
     await riddleAutoSettingsStore.update(guildId, { enabled: next });
 
     if (next) {
       // Publish the first automatic riddle immediately instead of making admins
-      // wait for the next interval. Mark the attempt first to avoid the minute
-      // scheduler racing this button and publishing twice.
-      await riddleAutoSettingsStore.markRun(guildId);
+      // wait for the next interval.
       const posted = await publishAutomaticRiddle(interaction.client, guildId);
       await showRiddleAutoControls(interaction);
       await interaction.followUp({
