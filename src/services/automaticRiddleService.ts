@@ -1,4 +1,4 @@
-import type { TextChannel, MessageActionRowComponentBuilder } from "discord.js";
+import type { Client, TextChannel, MessageActionRowComponentBuilder } from "discord.js";
 import type { BotClient } from "../index.js";
 import { riddleStore } from "../riddleStore.js";
 import { riddleAutoSettingsStore } from "../riddleAutoSettingsStore.js";
@@ -48,7 +48,7 @@ function safeHints(raw: string | undefined, answer: string): string {
   ]);
 }
 
-export async function publishAutomaticRiddle(client: BotClient, guildId: string): Promise<boolean> {
+export async function publishAutomaticRiddle(client: Client, guildId: string): Promise<boolean> {
   const settings = await riddleAutoSettingsStore.get(guildId);
   const channelId = settings.channelId;
   if (!settings.enabled || !channelId) return false;
