@@ -96,6 +96,7 @@ model Raffle {
   invocationText String?
   ritualType     String?
   winnerId       String?
+  winnerSelectionProcessed Boolean @default(false)
   ended          Boolean  @default(false)
   entries        String[] @default([])
   boundUsers     String[] @default([])
