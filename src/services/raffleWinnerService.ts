@@ -37,12 +37,8 @@ export async function chooseRaffleWinner(raffle: Raffle): Promise<string | null>
     // Keep duplicate entries to preserve the existing weighted-entry system.
     let eligibleEntries = entries.filter(userId => !coolingDown.has(userId));
 
-    // If every entrant is on cooldown, allow a draw from the full entry pool
-    // rather than leaving the raffle without a winner.
-    if (eligibleEntries.length === 0) {
-      eligibleEntries = entries;
-    }
-
+    // If every entrant is on cooldown, no winner is selected. This preserves
+    // the cooldown promise instead of allowing an immediate repeat winner.
     const winnerId = eligibleEntries.length > 0
       ? eligibleEntries[Math.floor(Math.random() * eligibleEntries.length)]
       : null;
