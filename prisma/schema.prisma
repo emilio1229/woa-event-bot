@@ -105,6 +105,16 @@ model Raffle {
   @@index([guildId, messageId])
 }
 
+model RaffleWinnerCooldown {
+  guildId         String
+  userId          String
+  rafflesRemaining Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@id([guildId, userId])
+  @@index([guildId, rafflesRemaining])
+}
+
 model Bounty {
   id        String   @id
   guildId   String
