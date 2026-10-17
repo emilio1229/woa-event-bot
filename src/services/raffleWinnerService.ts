@@ -19,7 +19,17 @@ export async function chooseRaffleWinner(raffle: Raffle): Promise<string | null>
       return raffle.winnerId ?? null;
     }
 
+    if (storedRaffle.winnerSelectionProcessed) {
+      return storedRaffle.winnerId;
+    }
+
+    // Preserve a winner selected by an older bot version, without advancing
+    // cooldowns a second time during a deployment/retry.
     if (storedRaffle.winnerId) {
+      await tx.raffle.update({
+        where: { id: storedRaffle.id },
+        data: { winnerSelectionProcessed: true }
+      });
       return storedRaffle.winnerId;
     }
 
@@ -74,7 +84,7 @@ export async function chooseRaffleWinner(raffle: Raffle): Promise<string | null>
 
     await tx.raffle.update({
       where: { id: storedRaffle.id },
-      data: { winnerId }
+      data: { winnerId, winnerSelectionProcessed: true }
     });
 
     return winnerId;
