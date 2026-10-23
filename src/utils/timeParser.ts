@@ -87,7 +87,7 @@ function parseExplicitDate(input: string, timezone: string): number | null {
   const formats = [
     "MMM d yyyy h a", "MMMM d yyyy h a", "MMM d yyyy H:mm", "MMMM d yyyy H:mm",
     "MMM d yyyy", "MMMM d yyyy",
-    "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss",
+    "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd h:mm a", "yyyy-MM-dd h a",
     "M/d/yyyy h:mm a", "M/d/yyyy h a", "M/d/yyyy H:mm", "M/d/yyyy",
     "d/M/yyyy H:mm", "d/M/yyyy"
   ];
