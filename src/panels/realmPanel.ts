@@ -284,7 +284,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   }
   else if (section.startsWith("community:rsvp:")) {
     const eventId = section.slice("community:rsvp:".length);
-    const updated = await rsvpCommunityEvent(eventId, interaction.user.id);
+    const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
     if (!updated) await showEvents(interaction as ButtonInteraction, "❌ That community event is no longer open for RSVP.");
     else {
       const state = updated.rsvps[interaction.user.id];
