@@ -66,18 +66,18 @@ export async function getCommunityEvent(id: string) {
   return row ? normalize(row) : undefined;
 }
 
-export async function reviewCommunityEvent(id: string, actorId: string, decision: "approved" | "rejected" | "changes_requested", note?: string) {
+export async function reviewCommunityEvent(id: string, guildId: string, actorId: string, decision: "approved" | "rejected" | "changes_requested", note?: string) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
-  if (!current || !["pending", "changes_requested"].includes(current.status)) return undefined;
+  if (!current || current.guildId !== guildId || !["pending", "changes_requested"].includes(current.status)) return undefined;
   const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
   audit.push(auditEntry(decision, actorId, note));
   const updated = await prisma.communityEvent.update({ where: { id }, data: { status: decision, reviewNote: note ?? null, audit: audit as Prisma.InputJsonValue } });
   return normalize(updated);
 }
 
-export async function rsvpCommunityEvent(id: string, userId: string) {
+export async function rsvpCommunityEvent(id: string, guildId: string, userId: string) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
-  if (!current || current.status !== "approved" || current.startAtUnix <= Math.floor(Date.now() / 1000)) return undefined;
+  if (!current || current.guildId !== guildId || current.status !== "approved" || current.startAtUnix <= Math.floor(Date.now() / 1000)) return undefined;
   const event = normalize(current);
   const rsvps = { ...event.rsvps };
   const audit = [...event.audit];
