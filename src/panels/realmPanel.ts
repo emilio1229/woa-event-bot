@@ -347,6 +347,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     }
   }
   else if (section.startsWith("community:timezone")) {
+    if (!interaction.isStringSelectMenu()) return false;
     const editId = section.startsWith("community:timezone:") ? section.slice("community:timezone:".length) || undefined : undefined;
     const timezone = interaction.values[0];
     const key = communityDraftKey(interaction.guild!.id, interaction.user.id);
