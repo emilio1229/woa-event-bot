@@ -249,3 +249,26 @@ model RiddleAutoSettings {
   lastRunAt        DateTime?
   updatedAt        DateTime @updatedAt
 }
+
+
+model CommunityEvent {
+  id            String   @id
+  guildId       String
+  creatorId     String
+  title         String
+  category      String   @default("Community")
+  mapLocation   String
+  description   String
+  startAtIso    String
+  startAtUnix   Int
+  timezone      String   @default("UTC")
+  capacity      Int      @default(0)
+  status        String   @default("pending")
+  reviewNote    String?
+  rsvps         Json     @default("{}")
+  audit         Json     @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([guildId, status, startAtUnix])
+  @@index([guildId, creatorId, status])
+}
