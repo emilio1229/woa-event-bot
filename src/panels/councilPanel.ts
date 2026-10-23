@@ -413,8 +413,16 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
   const pending = await listPendingCommunityEvents(interaction.guildId ?? "", 3);
   const normalDescription = events.length ? events.slice(0, 8).map(event => "🏆 **" + event.title + "** — <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n" + event.description + "\nRSVP: " + getEventRsvpSummary(event).going + (event.notes ? "\n📝 " + event.notes : "")).join("\n\n") : "No upcoming official events.";
   const pendingDescription = pending.length ? pending.map(event => "🕒 **" + event.title + "** — submitted by <@" + event.creatorId + ">\n🗺️ " + event.mapLocation + " • " + event.category + "\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n" + event.description).join("\n\n") : "No community submissions are awaiting review.";
+  // Keep the review queue first so a long official-event list can never truncate it out of the embed.
+  const officialSection = "**Official WoA events**\n" + normalDescription;
+  const reviewSection = "**🌿 Pending community submissions**\n" + pendingDescription;
+  const noticeSection = notice ? notice + "\n\n" : "";
+  const reviewBudget = Math.max(300, 4000 - noticeSection.length - reviewSection.length - 4);
+  const safeOfficialSection = officialSection.length > reviewBudget
+    ? officialSection.slice(0, Math.max(0, reviewBudget - 20)) + "\n…more official events omitted"
+    : officialSection;
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 Events & Community Review")
-    .setDescription([notice, "**Official WoA events**\n" + normalDescription, "**🌿 Pending community submissions**\n" + pendingDescription].filter(Boolean).join("\n\n").slice(0, 4000));
+    .setDescription(noticeSection + reviewSection + "\n\n" + safeOfficialSection);
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (const event of pending) {
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
