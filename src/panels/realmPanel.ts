@@ -261,6 +261,7 @@ export async function buildRealmPanel(guildId?: string) {
 }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
+  if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community:submit")) { await submitCommunityEvent(interaction); return true; }
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
   const customId = interaction.customId;
   if (!customId.startsWith(REALM_PREFIX)) return false;
