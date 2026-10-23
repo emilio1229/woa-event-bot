@@ -23,7 +23,7 @@ import { bountyStore } from "../utils/bountyStore.js";
 import { getUpcomingEvents, getEventById, getEventRsvpSummary, updateEventRsvp } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
-import { createCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent } from "../services/communityEventService.js";
+import { cancelCommunityEvent, createCommunityEvent, getCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent, updateCommunityEventSubmission } from "../services/communityEventService.js";
 
 export const REALM_PREFIX = "woa:realm";
 
@@ -68,14 +68,18 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
   });
   embed.setDescription(["Browse WoA gatherings and player-hosted events. Community submissions are reviewed by the Council before appearing here.", notice, ...standard, ...community].filter(Boolean).join("\n\n").slice(0, 4000));
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
+  const eventButtons: ButtonBuilder[] = [];
   for (let i = 0; i < Math.min(events.length, 3); i += 1) {
-    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button(("🜂 Going: " + events[i].title).slice(0, 80), REALM_PREFIX + ":event:going:" + events[i].id, ButtonStyle.Success)));
+    eventButtons.push(button(("🜂 Going: " + events[i].title).slice(0, 80), REALM_PREFIX + ":event:going:" + events[i].id, ButtonStyle.Success));
   }
   for (let i = 0; i < Math.min(communityEvents.length, 4); i += 1) {
     const event = communityEvents[i];
     const state = event.rsvps[interaction.user.id];
     const label = state ? (state === "waitlist" ? "Leave waitlist" : "Leave event") : "RSVP";
-    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button(("🌿 " + label + ": " + event.title).slice(0, 80), REALM_PREFIX + ":community:rsvp:" + event.id, state ? ButtonStyle.Secondary : ButtonStyle.Success)));
+    eventButtons.push(button(("🌿 " + label + ": " + event.title).slice(0, 80), REALM_PREFIX + ":community:rsvp:" + event.id, state ? ButtonStyle.Secondary : ButtonStyle.Success));
+  }
+  for (let i = 0; i < eventButtons.length; i += 5) {
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...eventButtons.slice(i, i + 5)));
   }
   components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("➕ Create Event", REALM_PREFIX + ":community:create"),
@@ -88,24 +92,34 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
 async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: string) {
   const events = await listMyCommunityEvents(interaction.guild!.id, interaction.user.id);
   const lines = events.map(event => {
-    const status = event.status === "pending" ? "🕒 Awaiting Council review" : event.status === "changes_requested" ? "📝 Changes requested" + (event.reviewNote ? ": " + event.reviewNote : "") : "✅ Approved and listed in Realm Events";
+    const status = event.status === "pending" ? "🕒 Awaiting Council review" : event.status === "changes_requested" ? "📝 Changes requested" + (event.reviewNote ? ": " + event.reviewNote : "") : event.status === "rejected" ? "❌ Rejected" + (event.reviewNote ? ": " + event.reviewNote : "") : "✅ Approved and listed in Realm Events";
     return "**" + event.title + "** — " + status + "\n🗓️ <t:" + event.startAtUnix + ":F> • " + event.mapLocation;
   });
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("📋 MY COMMUNITY EVENTS")
     .setDescription([notice, lines.length ? lines.join("\n\n") : "You have no community events yet. Use **Create Event** to submit one for Council review."].filter(Boolean).join("\n\n").slice(0, 4000));
-  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("➕ Create Event", REALM_PREFIX + ":community:create"), button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary))] });
+  const components: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (const event of events.slice(0, 3)) {
+    const actions = [button("✏️ Edit / Resubmit", REALM_PREFIX + ":community:edit:" + event.id, ButtonStyle.Secondary)];
+    if (event.status !== "rejected") actions.push(button("✖ Cancel", REALM_PREFIX + ":community:cancel:" + event.id, ButtonStyle.Danger));
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...actions));
+  }
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("➕ Create Event", REALM_PREFIX + ":community:create"), button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary)));
+  await interaction.update({ embeds: [embed], components });
 }
 
-function buildCommunityEventModal() {
-  const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:submit").setTitle("Create Community Event");
-  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true) =>
-    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(style === TextInputStyle.Paragraph ? 1000 : 100));
+function buildCommunityEventModal(existing?: Awaited<ReturnType<typeof getCommunityEvent>>) {
+  const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:submit" + (existing ? ":" + existing.id : "")).setTitle(existing ? "Edit Community Event" : "Create Community Event");
+  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true, value?: string) => {
+    const input = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(style === TextInputStyle.Paragraph ? 1000 : 100);
+    if (value) input.setValue(value.slice(0, style === TextInputStyle.Paragraph ? 1000 : 100));
+    return new ActionRowBuilder<TextInputBuilder>().addComponents(input);
+  };
   modal.addComponents(
-    field("title", "Event title", "Aberration cave run"),
-    field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave"),
-    field("start", "Start date/time (ISO with timezone)", "2026-11-01T19:00:00-07:00"),
-    field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph),
-    field("capacity", "Player limit (0 = unlimited)", "0")
+    field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
+    field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
+    field("start", "Start date/time (ISO with timezone)", "2026-11-01T19:00:00-07:00", TextInputStyle.Short, true, existing?.startAtIso),
+    field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
+    field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
   return modal;
 }
@@ -115,6 +129,7 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
     await interaction.reply({ content: "❌ Community events can only be created inside a server.", flags: MessageFlags.Ephemeral });
     return;
   }
+  const editId = interaction.customId.startsWith(REALM_PREFIX + ":community:submit:") ? interaction.customId.slice((REALM_PREFIX + ":community:submit:").length) : null;
   const title = interaction.fields.getTextInputValue("title").trim();
   const categoryLocation = interaction.fields.getTextInputValue("category_location").trim();
   const startRaw = interaction.fields.getTextInputValue("start").trim();
@@ -134,7 +149,13 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
     await interaction.reply({ content: "⛔ You may have up to 3 pending submissions and 3 approved upcoming events at a time.", flags: MessageFlags.Ephemeral });
     return;
   }
-  await createCommunityEvent({ guildId: interaction.guildId, creatorId: interaction.user.id, title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), capacity });
+  const input = { title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), capacity };
+  if (editId) {
+    const updated = await updateCommunityEventSubmission(editId, interaction.user.id, input);
+    if (!updated) { await interaction.reply({ content: "❌ You cannot edit that event, or it is no longer editable.", flags: MessageFlags.Ephemeral }); return; }
+  } else {
+    await createCommunityEvent({ guildId: interaction.guildId, creatorId: interaction.user.id, ...input });
+  }
   await interaction.reply({ content: "🕒 **Submitted to the High Council.** Your event will only appear in the shared Realm Events panel after approval. Check **My Events** for its status.", flags: MessageFlags.Ephemeral });
 }
 
@@ -240,7 +261,6 @@ export async function buildRealmPanel(guildId?: string) {
 }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
-  if (interaction.isModalSubmit() && interaction.customId === REALM_PREFIX + ":community:submit") { await submitCommunityEvent(interaction); return true; }
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
   const customId = interaction.customId;
   if (!customId.startsWith(REALM_PREFIX)) return false;
@@ -251,6 +271,15 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
   else if (section === "community:create") await interaction.showModal(buildCommunityEventModal());
   else if (section === "community:mine") await showMyCommunityEvents(interaction as ButtonInteraction);
+  else if (section.startsWith("community:edit:")) {
+    const event = await getCommunityEvent(section.slice("community:edit:".length));
+    if (!event || event.creatorId !== interaction.user.id || !["pending", "changes_requested", "approved"].includes(event.status)) await showMyCommunityEvents(interaction as ButtonInteraction, "❌ That event cannot be edited.");
+    else await interaction.showModal(buildCommunityEventModal(event));
+  }
+  else if (section.startsWith("community:cancel:")) {
+    const event = await cancelCommunityEvent(section.slice("community:cancel:".length), interaction.user.id);
+    await showMyCommunityEvents(interaction as ButtonInteraction, event ? "✖ Event cancelled." : "❌ That event could not be cancelled.");
+  }
   else if (section.startsWith("community:rsvp:")) {
     const eventId = section.slice("community:rsvp:".length);
     const updated = await rsvpCommunityEvent(eventId, interaction.user.id);
