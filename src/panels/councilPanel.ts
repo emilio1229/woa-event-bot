@@ -38,6 +38,7 @@ import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
 import { buildRiddlePanel } from "./riddlePanel.js";
 import { handleArcaneCouncilPanel } from "../arcane/council.js";
+import { listPendingCommunityEvents, reviewCommunityEvent } from "../services/communityEventService.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
@@ -114,6 +115,15 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "raffles:start") await startRaffleModal(interaction);
   else if (section === "raffles:end") await startRaffleEndPicker(interaction);
   else if (section === "events") await showEvents(interaction);
+  else if (section.startsWith("community:approve:") || section.startsWith("community:changes:") || section.startsWith("community:reject:")) {
+    const parts = section.split(":");
+    const action = parts[1];
+    const eventId = parts.slice(2).join(":");
+    const decision = action === "approve" ? "approved" : action === "changes" ? "changes_requested" : "rejected";
+    const note = decision === "changes_requested" ? "Please revise the event details and resubmit." : decision === "rejected" ? "The Council declined this submission." : undefined;
+    const reviewed = await reviewCommunityEvent(eventId, interaction.user.id, decision, note);
+    await showEvents(interaction, reviewed ? (decision === "approved" ? "✅ Community event approved and added to Realm Events." : decision === "changes_requested" ? "📝 Changes requested; only the creator can see the review status." : "❌ Community event rejected.") : "That submission was already reviewed or no longer exists.");
+  }
   else if (section === "events:start") await startEventModal(interaction);
   else if (section === "event:no-role") await handleEventNoRole(interaction);
   else if (section === "events:no-role") await handleEventNoRole(interaction);
@@ -397,7 +407,24 @@ async function startBountyModal(interaction: ButtonInteraction) { const menu = p
 function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) { return new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required)); }
 async function showEconomy(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const active = users.filter(user => user.joinedAt).length; await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`), button("👁️ View Player Balance", `${COUNCIL_PREFIX}:economy:balance`)), backButtonRow()] }); }
 async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()); const description = raffles.length ? raffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}\nEnds <t:${Math.floor(raffle.endsAt / 1000)}:R> • **${raffle.entries.length} entries**`).join("\n\n") : "No active community giveaways."; await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🛑 End Giveaway", `${COUNCIL_PREFIX}:raffles:end`, ButtonStyle.Danger)), backButtonRow()] }); }
-async function showEvents(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) { const events = await getUpcomingEvents(interaction.guildId ?? "", 10); const description = events.length ? `${notice ? `${notice}\n\n` : ""}${events.map(event => `🏆 **${event.title}** — <t:${event.startAtUnix}:F>\n${event.description}\nRSVP: ${getEventRsvpSummary(event).going}${event.notes ? `\n📝 ${event.notes}` : ""}`).join("\n\n")}` : `${notice ? `${notice}\n\n` : ""}No upcoming events.`; await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription(description.slice(0, 4000))], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Event", `${COUNCIL_PREFIX}:events:start`)), backButtonRow()] }); }
+async function showEvents(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) {
+  const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
+  const pending = await listPendingCommunityEvents(interaction.guildId ?? "", 3);
+  const normalDescription = events.length ? events.slice(0, 8).map(event => "🏆 **" + event.title + "** — <t:" + event.startAtUnix + ":F>\n" + event.description + "\nRSVP: " + getEventRsvpSummary(event).going + (event.notes ? "\n📝 " + event.notes : "")).join("\n\n") : "No upcoming official events.";
+  const pendingDescription = pending.length ? pending.map(event => "🕒 **" + event.title + "** — submitted by <@" + event.creatorId + ">\n🗺️ " + event.mapLocation + " • " + event.category + "\n🗓️ <t:" + event.startAtUnix + ":F>\n" + event.description).join("\n\n") : "No community submissions are awaiting review.";
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 Events & Community Review")
+    .setDescription([notice, "**Official WoA events**\n" + normalDescription, "**🌿 Pending community submissions**\n" + pendingDescription].filter(Boolean).join("\n\n").slice(0, 4000));
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (const event of pending) {
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+      button("✅ Approve", COUNCIL_PREFIX + ":community:approve:" + event.id, ButtonStyle.Success),
+      button("📝 Request Changes", COUNCIL_PREFIX + ":community:changes:" + event.id, ButtonStyle.Secondary),
+      button("❌ Reject", COUNCIL_PREFIX + ":community:reject:" + event.id, ButtonStyle.Danger)
+    ));
+  }
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
+  await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
+}
 async function showBounties(interaction: ButtonInteraction) { const bounties = await bountyStore.getActive(interaction.guildId ?? ""); const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\n") : "No active bounties."; await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButtonRow()] }); }
 async function showRewards(interaction: ButtonInteraction) { const activeRaffles = (await raffleStore.all()).filter(raffle => interaction.guildId === raffle.guildId && Date.now() < raffle.endsAt && !raffle.ended); const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id); const components = buildShopComponents(activeRaffles); components.push(backButtonRow() as never); const activeText = activeRaffles.length ? activeRaffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize} • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "No active community giveaway is available for redemption right now."; const embed = new EmbedBuilder().setTitle("🛍️ Sigil Shop").setDescription(["Trade your Sigils for community giveaway entries.", `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`, `Current balance: **${user.balance} sigils**.`].join("\n")).addFields({ name: "🎟️ Active Giveaways", value: activeText, inline: false }).setTimestamp(); await interaction.update({ embeds: [embed], components }); }
 async function showStatistics(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()).length; const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length; const events = await getUpcomingEvents(interaction.guildId ?? "", 1000); await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButtonRow()] }); }
