@@ -323,8 +323,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
       return true;
     }
     draft.timezone = timezone;
-    const existing = draft.editId ? await getCommunityEvent(draft.editId) : undefined;
-    await interaction.showModal(buildCommunityEventModal(timezone, existing));
+    await interaction.reply({ content: "🌎 Timezone selected: **" + timezone + "**. Continue to enter the event details.", flags: MessageFlags.Ephemeral, components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("Continue to event details", REALM_PREFIX + ":community:continue"))] });
     return true;
   }
   if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community:submit")) { await submitCommunityEvent(interaction); return true; }
@@ -337,6 +336,16 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
   else if (section === "community:create") await interaction.update(communityTimezonePicker());
+  else if (section === "community:continue") {
+    const key = communityDraftKey(interaction.guild!.id, interaction.user.id);
+    const draft = communityEventDrafts.get(key);
+    if (!draft?.timezone || !IANAZone.isValidZone(draft.timezone)) {
+      await interaction.reply({ content: "❌ Your timezone selection expired. Start creating the event again.", flags: MessageFlags.Ephemeral });
+    } else {
+      const existing = draft.editId ? await getCommunityEvent(draft.editId) : undefined;
+      await interaction.showModal(buildCommunityEventModal(draft.timezone, existing));
+    }
+  }
   else if (section.startsWith("community:timezone")) {
     const editId = section.startsWith("community:timezone:") ? section.slice("community:timezone:".length) || undefined : undefined;
     const timezone = interaction.values[0];
