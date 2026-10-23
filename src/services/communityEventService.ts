@@ -98,12 +98,12 @@ export async function rsvpCommunityEvent(id: string, userId: string) {
 }
 
 
-export async function updateCommunityEventSubmission(id: string, creatorId: string, input: {
+export async function updateCommunityEventSubmission(id: string, guildId: string, creatorId: string, input: {
   title: string; category: string; mapLocation: string; description: string;
   startAtIso: string; startAtUnix: number; capacity: number;
 }) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
-  if (!current || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
+  if (!current || current.guildId !== guildId || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
   const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
   audit.push(auditEntry("edited_resubmitted", creatorId));
   const updated = await prisma.communityEvent.update({ where: { id }, data: {
@@ -112,9 +112,9 @@ export async function updateCommunityEventSubmission(id: string, creatorId: stri
   return normalize(updated);
 }
 
-export async function cancelCommunityEvent(id: string, creatorId: string) {
+export async function cancelCommunityEvent(id: string, guildId: string, creatorId: string) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
-  if (!current || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
+  if (!current || current.guildId !== guildId || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
   const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
   audit.push(auditEntry("cancelled", creatorId));
   const updated = await prisma.communityEvent.update({ where: { id }, data: { status: "cancelled", audit: audit as Prisma.InputJsonValue } });
