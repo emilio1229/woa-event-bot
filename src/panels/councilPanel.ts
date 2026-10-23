@@ -92,7 +92,8 @@ export function buildCouncilPanel() {
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Economy", `${COUNCIL_PREFIX}:economy`), button("🎟️ Raffles", `${COUNCIL_PREFIX}:raffles`), button("🏆 Events", `${COUNCIL_PREFIX}:events`), button("📜 Bounties", `${COUNCIL_PREFIX}:bounties`)),
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`)),
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${COUNCIL_PREFIX}:arcane:home`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${COUNCIL_PREFIX}:arcane:home`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`)),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 Community Event Reviews", `${COUNCIL_PREFIX}:community:review`, ButtonStyle.Success))
   ] };
 }
 
@@ -115,6 +116,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "raffles:start") await startRaffleModal(interaction);
   else if (section === "raffles:end") await startRaffleEndPicker(interaction);
   else if (section === "events") await showEvents(interaction);
+  else if (section === "community:review") await showEvents(interaction);
   else if (section.startsWith("community:approve:") || section.startsWith("community:changes:") || section.startsWith("community:reject:")) {
     const parts = section.split(":");
     const action = parts[1];
@@ -422,7 +424,7 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
       button("❌ Reject", COUNCIL_PREFIX + ":community:reject:" + event.id, ButtonStyle.Danger)
     ));
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh Community Reviews", COUNCIL_PREFIX + ":community:review", ButtonStyle.Success), button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
   await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
 }
 async function showBounties(interaction: ButtonInteraction) { const bounties = await bountyStore.getActive(interaction.guildId ?? ""); const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\n") : "No active bounties."; await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButtonRow()] }); }
