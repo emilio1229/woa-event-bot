@@ -100,7 +100,7 @@ export async function rsvpCommunityEvent(id: string, guildId: string, userId: st
 
 export async function updateCommunityEventSubmission(id: string, guildId: string, creatorId: string, input: {
   title: string; category: string; mapLocation: string; description: string;
-  startAtIso: string; startAtUnix: number; capacity: number;
+  startAtIso: string; startAtUnix: number; timezone: string; capacity: number;
 }) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
   if (!current || current.guildId !== guildId || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;

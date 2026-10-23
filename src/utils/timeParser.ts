@@ -60,9 +60,19 @@ function withTime(date: DateTime, time: ClockTime): number | null {
 }
 
 function parseExplicitDate(input: string, timezone: string): number | null {
-  // ISO-8601 timestamps (with optional Z or UTC offset) are absolute instants.
-  const iso = DateTime.fromISO(input, { setZone: true });
-  if (iso.isValid && /^\d{4}-\d{2}-\d{2}/.test(input)) {
+  // ISO timestamps with Z/offset are absolute instants. ISO local date/time
+  // strings are interpreted in the selected IANA timezone, not the host timezone.
+  const hasExplicitOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(input);
+  if (/^\d{4}-\d{2}-\d{2}/.test(input)) {
+    const iso = hasExplicitOffset
+      ? DateTime.fromISO(input, { setZone: true })
+      : DateTime.fromISO(input, { zone: timezone, setZone: false });
+    if (!iso.isValid) return null;
+    if (!hasExplicitOffset) {
+      const match = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+      if (match && (iso.year !== Number(match[1]) || iso.month !== Number(match[2]) || iso.day !== Number(match[3]) ||
+          (match[4] !== undefined && (iso.hour !== Number(match[4]) || iso.minute !== Number(match[5]) || iso.second !== Number(match[6] ?? 0)))) return null;
+    }
     return iso.toMillis();
   }
 
@@ -77,7 +87,7 @@ function parseExplicitDate(input: string, timezone: string): number | null {
   const formats = [
     "MMM d yyyy h a", "MMMM d yyyy h a", "MMM d yyyy H:mm", "MMMM d yyyy H:mm",
     "MMM d yyyy", "MMMM d yyyy",
-    "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss",
+    "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd h:mm a", "yyyy-MM-dd h a",
     "M/d/yyyy h:mm a", "M/d/yyyy h a", "M/d/yyyy H:mm", "M/d/yyyy",
     "d/M/yyyy H:mm", "d/M/yyyy"
   ];

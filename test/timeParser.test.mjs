@@ -72,3 +72,23 @@ test("a bare clock time means the next occurrence in the admin timezone", () => 
   assert.notEqual(result, null);
   assert.ok(result > Date.now());
 });
+
+
+test("community event local times convert using the creator-selected timezone", () => {
+  assert.equal(
+    toUtcIso("10/30/2026 7:30pm", "America/Phoenix"),
+    "2026-10-31T02:30:00.000Z"
+  );
+  assert.equal(
+    toUtcIso("10/30/2026 7:30pm", "America/New_York"),
+    "2026-10-30T23:30:00.000Z"
+  );
+  assert.equal(
+    toUtcIso("2026-10-30 19:30", "America/Phoenix"),
+    "2026-10-31T02:30:00.000Z"
+  );
+  assert.equal(
+    toUtcIso("2026-10-30 7:30 PM", "America/Phoenix"),
+    "2026-10-31T02:30:00.000Z"
+  );
+});
