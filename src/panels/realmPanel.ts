@@ -23,6 +23,7 @@ import { bountyStore } from "../utils/bountyStore.js";
 import { getUpcomingEvents, getEventById, getEventRsvpSummary, updateEventRsvp } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
+import { parseTime } from "../utils/timeParser.js";
 import { cancelCommunityEvent, createCommunityEvent, getCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent, updateCommunityEventSubmission } from "../services/communityEventService.js";
 
 export const REALM_PREFIX = "woa:realm";
@@ -59,7 +60,7 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
   const [events, communityEvents] = await Promise.all([getUpcomingEvents(guildId, 10), listApprovedCommunityEvents(guildId, 10)]);
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
   const standard = events.slice(0, 3).map((event, index) =>
-    "**" + (index + 1) + ". " + event.title + "**\n🗓️ <t:" + event.startAtUnix + ":F>\n📖 " + (event.description || "No description provided.") + "\n🟢 Going: **" + getEventRsvpSummary(event).going + "**" + (event.notes ? "\n📝 " + event.notes : ""));
+    "**" + (index + 1) + ". " + event.title + "**\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n📖 " + (event.description || "No description provided.") + "\n🟢 Going: **" + getEventRsvpSummary(event).going + "**" + (event.notes ? "\n📝 " + event.notes : ""));
   const community = communityEvents.slice(0, 4).map((event, index) => {
     const going = Object.values(event.rsvps).filter(state => state === "going").length;
     const waitlist = Object.values(event.rsvps).filter(state => state === "waitlist").length;
@@ -118,7 +119,7 @@ function buildCommunityEventModal(existing?: Awaited<ReturnType<typeof getCommun
   modal.addComponents(
     field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
     field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
-    field("start", "Start date/time (ISO with timezone)", "2026-11-01T19:00:00-07:00", TextInputStyle.Short, true, existing?.startAtIso),
+    field("start", "Start date/time | IANA timezone", "2026-11-01 7:00 PM | America/Phoenix", TextInputStyle.Short, true, existing ? existing.startAtIso + " | " + existing.timezone : undefined),
     field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
     field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
@@ -134,15 +135,19 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
   const title = interaction.fields.getTextInputValue("title").trim();
   const categoryLocation = interaction.fields.getTextInputValue("category_location").trim();
   const startRaw = interaction.fields.getTextInputValue("start").trim();
+  const timezoneSeparator = startRaw.lastIndexOf("|");
+  const startText = timezoneSeparator >= 0 ? startRaw.slice(0, timezoneSeparator).trim() : "";
+  const timezone = timezoneSeparator >= 0 ? startRaw.slice(timezoneSeparator + 1).trim() : "";
+  const startMillis = startText && timezone ? parseTime(startText, timezone) : null;
   const description = interaction.fields.getTextInputValue("description").trim();
   const capacityRaw = interaction.fields.getTextInputValue("capacity").trim();
   const separator = categoryLocation.indexOf("|");
   const category = (separator >= 0 ? categoryLocation.slice(0, separator) : "Community").trim().slice(0, 60) || "Community";
   const mapLocation = (separator >= 0 ? categoryLocation.slice(separator + 1) : categoryLocation).trim().slice(0, 120);
-  const startDate = new Date(startRaw);
+  const startDate = startMillis === null ? new Date(Number.NaN) : new Date(startMillis);
   const capacity = Number.parseInt(capacityRaw, 10);
   if (!title || !mapLocation || !description || !Number.isFinite(startDate.getTime()) || startDate.getTime() <= Date.now() || !Number.isInteger(capacity) || capacity < 0) {
-    await interaction.reply({ content: "❌ Check your event details. The start must be a future date/time with a timezone (for example 2026-11-01T19:00:00-07:00), and the player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "❌ Check your event details. Enter a future date/time and a valid IANA timezone separated by | (for example 2026-11-01 7:00 PM | America/Phoenix). Common zones: America/Phoenix, America/Los_Angeles, America/Denver, America/Chicago, America/New_York, Europe/London, Australia/Sydney. The player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
     return;
   }
   const mine = await listMyCommunityEvents(interaction.guildId, interaction.user.id, 20);
@@ -150,7 +155,7 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
     await interaction.reply({ content: "⛔ You may have up to 3 pending submissions and 3 approved upcoming events at a time.", flags: MessageFlags.Ephemeral });
     return;
   }
-  const input = { title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), capacity };
+  const input = { title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), timezone, capacity };
   if (editId) {
     const updated = await updateCommunityEventSubmission(editId, interaction.guildId, interaction.user.id, input);
     if (!updated) { await interaction.reply({ content: "❌ You cannot edit that event, or it is no longer editable.", flags: MessageFlags.Ephemeral }); return; }
