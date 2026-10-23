@@ -71,7 +71,7 @@ function parseExplicitDate(input: string, timezone: string): number | null {
     if (!hasExplicitOffset) {
       const match = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
       if (match && (iso.year !== Number(match[1]) || iso.month !== Number(match[2]) || iso.day !== Number(match[3]) ||
-          (match[4] !== undefined && (iso.hour !== Number(match[4]) || iso.minute !== Number(match[5]) || iso.second !== Number(match[6] ?? 0)))) return null;
+          (match[4] !== undefined && (iso.hour !== Number(match[4]) || iso.minute !== Number(match[5]) || iso.second !== Number(match[6] ?? 0))))) return null;
     }
     return iso.toMillis();
   }
