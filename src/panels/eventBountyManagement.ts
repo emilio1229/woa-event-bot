@@ -66,23 +66,23 @@ async function showEvents(interaction: ButtonInteraction) {
   const events = await getUpcomingEvents(guildId, 10);
   const pending = await listPendingCommunityEvents(guildId, 3);
   const officialDescription = events.length
-    ? events.slice(0, 8).map(event => \`🏆 **\${event.title}** — <t:\${event.startAtUnix}:F>\n\${event.description}\nRSVP: \${getEventRsvpSummary(event).going}\${event.notes ? \`\n📝 \${event.notes}\` : ""}\`).join("\n\n")
+    ? events.slice(0, 8).map(event => `🏆 **${event.title}** — <t:${event.startAtUnix}:F>\n${event.description}\nRSVP: ${getEventRsvpSummary(event).going}${event.notes ? `\n📝 ${event.notes}` : ""}`).join("\n\n")
     : "No upcoming official events.";
   const communityDescription = pending.length
-    ? pending.map(event => \`🕒 **\${event.title}** — submitted by <@\${event.creatorId}>\n🗺️ \${event.mapLocation} • \${event.category}\n🗓️ <t:\${event.startAtUnix}:F> • 🌎 \${event.timezone}\n\${event.description}\`).join("\n\n")
+    ? pending.map(event => `🕒 **${event.title}** — submitted by <@${event.creatorId}>\n🗺️ ${event.mapLocation} • ${event.category}\n🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}\n${event.description}`).join("\n\n")
     : "No community submissions are awaiting review.";
-  const description = (\`**🌿 Pending community submissions**\n\${communityDescription}\n\n**🏆 Official WoA events**\n\${officialDescription}\`).slice(0, 4000);
+  const description = (`**🌿 Pending community submissions**\n${communityDescription}\n\n**🏆 Official WoA events**\n${officialDescription}`).slice(0, 4000);
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (const event of pending) {
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(\`woa:council:community:approve:\${event.id}\`).setLabel("✅ Approve").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId(\`woa:council:community:changes:\${event.id}\`).setLabel("📝 Request Changes").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(\`woa:council:community:reject:\${event.id}\`).setLabel("❌ Reject").setStyle(ButtonStyle.Danger)
+      new ButtonBuilder().setCustomId(`woa:council:community:approve:${event.id}`).setLabel("✅ Approve").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`woa:council:community:changes:${event.id}`).setLabel("📝 Request Changes").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`woa:council:community:reject:${event.id}`).setLabel("❌ Reject").setStyle(ButtonStyle.Danger)
     ));
   }
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId("woa:council:events:start").setLabel("✨ Start Event").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(\`\${PREFIX}:events:end\`).setLabel("🛑 End Event").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`${PREFIX}:events:end`).setLabel("🛑 End Event").setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId("woa:council:community:review").setLabel("🌿 Review Submissions").setStyle(ButtonStyle.Success),
     backButton()
   ));
