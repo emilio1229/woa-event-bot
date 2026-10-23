@@ -17,6 +17,7 @@ import {
   type StringSelectMenuInteraction
 } from "discord.js";
 import { env } from "../config/env.js";
+import { DateTime } from "luxon";
 import { raffleStore } from "../raffleStore.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { bountyStore } from "../utils/bountyStore.js";
@@ -65,7 +66,7 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
     const going = Object.values(event.rsvps).filter(state => state === "going").length;
     const waitlist = Object.values(event.rsvps).filter(state => state === "waitlist").length;
     return "**🌿 Community " + (index + 1) + ". " + event.title + "**\n🗺️ " + event.mapLocation + " • " + event.category +
-      "\n🗓️ <t:" + event.startAtUnix + ":F>\n📖 " + event.description + "\n👥 Going: **" + going + (event.capacity ? "/" + event.capacity : "") + "** • Waitlist: " + waitlist;
+      "\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n📖 " + event.description + "\n👥 Going: **" + going + (event.capacity ? "/" + event.capacity : "") + "** • Waitlist: " + waitlist;
   });
   embed.setDescription(["Browse WoA gatherings and player-hosted events. Community submissions are reviewed by the Council before appearing here.", notice, ...standard, ...community].filter(Boolean).join("\n\n").slice(0, 4000));
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
@@ -94,7 +95,7 @@ async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: st
   const events = await listMyCommunityEvents(interaction.guild!.id, interaction.user.id);
   const lines = events.map(event => {
     const status = event.status === "pending" ? "🕒 Awaiting Council review" : event.status === "changes_requested" ? "📝 Changes requested" + (event.reviewNote ? ": " + event.reviewNote : "") : event.status === "rejected" ? "❌ Rejected" + (event.reviewNote ? ": " + event.reviewNote : "") : "✅ Approved and listed in Realm Events";
-    return "**" + event.title + "** — " + status + "\n🗓️ <t:" + event.startAtUnix + ":F> • " + event.mapLocation;
+    return "**" + event.title + "** — " + status + "\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + " • " + event.mapLocation;
   });
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("📋 MY COMMUNITY EVENTS")
     .setDescription([notice, lines.length ? lines.join("\n\n") : "You have no community events yet. Use **Create Event** to submit one for Council review."].filter(Boolean).join("\n\n").slice(0, 4000));
@@ -119,7 +120,7 @@ function buildCommunityEventModal(existing?: Awaited<ReturnType<typeof getCommun
   modal.addComponents(
     field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
     field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
-    field("start", "Start date/time | IANA timezone", "2026-11-01 7:00 PM | America/Phoenix", TextInputStyle.Short, true, existing ? existing.startAtIso + " | " + existing.timezone : undefined),
+    field("start", "Start date/time | IANA timezone", "2026-11-01 7:00 PM | America/Phoenix", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(existing.timezone).toFormat("yyyy-MM-dd h:mm a") + " | " + existing.timezone : undefined),
     field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
     field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
