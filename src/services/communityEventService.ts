@@ -57,7 +57,7 @@ export async function listPendingCommunityEvents(guildId: string, limit = 10) {
 }
 
 export async function listMyCommunityEvents(guildId: string, creatorId: string, limit = 10) {
-  const rows = await prisma.communityEvent.findMany({ where: { guildId, creatorId, status: { in: ["pending", "changes_requested", "approved"] } }, orderBy: { startAtUnix: "asc" }, take: limit });
+  const rows = await prisma.communityEvent.findMany({ where: { guildId, creatorId, status: { in: ["pending", "changes_requested", "approved", "rejected"] } }, orderBy: { startAtUnix: "asc" }, take: limit });
   return rows.map(normalize);
 }
 
@@ -94,5 +94,29 @@ export async function rsvpCommunityEvent(id: string, userId: string) {
     audit.push(auditEntry(rsvps[userId] === "going" ? "rsvp_going" : "rsvp_waitlist", userId));
   }
   const updated = await prisma.communityEvent.update({ where: { id }, data: { rsvps: rsvps as Prisma.InputJsonValue, audit: audit as Prisma.InputJsonValue } });
+  return normalize(updated);
+}
+
+
+export async function updateCommunityEventSubmission(id: string, creatorId: string, input: {
+  title: string; category: string; mapLocation: string; description: string;
+  startAtIso: string; startAtUnix: number; capacity: number;
+}) {
+  const current = await prisma.communityEvent.findUnique({ where: { id } });
+  if (!current || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
+  const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
+  audit.push(auditEntry("edited_resubmitted", creatorId));
+  const updated = await prisma.communityEvent.update({ where: { id }, data: {
+    ...input, status: "pending", reviewNote: null, audit: audit as Prisma.InputJsonValue
+  }});
+  return normalize(updated);
+}
+
+export async function cancelCommunityEvent(id: string, creatorId: string) {
+  const current = await prisma.communityEvent.findUnique({ where: { id } });
+  if (!current || current.creatorId !== creatorId || !["pending", "changes_requested", "approved"].includes(current.status)) return undefined;
+  const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
+  audit.push(auditEntry("cancelled", creatorId));
+  const updated = await prisma.communityEvent.update({ where: { id }, data: { status: "cancelled", audit: audit as Prisma.InputJsonValue } });
   return normalize(updated);
 }
