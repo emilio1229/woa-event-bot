@@ -6,6 +6,7 @@ import {
   ChannelType,
   EmbedBuilder,
   ModalBuilder,
+  StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
   MessageFlags,
@@ -17,7 +18,7 @@ import {
   type StringSelectMenuInteraction
 } from "discord.js";
 import { env } from "../config/env.js";
-import { DateTime } from "luxon";
+import { DateTime, IANAZone } from "luxon";
 import { raffleStore } from "../raffleStore.js";
 import { buildActiveRaffleEmbed } from "../embedBuilder.js";
 import { bountyStore } from "../utils/bountyStore.js";
@@ -28,6 +29,49 @@ import { parseTime } from "../utils/timeParser.js";
 import { cancelCommunityEvent, createCommunityEvent, getCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent, updateCommunityEventSubmission } from "../services/communityEventService.js";
 
 export const REALM_PREFIX = "woa:realm";
+
+type CommunityEventDraft = { timezone: string; editId?: string };
+const communityEventDrafts = new Map<string, CommunityEventDraft>();
+const COMMUNITY_TIMEZONES = [
+  ["Arizona / Phoenix", "America/Phoenix"], ["Pacific Time", "America/Los_Angeles"],
+  ["Mountain Time", "America/Denver"], ["Central Time", "America/Chicago"],
+  ["Eastern Time", "America/New_York"], ["Alaska", "America/Anchorage"],
+  ["Hawaii", "Pacific/Honolulu"], ["Vancouver", "America/Vancouver"],
+  ["Toronto", "America/Toronto"], ["Mexico City", "America/Mexico_City"],
+  ["São Paulo", "America/Sao_Paulo"], ["UTC", "UTC"],
+  ["United Kingdom", "Europe/London"], ["Central Europe", "Europe/Berlin"],
+  ["Paris", "Europe/Paris"], ["Copenhagen", "Europe/Copenhagen"],
+  ["South Africa", "Africa/Johannesburg"], ["Dubai", "Asia/Dubai"],
+  ["India", "Asia/Kolkata"], ["Singapore", "Asia/Singapore"],
+  ["Japan", "Asia/Tokyo"], ["South Korea", "Asia/Seoul"],
+  ["Sydney", "Australia/Sydney"], ["Auckland", "Pacific/Auckland"]
+] as const;
+
+function communityDraftKey(guildId: string, userId: string) { return guildId + ":" + userId; }
+
+function communityTimezonePicker(editId?: string) {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId(REALM_PREFIX + ":community:timezone" + (editId ? ":" + editId : ""))
+    .setPlaceholder("Choose the timezone you are posting from")
+    .setMinValues(1).setMaxValues(1)
+    .addOptions(
+      ...COMMUNITY_TIMEZONES.map(([label, value]) => ({ label, value, description: value })),
+      { label: "Other IANA timezone…", value: "custom", description: "Enter a timezone such as America/Edmonton" }
+    );
+  return {
+    embeds: [new EmbedBuilder().setColor(0x7B2CBF).setTitle("🌎 EVENT TIMEZONE")
+      .setDescription("Choose the timezone you'll use when entering this event's date and time. Discord will show the saved event time in each viewer's local timezone.")],
+    components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary))]
+  };
+}
+
+function buildCustomCommunityTimezoneModal() {
+  const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:timezone:custom").setTitle("Custom Event Timezone");
+  const input = new TextInputBuilder().setCustomId("timezone").setLabel("IANA timezone").setPlaceholder("America/Edmonton").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(80);
+  modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+  return modal;
+}
 
 async function getVisibleRaffles(interaction: ButtonInteraction) {
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
@@ -110,7 +154,7 @@ async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: st
   await interaction.update({ embeds: [embed], components });
 }
 
-function buildCommunityEventModal(existing?: Awaited<ReturnType<typeof getCommunityEvent>>) {
+function buildCommunityEventModal(timezone: string, existing?: Awaited<ReturnType<typeof getCommunityEvent>>) {
   const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:submit" + (existing ? ":" + existing.id : "")).setTitle(existing ? "Edit Community Event" : "Create Community Event");
   const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true, value?: string) => {
     const input = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(style === TextInputStyle.Paragraph ? 1000 : 100);
@@ -120,7 +164,7 @@ function buildCommunityEventModal(existing?: Awaited<ReturnType<typeof getCommun
   modal.addComponents(
     field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
     field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
-    field("start", "Start date/time | IANA timezone", "2026-11-01 7:00 PM | America/Phoenix", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(existing.timezone).toFormat("yyyy-MM-dd h:mm a") + " | " + existing.timezone : undefined),
+    field("start", ("Start date/time (" + timezone + ")").slice(0, 45), "2026-11-01 7:00 PM or 19:00", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(timezone).toFormat("yyyy-MM-dd h:mm a") : undefined),
     field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
     field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
@@ -136,10 +180,10 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
   const title = interaction.fields.getTextInputValue("title").trim();
   const categoryLocation = interaction.fields.getTextInputValue("category_location").trim();
   const startRaw = interaction.fields.getTextInputValue("start").trim();
-  const timezoneSeparator = startRaw.lastIndexOf("|");
-  const startText = timezoneSeparator >= 0 ? startRaw.slice(0, timezoneSeparator).trim() : "";
-  const timezone = timezoneSeparator >= 0 ? startRaw.slice(timezoneSeparator + 1).trim() : "";
-  const startMillis = startText && timezone ? parseTime(startText, timezone) : null;
+  const draftKey = communityDraftKey(interaction.guildId ?? "", interaction.user.id);
+  const draft = communityEventDrafts.get(draftKey);
+  const timezone = draft?.timezone ?? "";
+  const startMillis = timezone ? parseTime(startRaw, timezone) : null;
   const description = interaction.fields.getTextInputValue("description").trim();
   const capacityRaw = interaction.fields.getTextInputValue("capacity").trim();
   const separator = categoryLocation.indexOf("|");
@@ -148,7 +192,7 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
   const startDate = startMillis === null ? new Date(Number.NaN) : new Date(startMillis);
   const capacity = Number.parseInt(capacityRaw, 10);
   if (!title || !mapLocation || !description || !Number.isFinite(startDate.getTime()) || startDate.getTime() <= Date.now() || !Number.isInteger(capacity) || capacity < 0) {
-    await interaction.reply({ content: "❌ Check your event details. Enter a future date/time and a valid IANA timezone separated by | (for example 2026-11-01 7:00 PM | America/Phoenix). Common zones: America/Phoenix, America/Los_Angeles, America/Denver, America/Chicago, America/New_York, Europe/London, Australia/Sydney. The player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "❌ Check your event details. Choose a valid timezone first, then enter a future date/time such as 2026-11-01 7:00 PM or 19:00. The player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
     return;
   }
   const mine = await listMyCommunityEvents(interaction.guildId, interaction.user.id, 20);
@@ -163,6 +207,7 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
   } else {
     await createCommunityEvent({ guildId: interaction.guildId, creatorId: interaction.user.id, ...input });
   }
+  communityEventDrafts.delete(draftKey);
   await interaction.reply({ content: "🕒 **Submitted to the High Council.** Your event will only appear in the shared Realm Events panel after approval. Check **My Events** for its status.", flags: MessageFlags.Ephemeral });
 }
 
@@ -268,6 +313,20 @@ export async function buildRealmPanel(guildId?: string) {
 }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
+  if (interaction.isModalSubmit() && interaction.customId === REALM_PREFIX + ":community:timezone:custom") {
+    if (!interaction.guildId) { await interaction.reply({ content: "❌ Choose an event timezone inside a server.", flags: MessageFlags.Ephemeral }); return true; }
+    const key = communityDraftKey(interaction.guildId, interaction.user.id);
+    const draft = communityEventDrafts.get(key);
+    const timezone = interaction.fields.getTextInputValue("timezone").trim();
+    if (!draft || !IANAZone.isValidZone(timezone)) {
+      await interaction.reply({ content: "❌ That timezone is invalid or the setup expired. Use an IANA timezone such as America/Phoenix, Europe/London, or Asia/Tokyo, then start again.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    draft.timezone = timezone;
+    const existing = draft.editId ? await getCommunityEvent(draft.editId) : undefined;
+    await interaction.showModal(buildCommunityEventModal(timezone, existing));
+    return true;
+  }
   if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community:submit")) { await submitCommunityEvent(interaction); return true; }
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
   const customId = interaction.customId;
@@ -277,12 +336,28 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
-  else if (section === "community:create") await interaction.showModal(buildCommunityEventModal());
+  else if (section === "community:create") await interaction.update(communityTimezonePicker());
+  else if (section.startsWith("community:timezone")) {
+    const editId = section.startsWith("community:timezone:") ? section.slice("community:timezone:".length) || undefined : undefined;
+    const timezone = interaction.values[0];
+    const key = communityDraftKey(interaction.guild!.id, interaction.user.id);
+    if (timezone === "custom") {
+      communityEventDrafts.set(key, { timezone: "", editId });
+      await interaction.showModal(buildCustomCommunityTimezoneModal());
+    } else {
+      communityEventDrafts.set(key, { timezone, editId });
+      const existing = editId ? await getCommunityEvent(editId) : undefined;
+      if (editId && (!existing || existing.creatorId !== interaction.user.id || !["pending", "changes_requested", "approved"].includes(existing.status))) {
+        communityEventDrafts.delete(key);
+        await interaction.update({ content: "❌ That event cannot be edited.", embeds: [], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary))] });
+      } else await interaction.showModal(buildCommunityEventModal(timezone, existing));
+    }
+  }
   else if (section === "community:mine") await showMyCommunityEvents(interaction as ButtonInteraction);
   else if (section.startsWith("community:edit:")) {
     const event = await getCommunityEvent(section.slice("community:edit:".length));
     if (!event || event.creatorId !== interaction.user.id || !["pending", "changes_requested", "approved"].includes(event.status)) await showMyCommunityEvents(interaction as ButtonInteraction, "❌ That event cannot be edited.");
-    else await interaction.showModal(buildCommunityEventModal(event));
+    else await interaction.update(communityTimezonePicker(event.id));
   }
   else if (section.startsWith("community:cancel:")) {
     const event = await cancelCommunityEvent(section.slice("community:cancel:".length), interaction.guild!.id, interaction.user.id);
