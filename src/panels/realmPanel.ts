@@ -5,10 +5,15 @@ import {
   ChannelSelectMenuBuilder,
   ChannelType,
   EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  MessageFlags,
   PermissionFlagsBits,
   type ButtonInteraction,
   type ChannelSelectMenuInteraction,
   type Interaction,
+  type ModalSubmitInteraction,
   type StringSelectMenuInteraction
 } from "discord.js";
 import { env } from "../config/env.js";
@@ -18,6 +23,7 @@ import { bountyStore } from "../utils/bountyStore.js";
 import { getUpcomingEvents, getEventById, getEventRsvpSummary, updateEventRsvp } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
+import { createCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent } from "../services/communityEventService.js";
 
 export const REALM_PREFIX = "woa:realm";
 
@@ -49,31 +55,87 @@ async function showBounties(interaction: ButtonInteraction) {
 }
 
 async function showEvents(interaction: ButtonInteraction, notice?: string) {
-  const events = await getUpcomingEvents(interaction.guild!.id, 10);
-  const embed = new EmbedBuilder().setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
-  if (!events.length) {
-    embed.setDescription(`${notice ? `${notice}\n\n` : ""}No upcoming gatherings are inscribed in the event ledger yet. Check back soon.`);
-    await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary))] });
+  const guildId = interaction.guild!.id;
+  const [events, communityEvents] = await Promise.all([getUpcomingEvents(guildId, 10), listApprovedCommunityEvents(guildId, 10)]);
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 UPCOMING GATHERINGS").setFooter({ text: "The Wizards of Ark • Event Hall" });
+  const standard = events.slice(0, 3).map((event, index) =>
+    "**" + (index + 1) + ". " + event.title + "**\n🗓️ <t:" + event.startAtUnix + ":F>\n📖 " + (event.description || "No description provided.") + "\n🟢 Going: **" + getEventRsvpSummary(event).going + "**" + (event.notes ? "\n📝 " + event.notes : ""));
+  const community = communityEvents.slice(0, 4).map((event, index) => {
+    const going = Object.values(event.rsvps).filter(state => state === "going").length;
+    const waitlist = Object.values(event.rsvps).filter(state => state === "waitlist").length;
+    return "**🌿 Community " + (index + 1) + ". " + event.title + "**\n🗺️ " + event.mapLocation + " • " + event.category +
+      "\n🗓️ <t:" + event.startAtUnix + ":F>\n📖 " + event.description + "\n👥 Going: **" + going + (event.capacity ? "/" + event.capacity : "") + "** • Waitlist: " + waitlist;
+  });
+  embed.setDescription(["Browse WoA gatherings and player-hosted events. Community submissions are reviewed by the Council before appearing here.", notice, ...standard, ...community].filter(Boolean).join("\n\n").slice(0, 4000));
+  const components: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (let i = 0; i < Math.min(events.length, 3); i += 1) {
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button(("🜂 Going: " + events[i].title).slice(0, 80), REALM_PREFIX + ":event:going:" + events[i].id, ButtonStyle.Success)));
+  }
+  for (let i = 0; i < Math.min(communityEvents.length, 4); i += 1) {
+    const event = communityEvents[i];
+    const state = event.rsvps[interaction.user.id];
+    const label = state ? (state === "waitlist" ? "Leave waitlist" : "Leave event") : "RSVP";
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button(("🌿 " + label + ": " + event.title).slice(0, 80), REALM_PREFIX + ":community:rsvp:" + event.id, state ? ButtonStyle.Secondary : ButtonStyle.Success)));
+  }
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+    button("➕ Create Event", REALM_PREFIX + ":community:create"),
+    button("📋 My Events", REALM_PREFIX + ":community:mine", ButtonStyle.Secondary),
+    button("◀ Realm", REALM_PREFIX + ":home", ButtonStyle.Secondary)
+  ));
+  await interaction.update({ embeds: [embed], components });
+}
+
+async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: string) {
+  const events = await listMyCommunityEvents(interaction.guild!.id, interaction.user.id);
+  const lines = events.map(event => {
+    const status = event.status === "pending" ? "🕒 Awaiting Council review" : event.status === "changes_requested" ? "📝 Changes requested" + (event.reviewNote ? ": " + event.reviewNote : "") : "✅ Approved and listed in Realm Events";
+    return "**" + event.title + "** — " + status + "\n🗓️ <t:" + event.startAtUnix + ":F> • " + event.mapLocation;
+  });
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("📋 MY COMMUNITY EVENTS")
+    .setDescription([notice, lines.length ? lines.join("\n\n") : "You have no community events yet. Use **Create Event** to submit one for Council review."].filter(Boolean).join("\n\n").slice(0, 4000));
+  await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("➕ Create Event", REALM_PREFIX + ":community:create"), button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary))] });
+}
+
+function buildCommunityEventModal() {
+  const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:submit").setTitle("Create Community Event");
+  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true) =>
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(style === TextInputStyle.Paragraph ? 1000 : 100));
+  modal.addComponents(
+    field("title", "Event title", "Aberration cave run"),
+    field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave"),
+    field("start", "Start date/time (ISO with timezone)", "2026-11-01T19:00:00-07:00"),
+    field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph),
+    field("capacity", "Player limit (0 = unlimited)", "0")
+  );
+  return modal;
+}
+
+async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
+  if (!interaction.guildId) {
+    await interaction.reply({ content: "❌ Community events can only be created inside a server.", flags: MessageFlags.Ephemeral });
     return;
   }
-
-  const visibleEvents = events.slice(0, 4);
-  embed.setDescription(`${notice ? `${notice}\n\n` : ""}${visibleEvents.map((event, index) => {
-    const summary = getEventRsvpSummary(event);
-    const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going");
-    const goingList = going.length ? going.map(userId => `<@${userId}>`).join(", ").slice(0, 900) : "No one yet";
-    return `**${index + 1}. ${event.title}**\n🗓️ <t:${event.startAtUnix}:F>\n📖 ${event.description ?? "No description provided."}\n🟢 **Going (${summary.going})**\n${goingList}${event.notes ? `\n📝 ${event.notes}` : ""}`;
-  }).join("\n\n")}${events.length > 4 ? "\n\n*Showing the next 4 upcoming gatherings.*" : ""}`.slice(0, 4000));
-
-  const eventButtons = visibleEvents.map(event =>
-    button(`🜂 Going: ${event.title}`.slice(0, 80), `${REALM_PREFIX}:event:going:${event.id}`, ButtonStyle.Success)
-  );
-  const components: ActionRowBuilder<ButtonBuilder>[] = [];
-  for (let i = 0; i < eventButtons.length; i += 5) {
-    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...eventButtons.slice(i, i + 5)));
+  const title = interaction.fields.getTextInputValue("title").trim();
+  const categoryLocation = interaction.fields.getTextInputValue("category_location").trim();
+  const startRaw = interaction.fields.getTextInputValue("start").trim();
+  const description = interaction.fields.getTextInputValue("description").trim();
+  const capacityRaw = interaction.fields.getTextInputValue("capacity").trim();
+  const separator = categoryLocation.indexOf("|");
+  const category = (separator >= 0 ? categoryLocation.slice(0, separator) : "Community").trim().slice(0, 60) || "Community";
+  const mapLocation = (separator >= 0 ? categoryLocation.slice(separator + 1) : categoryLocation).trim().slice(0, 120);
+  const startDate = new Date(startRaw);
+  const capacity = Number.parseInt(capacityRaw, 10);
+  if (!title || !mapLocation || !description || !Number.isFinite(startDate.getTime()) || startDate.getTime() <= Date.now() || !Number.isInteger(capacity) || capacity < 0) {
+    await interaction.reply({ content: "❌ Check your event details. The start must be a future date/time with a timezone (for example 2026-11-01T19:00:00-07:00), and the player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
+    return;
   }
-  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
-  await interaction.update({ embeds: [embed], components });
+  const mine = await listMyCommunityEvents(interaction.guildId, interaction.user.id, 20);
+  if (mine.filter(event => event.status === "pending" || event.status === "changes_requested").length >= 3 || mine.filter(event => event.status === "approved").length >= 3) {
+    await interaction.reply({ content: "⛔ You may have up to 3 pending submissions and 3 approved upcoming events at a time.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+  await createCommunityEvent({ guildId: interaction.guildId, creatorId: interaction.user.id, title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), capacity });
+  await interaction.reply({ content: "🕒 **Submitted to the High Council.** Your event will only appear in the shared Realm Events panel after approval. Check **My Events** for its status.", flags: MessageFlags.Ephemeral });
 }
 
 async function markEventGoing(interaction: ButtonInteraction, eventId: string) {
@@ -178,6 +240,7 @@ export async function buildRealmPanel(guildId?: string) {
 }
 
 export async function handleRealmPanel(interaction: Interaction): Promise<boolean> {
+  if (interaction.isModalSubmit() && interaction.customId === REALM_PREFIX + ":community:submit") { await submitCommunityEvent(interaction); return true; }
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
   const customId = interaction.customId;
   if (!customId.startsWith(REALM_PREFIX)) return false;
@@ -186,6 +249,17 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
+  else if (section === "community:create") await interaction.showModal(buildCommunityEventModal());
+  else if (section === "community:mine") await showMyCommunityEvents(interaction as ButtonInteraction);
+  else if (section.startsWith("community:rsvp:")) {
+    const eventId = section.slice("community:rsvp:".length);
+    const updated = await rsvpCommunityEvent(eventId, interaction.user.id);
+    if (!updated) await showEvents(interaction as ButtonInteraction, "❌ That community event is no longer open for RSVP.");
+    else {
+      const state = updated.rsvps[interaction.user.id];
+      await showEvents(interaction as ButtonInteraction, state === "waitlist" ? "🕒 You are on the waitlist for **" + updated.title + "**." : state === "going" ? "✅ You are registered for **" + updated.title + "**." : "You left **" + updated.title + "**.");
+    }
+  }
   else if (section === "codex") await interaction.update(realmCodexHome());
   else if (section.startsWith("codex:")) await interaction.update(realmCodexSection(section.slice("codex:".length)));
   else if (section.startsWith("event:going:")) await markEventGoing(interaction as ButtonInteraction, section.slice("event:going:".length));
