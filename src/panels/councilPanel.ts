@@ -121,7 +121,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
     const eventId = parts.slice(2).join(":");
     const decision = action === "approve" ? "approved" : action === "changes" ? "changes_requested" : "rejected";
     const note = decision === "changes_requested" ? "Please revise the event details and resubmit." : decision === "rejected" ? "The Council declined this submission." : undefined;
-    const reviewed = await reviewCommunityEvent(eventId, interaction.user.id, decision, note);
+    const reviewed = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, decision, note);
     await showEvents(interaction, reviewed ? (decision === "approved" ? "✅ Community event approved and added to Realm Events." : decision === "changes_requested" ? "📝 Changes requested; only the creator can see the review status." : "❌ Community event rejected.") : "That submission was already reviewed or no longer exists.");
   }
   else if (section === "events:start") await startEventModal(interaction);
