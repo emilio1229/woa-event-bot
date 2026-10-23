@@ -87,4 +87,8 @@ test("community event local times convert using the creator-selected timezone", 
     toUtcIso("2026-10-30 19:30", "America/Phoenix"),
     "2026-10-31T02:30:00.000Z"
   );
+  assert.equal(
+    toUtcIso("2026-10-30 7:30 PM", "America/Phoenix"),
+    "2026-10-31T02:30:00.000Z"
+  );
 });
