@@ -410,7 +410,7 @@ async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteracti
 async function showEvents(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
   const pending = await listPendingCommunityEvents(interaction.guildId ?? "", 3);
-  const normalDescription = events.length ? events.slice(0, 8).map(event => "🏆 **" + event.title + "** — <t:" + event.startAtUnix + ":F>\n" + event.description + "\nRSVP: " + getEventRsvpSummary(event).going + (event.notes ? "\n📝 " + event.notes : "")).join("\n\n") : "No upcoming official events.";
+  const normalDescription = events.length ? events.slice(0, 8).map(event => "🏆 **" + event.title + "** — <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n" + event.description + "\nRSVP: " + getEventRsvpSummary(event).going + (event.notes ? "\n📝 " + event.notes : "")).join("\n\n") : "No upcoming official events.";
   const pendingDescription = pending.length ? pending.map(event => "🕒 **" + event.title + "** — submitted by <@" + event.creatorId + ">\n🗺️ " + event.mapLocation + " • " + event.category + "\n🗓️ <t:" + event.startAtUnix + ":F>\n" + event.description).join("\n\n") : "No community submissions are awaiting review.";
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 Events & Community Review")
     .setDescription([notice, "**Official WoA events**\n" + normalDescription, "**🌿 Pending community submissions**\n" + pendingDescription].filter(Boolean).join("\n\n").slice(0, 4000));
