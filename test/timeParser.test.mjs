@@ -39,6 +39,7 @@ test("keeps supported natural-language formats", () => {
   for (const input of [
     "in 10 minutes",
     "tomorrow 7pm",
+    "tomorrow at 7pm",
     "tonight",
     "this weekend 8:30pm",
     "next month",
@@ -58,6 +59,10 @@ test("accepts common absolute date and clock formats", () => {
   for (const input of [
     "10/20/2026 5pm",
     "10/20/2026 17:30",
+    "11/1/26 7pm",
+    "Nov 1st, 2026 at 7 PM",
+    "November 1 2026 19:00",
+    "Nov 1 7 PM",
     "Oct 20 2026 5pm",
     "October 20, 2026 at 5:30 PM",
     "2026-10-20T17:30:00-07:00",
