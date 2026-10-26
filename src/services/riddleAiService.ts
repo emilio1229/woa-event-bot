@@ -1365,7 +1365,7 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
     })).map(row => normalize(row.answer))
   );
 
-  const uniqueRiddles = [...new Map(RIDDLES.map(seed => [normalize(seed.answer), seed])).values()];
+  const uniqueRiddles = [...new Map<string, RiddleSeed>(RIDDLES.map(seed => [normalize(seed.answer), seed] as const)).values()];
   const safeRiddles = uniqueRiddles.filter(isSafeSeed);
   if (!safeRiddles.length) {
     throw new Error("The Arcane Scribe has no riddle that passes the answer-leak rules.");
