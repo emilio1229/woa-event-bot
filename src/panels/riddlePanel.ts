@@ -101,7 +101,7 @@ export function buildRiddlePanel() {
   return {
     embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧩 THE ARCANE RIDDLE").setDescription("Inscribe a riddle. The first wizard to solve it claims the Sigil reward.")],
     components: [
-      row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🧠 Generate with AI", RIDDLE_PREFIX + ":ai")),
+      row(button("✨ Create Riddle", RIDDLE_PREFIX + ":start"), button("🛡️ Anti-AI Riddler", RIDDLE_PREFIX + ":ai")),
       row(button("📋 Active Riddles", RIDDLE_PREFIX + ":active"), button("📣 Repost Active Riddle", RIDDLE_PREFIX + ":repost", ButtonStyle.Success)),
       row(back())
     ]
@@ -296,7 +296,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
   if (interaction.isButton() && (interaction.customId === RIDDLE_PREFIX + ":start" || interaction.customId === RIDDLE_PREFIX + ":ai")) {
     const mode = interaction.customId.endsWith(":ai") ? "ai" : "manual";
     const menu = new ChannelSelectMenuBuilder().setCustomId(RIDDLE_PREFIX + ":channel:" + mode).setPlaceholder("Choose the riddle channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
-    await interaction.update({ embeds: [new EmbedBuilder().setTitle(mode === "ai" ? "🧠 AI Riddle Channel" : "🧩 Riddle Channel").setDescription(mode === "ai" ? "Choose where the approved riddle will eventually be posted. Nothing is posted yet." : "Choose where to post the riddle.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), row(back())] });
+    await interaction.update({ embeds: [new EmbedBuilder().setTitle(mode === "ai" ? "🛡️ Anti-AI Riddler Channel" : "🧩 Riddle Channel").setDescription(mode === "ai" ? "Choose where the hardened riddle will eventually be posted. Nothing is posted yet." : "Choose where to post the riddle.")], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), row(back())] });
     return true;
   }
   if (interaction.isChannelSelectMenu() && interaction.customId.startsWith(RIDDLE_PREFIX + ":channel:")) {
@@ -304,14 +304,14 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const guildId = interaction.guildId ?? "";
     const channelId = interaction.values[0];
     if (mode === "ai") {
-      if (!guildId) { await interaction.reply({ content: "❌ AI riddles can only be created inside a server.", ephemeral: true }); return true; }
+      if (!guildId) { await interaction.reply({ content: "❌ Anti-AI riddles can only be prepared inside a server.", ephemeral: true }); return true; }
       // Generating an AI riddle is only a draft operation. Do not block the
       // scribe here because an existing live riddle does not prevent an admin
       // from preparing the next one. The active-riddle check belongs in
       // postRiddle(), immediately before publishing.
       const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
       if (!channel || !channel.isSendable()) { await interaction.reply({ content: "❌ That channel cannot receive messages from the bot.", ephemeral: true }); return true; }
-      await interaction.update({ content: "🧠 The Arcane Scribe is weaving a riddle for review…", embeds: [], components: [] });
+      await interaction.update({ content: "🧠 The Arcane Scribe is hardening a riddle for private review…", embeds: [], components: [] });
       try {
         const generated = await generateArcaneRiddle();
         aiDrafts.set(interaction.user.id, { guildId, channelId, ...generated });
