@@ -974,14 +974,28 @@ function normalize(value: string): string {
   return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+const GENERIC_ANSWER_TERMS = new Set([
+  "artifact", "artifacts", "council", "creature", "creatures", "exchange",
+  "explorer", "element", "grand", "high", "notes", "shadow", "saddle",
+  "sigil", "tek", "titan", "water", "wizard", "wizards", "warlock",
+  "warlocks", "witch", "witches", "roar", "web", "form", "shoulder",
+  "feathers", "golem", "ice", "charge", "the"
+]);
+
 function answerLeaksInto(text: string, answer: string): boolean {
   const normalizedText = " " + normalize(text) + " ";
   const normalizedAnswer = normalize(answer);
   if (!normalizedAnswer) return true;
 
-  // Reject the complete answer phrase, but do not reject ordinary clue words
-  // that happen to overlap with part of a title (e.g. "grand" or "council").
-  return normalizedText.includes(" " + normalizedAnswer + " ");
+  // Catch both a full answer phrase and distinctive long answer tokens.
+  // Common WoA/ARK nouns are excluded from token checks to avoid rejecting
+  // fair clues merely because they share broad category vocabulary.
+  if (normalizedText.includes(" " + normalizedAnswer + " ")) return true;
+
+  const distinctiveTokens = normalizedAnswer
+    .split(" ")
+    .filter(token => token.length >= 8 && !GENERIC_ANSWER_TERMS.has(token));
+  return distinctiveTokens.some(token => normalizedText.includes(" " + token + " "));
 }
 
 function isSafeSeed(seed: RiddleSeed): boolean {
@@ -990,14 +1004,28 @@ function isSafeSeed(seed: RiddleSeed): boolean {
 }
 
 function buildHints(seed: RiddleSeed): string[] {
-  // Fail closed if a future edit accidentally puts answer text into a clue.
-  return seed.hints.map((hint, index) => answerLeaksInto(hint, seed.answer)
-    ? [
-        "Reconsider which image describes the subject and which only describes its surroundings.",
-        "Separate the source of the clue from the action or object it produces.",
-        "The setting narrows the search, but does not name the solution.",
-        "Return to the line that describes an unusual relationship rather than a familiar label."
-      ][Math.min(index, 3)]
+  const categoryFallback: Record<RiddleCategory, string> = {
+    creature: "Classify the subject by its behavior, not by its appearance alone.",
+    item: "Separate the thing being described from the result it enables.",
+    ability: "The answer names a capability, not the creature or tool behind it.",
+    lore: "The solution belongs to the realm's own established lore.",
+    map: "The clue points to a world feature rather than a tame or inventory object.",
+    challenge: "Identify the encounter or trial, not a creature you could keep.",
+    mixed: "Separate the central clue from the setting used to disguise it."
+  };
+  const fallbacks = [
+    "Reconsider which image describes the subject and which only describes its surroundings.",
+    "Separate the source of the clue from the action or object it produces.",
+    "The setting narrows the search, but does not name the solution.",
+    categoryFallback[seed.category]
+  ];
+  const hints = seed.hints.slice(0, 4);
+  while (hints.length < 4) hints.push(categoryFallback[seed.category]);
+
+  // Always expose exactly four stages. If a clue accidentally echoes the
+  // answer, replace it with a safe reasoning prompt instead of leaking it.
+  return hints.map((hint, index) => answerLeaksInto(hint, seed.answer)
+    ? fallbacks[index]
     : hint);
 }
 
@@ -1022,9 +1050,12 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
   return {
     // Reveal only the opening clues publicly. The remaining two lines become
     // progressive hints, unlocked only after this wizard makes incorrect guesses.
-    question: candidate.lines.slice(0, 3).join("\n") + "\n\nWhat is the Scribe asking you to identify?",
+    question: candidate.lines.slice(0, 2).join("\n") + "\n\nWhat is the Scribe asking you to identify?",
     answer: candidate.answer,
-    hint: JSON.stringify([...candidate.lines.slice(3), ...buildHints(candidate)]),
+    // The public prompt gives only the opening setup. The answer path is
+    // exactly four staged hints; later seed lines are not appended as extra
+    // near-answer reveals.
+    hint: JSON.stringify(buildHints(candidate)),
     reward: candidate.reward,
     notes: "Arcane Scribe • " + candidate.notes
   };
