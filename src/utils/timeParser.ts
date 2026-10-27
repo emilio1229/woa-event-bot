@@ -77,7 +77,7 @@ function parseExplicitDate(input: string, timezone: string): number | null {
   }
 
   // Common English month-name dates, e.g. "Oct 20 2026 5pm" or "October 20, 2026 at 17:00".
-  const cleaned = input.replace(/\bat\b/gi, " ").replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  const cleaned = input.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1").replace(/\bat\b/gi, " ").replace(/,/g, " ").replace(/\s+/g, " ").trim();
   const monthDate = DateTime.fromFormat(cleaned, "MMM d yyyy h:mm a", { zone: timezone, setZone: true })
     .isValid
     ? DateTime.fromFormat(cleaned, "MMM d yyyy h:mm a", { zone: timezone })
@@ -89,7 +89,10 @@ function parseExplicitDate(input: string, timezone: string): number | null {
     "MMM d yyyy", "MMMM d yyyy",
     "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd h:mm a", "yyyy-MM-dd h a",
     "M/d/yyyy h:mm a", "M/d/yyyy h a", "M/d/yyyy H:mm", "M/d/yyyy",
-    "d/M/yyyy H:mm", "d/M/yyyy"
+    "M/d/yy h:mm a", "M/d/yy h a", "M/d/yy H:mm", "M/d/yy",
+    "d/M/yyyy H:mm", "d/M/yyyy", "d/M/yy H:mm", "d/M/yy",
+    "MMM d h:mm a", "MMM d h a", "MMM d H:mm", "MMM d",
+    "MMMM d h:mm a", "MMMM d h a", "MMMM d H:mm", "MMMM d"
   ];
   for (const format of formats) {
     const parsed = DateTime.fromFormat(cleaned, format, { zone: timezone, setZone: true, locale: "en-US" });

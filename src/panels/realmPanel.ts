@@ -164,7 +164,7 @@ function buildCommunityEventModal(timezone: string, existing?: Awaited<ReturnTyp
   modal.addComponents(
     field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
     field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
-    field("start", ("Start date/time (" + timezone + ")").slice(0, 45), "2026-11-01 7:00 PM or 19:00", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(timezone).toFormat("yyyy-MM-dd h:mm a") : undefined),
+    field("start", ("Start date/time (" + timezone + ")").slice(0, 45), "today 5pm | today 5:00pm | in 2 hours", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(timezone).toFormat("yyyy-MM-dd h:mm a") : undefined),
     field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
     field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
@@ -192,7 +192,7 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
   const startDate = startMillis === null ? new Date(Number.NaN) : new Date(startMillis);
   const capacity = Number.parseInt(capacityRaw, 10);
   if (!title || !mapLocation || !description || !Number.isFinite(startDate.getTime()) || startDate.getTime() <= Date.now() || !Number.isInteger(capacity) || capacity < 0) {
-    await interaction.reply({ content: "❌ Check your event details. Choose a valid timezone first, then enter a future date/time such as 2026-11-01 7:00 PM or 19:00. The player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "❌ Check your event details. Choose your timezone first, then enter a future start time in a format you find natural—for example: Nov 1, 2026 at 7 PM; 11/1/26 7:00pm; 2026-11-01 19:00; tomorrow at 7pm; next Friday 5pm; or in 2 hours. Times use your selected timezone. Player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
     return;
   }
   const mine = await listMyCommunityEvents(interaction.guildId, interaction.user.id, 20);
