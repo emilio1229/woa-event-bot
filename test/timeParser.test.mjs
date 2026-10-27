@@ -38,6 +38,10 @@ test("rejects impossible local times and invalid zones", () => {
 test("keeps supported natural-language formats", () => {
   for (const input of [
     "in 10 minutes",
+    "in 2 hours",
+    "today 5pm",
+    "today 5:00pm",
+    "today at 5pm",
     "tomorrow 7pm",
     "tomorrow at 7pm",
     "tonight",
