@@ -164,7 +164,7 @@ function buildCommunityEventModal(timezone: string, existing?: Awaited<ReturnTyp
   modal.addComponents(
     field("title", "Event title", "Aberration cave run", TextInputStyle.Short, true, existing?.title),
     field("category_location", "Category | Map / location", "Hunt | Astraeos - west cave", TextInputStyle.Short, true, existing ? existing.category + " | " + existing.mapLocation : undefined),
-    field("start", ("Start date/time (" + timezone + ")").slice(0, 45), "Nov 1, 2026 7 PM | 11/1/26 7pm | tomorrow 7pm", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(timezone).toFormat("yyyy-MM-dd h:mm a") : undefined),
+    field("start", ("Start date/time (" + timezone + ")").slice(0, 45), "today 5pm | today 5:00pm | in 2 hours", TextInputStyle.Short, true, existing ? DateTime.fromISO(existing.startAtIso).setZone(timezone).toFormat("yyyy-MM-dd h:mm a") : undefined),
     field("description", "Description and rules", "What players should bring / know", TextInputStyle.Paragraph, true, existing?.description),
     field("capacity", "Player limit (0 = unlimited)", "0", TextInputStyle.Short, true, existing ? String(existing.capacity) : undefined)
   );
