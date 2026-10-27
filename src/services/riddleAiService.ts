@@ -974,14 +974,28 @@ function normalize(value: string): string {
   return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+const GENERIC_ANSWER_TERMS = new Set([
+  "artifact", "artifacts", "council", "creature", "creatures", "exchange",
+  "explorer", "element", "grand", "high", "notes", "shadow", "saddle",
+  "sigil", "tek", "titan", "water", "wizard", "wizards", "warlock",
+  "warlocks", "witch", "witches", "roar", "web", "form", "shoulder",
+  "feathers", "golem", "ice", "charge", "the"
+]);
+
 function answerLeaksInto(text: string, answer: string): boolean {
   const normalizedText = " " + normalize(text) + " ";
   const normalizedAnswer = normalize(answer);
   if (!normalizedAnswer) return true;
 
-  // Reject the complete answer phrase, but do not reject ordinary clue words
-  // that happen to overlap with part of a title (e.g. "grand" or "council").
-  return normalizedText.includes(" " + normalizedAnswer + " ");
+  // Catch both a full answer phrase and distinctive long answer tokens.
+  // Common WoA/ARK nouns are excluded from token checks to avoid rejecting
+  // fair clues merely because they share broad category vocabulary.
+  if (normalizedText.includes(" " + normalizedAnswer + " ")) return true;
+
+  const distinctiveTokens = normalizedAnswer
+    .split(" ")
+    .filter(token => token.length >= 8 && !GENERIC_ANSWER_TERMS.has(token));
+  return distinctiveTokens.some(token => normalizedText.includes(" " + token + " "));
 }
 
 function isSafeSeed(seed: RiddleSeed): boolean {
@@ -989,15 +1003,356 @@ function isSafeSeed(seed: RiddleSeed): boolean {
   return !answerLeaksInto(publicText, seed.answer);
 }
 
+const HARDENED_HINTS: Record<string, string[]> = {
+  "Pyromane Shoulder Form": [
+    "The clue concerns where a companion is positioned, not a change to its species.",
+    "Compare a tame that follows at ground level with one whose position is fixed relative to its keeper.",
+    "The answer is a named configuration of a shoulder companion, not equipment.",
+    "Identify the alternate carry-state associated with the fire-themed tame."
+  ],
+  "Cosmo": [
+    "The maker is much smaller than the route it enables.",
+    "Look for a companion whose useful trace remains after it has moved on.",
+    "Its traversal aid is spun rather than built from stone or metal.",
+    "Name the Aberration companion that produces the thread used for crossing gaps."
+  ],
+  "Shastasaurus Saddle": [
+    "The answer changes what can be built around a mount, not how fast it swims.",
+    "Think of a mobile structure rather than ordinary riding equipment.",
+    "The host is a very large marine tame capable of carrying a base-like platform.",
+    "Name the equipment that turns that aquatic tame into a place to build."
+  ],
+  "Yi Ling Feathers": [
+    "The clue points to a biological material, not the animal that releases it.",
+    "This material can leave its source and threaten a target at range.",
+    "Its use is closer to ammunition than to ordinary plumage.",
+    "Identify the launched material associated with the cliff-dwelling Aberration hunter."
+  ],
+  "Dreadnoughtus Roar": [
+    "The answer is heard rather than held.",
+    "Its value is in disrupting an advantage, not dealing ordinary damage alone.",
+    "The target is advanced defensive technology powered by Element.",
+    "Name the vocal ability of the enormous Extinction creature that counters Tek shielding."
+  ],
+  "Fasolasuchus": [
+    "The danger is hidden by the terrain instead of approaching across its surface.",
+    "The key mechanic is an ambush that begins below the visible ground.",
+    "Narrow the search to a large desert predator associated with burrowing.",
+    "Name the Scorched Earth creature that can conceal itself beneath sand."
+  ],
+  "Shastasaurus Echolocation": [
+    "The answer gathers information without making the dark visibly bright.",
+    "A signal is sent out; what returns is knowledge rather than an object.",
+    "The ability belongs to a giant marine tame and helps reveal what sight misses.",
+    "Name the sound-based sensing ability of that aquatic giant."
+  ],
+  "Deinonychus": [
+    "The advantage comes from position, not simply from being larger or faster.",
+    "This predator can use another creature's body as part of its attack.",
+    "Look for a small pack hunter known for clinging to much larger targets.",
+    "Name the Valguero predator that attacks while attached to another creature."
+  ],
+  "Grendel": [
+    "The answer belongs to a named encounter, not the ordinary tame roster.",
+    "The arena tests preparation through a specific opponent.",
+    "Its name comes from a famous literary monster rather than an ARK species family.",
+    "Identify the named Valguero challenge encounter described in the bank."
+  ],
+  "Armadoggo": [
+    "The clue describes a companion from a later chapter of ARK, not a prehistoric giant.",
+    "Its role is defined by following and assisting a survivor.",
+    "Look to the ruined future setting and its newer dog-like companion.",
+    "Name the loyal companion introduced with Extinction content."
+  ],
+  "Ice Golem": [
+    "The apparent landscape feature is mobile and acts independently.",
+    "Its body resembles a natural formation rather than a conventional animal.",
+    "The clues point to a cold, stone-like elemental creature associated with Valguero.",
+    "Name the living frost-and-stone guardian."
+  ],
+  "Cosmo's Web": [
+    "Separate the maker from the thing left behind.",
+    "The tool changes traversal by spanning space rather than increasing speed.",
+    "It is a temporary strand created by a small companion from Aberration.",
+    "Name the web-based traversal tool, not its maker."
+  ],
+  "The Sigil Era": [
+    "The answer names a chapter in WoA's own history, not a map or game mechanic.",
+    "One part of the title is a symbolic mark; the other means a period of time.",
+    "Think of the community's current named chapter.",
+    "Give the exact two-part title used for this WoA era."
+  ],
+  "Grand Sigil Exchange": [
+    "The answer is a player-facing destination in the community's Discord game.",
+    "Its visitors spend a currency earned through participation rather than ordinary ARK resources.",
+    "It is the realm's central place for trading that earned currency for rewards.",
+    "Name the community shop whose title combines a grand trading hall with its magical currency."
+  ],
+  "Emilio the Great": [
+    "The answer is a community persona, not a staff role or ARK creature.",
+    "The title is deliberately theatrical and belongs to the server's lore.",
+    "Look for the persona associated with grand decrees and mischievous notes.",
+    "Give the exact name and honorific of WoA's grand wizard persona."
+  ],
+  "High Wizards": [
+    "The answer is a rank shared by trusted members, not an individual name.",
+    "It describes senior guidance within the community's leadership circle.",
+    "The title combines an elevated rank with a familiar magical calling.",
+    "Name the senior council title used in WoA."
+  ],
+  "Wizards, Warlocks & Witches": [
+    "The answer is the community's motto, not a list of playable classes.",
+    "It contains three distinct magical callings joined in one phrase.",
+    "The words appear beneath the community's identity.",
+    "Give the exact three-part WoA slogan, including its conjunctions."
+  ],
+  "The Council": [
+    "The answer is a group that helps govern the community, not a location.",
+    "Its role is to guide decisions and maintain rules rather than run one event.",
+    "Think of a circle of trusted administrators rather than a single leader.",
+    "Name WoA's governing group."
+  ],
+  "Artifact of the Clever": [
+    "The clue concerns a cave relic whose title praises a mental quality.",
+    "It is collected after a traversal challenge, not crafted or equipped as armor.",
+    "Look among the Island's named artifacts and distinguish cleverness from strength or immunity.",
+    "Name the Island artifact associated with cleverness."
+  ],
+  "Artifact of the Devourer": [
+    "The answer is a cave relic, not the creature implied by its title.",
+    "Its name evokes consumption rather than stealth, wisdom, or resistance.",
+    "Search the Island artifact set and match the title to that idea.",
+    "Name the artifact whose title refers to a consumer."
+  ],
+  "Artifact of the Immune": [
+    "The sought object is a relic, not the protective item a survivor might use nearby.",
+    "Its title describes resistance to a harmful environment.",
+    "Look among the Island's cave artifacts rather than consumables or armor.",
+    "Name the artifact whose title refers to being unaffected by harm."
+  ],
+  "Tek Transmitter": [
+    "The answer is a placeable structure, not a creature or a portable container.",
+    "Its function involves moving survivors between distant maps.",
+    "It provides transfer access from a base rather than serving as a crafting station.",
+    "Name the advanced structure used to access map transfers."
+  ],
+  "Cryopod": [
+    "The answer stores a living tame, not ordinary inventory.",
+    "It suspends the creature until the survivor chooses to release it.",
+    "Think of the portable stasis device rather than a fridge or building.",
+    "Name the item used to store and redeploy a tame in stasis."
+  ],
+  "Wyvern Milk": [
+    "The resource is used during raising, not as a general-purpose meal.",
+    "Its source is dangerous and closely tied to a particular hatchling's needs.",
+    "It is obtained from the adult form of the creature being raised.",
+    "Name the resource needed to raise a young wyvern."
+  ],
+  "Nameless": [
+    "The threat is associated with a subterranean map where darkness changes the rules.",
+    "A portable source of charge illumination affects how the enemy behaves.",
+    "Look for the hostile Aberration creature that makes light strategically important.",
+    "Name the underground enemy affected by charge light."
+  ],
+  "Reaper Queen": [
+    "The answer is the adult creature involved in an unusual acquisition process, not its offspring.",
+    "The process leaves a survivor carrying a developing second life.",
+    "Look to Aberration's dangerous subterranean predators rather than ordinary breeding.",
+    "Name the creature whose attack can lead to a Reaper pregnancy."
+  ],
+  "Rock Drake": [
+    "The answer combines vertical movement with long travel through the air, but is not a conventional flyer.",
+    "Its camouflage can make a moving threat difficult to notice.",
+    "The mount is strongly associated with Aberration's cliffs and hazardous depths.",
+    "Name the climbing, gliding, camouflaging mount from Aberration."
+  ],
+  "Charge Node": [
+    "The answer is a fixed world feature, not a creature or handheld lamp.",
+    "It restores a resource used by specialized equipment in a dark environment.",
+    "Look for the Aberration station that replenishes charge rather than generating ordinary electricity.",
+    "Name the structure that restores charge to compatible gear."
+  ],
+  "Gasbags": [
+    "The creature's signature advantage involves storing and releasing something lighter than itself.",
+    "Its movement can be altered by taking in or expelling gas.",
+    "Look to the unusual Extinction creature used for buoyancy and carrying weight.",
+    "Name the inflatable-looking tame that uses gas to control movement."
+  ],
+  "Orbital Supply Drop": [
+    "The event is a defended objective, not a routine container that can be opened without resistance.",
+    "Waves of enemies arrive while survivors protect a falling reward.",
+    "The encounter belongs to Extinction and is often abbreviated to three letters.",
+    "Name the wave-based Extinction defense event."
+  ],
+  "Element Vein": [
+    "The objective is a resource site that must be defended while it is harvested.",
+    "Its value attracts waves of hostile creatures rather than a single boss.",
+    "Look to Extinction's exposed deposits of advanced energy material.",
+    "Name the resource-defense event centered on exposed Element."
+  ],
+  "Desert Titan": [
+    "The answer is a titanic creature associated with one of Extinction's environmental regions.",
+    "Its encounter involves the sky and the wasteland rather than a conventional cave arena.",
+    "Distinguish it from the forest and ice counterparts by its desert domain.",
+    "Name the desert-dwelling Titan."
+  ],
+  "Forest Titan": [
+    "The answer is one of three regional Titans, distinguished by what surrounds it.",
+    "Its domain is overgrown and woody rather than frozen or arid.",
+    "The encounter belongs to Extinction's corrupted world.",
+    "Name the Titan associated with the forest."
+  ],
+  "Ice Titan": [
+    "The answer is a regional Titan whose environment is defined by cold.",
+    "It is not the smaller stone-like creature suggested by a frozen cliff.",
+    "Look to Extinction's Titan encounters and separate the frozen domain from forest and desert.",
+    "Name the Titan associated with ice."
+  ],
+  "Oasisaur": [
+    "The answer is a living refuge rather than an ordinary combat mount.",
+    "Its defining role is connected to an oasis and restoring what the wasteland has taken.",
+    "Look to the desert-themed creature added with Scorched Earth content.",
+    "Name the oasis-bearing creature."
+  ],
+  "Maewing": [
+    "The answer supports raising young from more than one species.",
+    "Its role resembles a mobile nursery more than a conventional mount.",
+    "The creature can carry and feed babies using a specialized pouch.",
+    "Name the creature known for its nursing pouch."
+  ],
+  "Noglin": [
+    "The answer changes a battle by interfering with another creature's control.",
+    "Its defining trick is mental intrusion rather than raw size or ordinary damage.",
+    "Look to the small, unsettling creature introduced with Genesis Part 2.",
+    "Name the creature that can take control of another being."
+  ],
+  "Ferox": [
+    "The answer changes dramatically when exposed to a particular resource.",
+    "Its small form is not the whole story; the transformation is central to its danger.",
+    "Look to the Genesis creature whose behavior changes after consuming Element.",
+    "Name the creature that transforms after consuming Element."
+  ],
+  "Shadowmane": [
+    "The answer's strongest traits involve coordinated movement and a pack, not a saddle.",
+    "It is a feline-like Genesis Part 2 creature with stealth-oriented combat behavior.",
+    "Look for the tame whose group presence changes how it performs in a fight.",
+    "Name the stealthy pack-oriented feline."
+  ],
+  "Desmodus": [
+    "The answer is a nocturnal flyer whose utility goes beyond ordinary flight.",
+    "Its signature role includes extracting a useful resource from living targets.",
+    "Look to Fjordur's large bat-like tame rather than a conventional bird.",
+    "Name the vampire-like creature associated with blood harvesting."
+  ],
+  "Rhyniognatha": [
+    "The answer is a large insect whose acquisition is unlike ordinary egg hatching.",
+    "Its life cycle involves a host and a risky process imposed on a survivor's tame.",
+    "Look to the unusual creature introduced with The Island's later content update.",
+    "Name the giant insect associated with the extraordinary impregnation mechanic."
+  ],
+  "Artifact of the Strong": [
+    "The answer is an Island cave relic whose title praises physical power.",
+    "It is a collectible objective, not a weapon or a boss trophy.",
+    "Compare the Island artifact names and distinguish strength from cleverness or immunity.",
+    "Name the artifact associated with strength."
+  ],
+  "Explorer Notes": [
+    "The answer is a collectible record that rewards discovery with experience.",
+    "It preserves observations left by people who explored before the current survivor.",
+    "Look for a discoverable record found throughout ARK's maps, not a craftable book.",
+    "Name the collectible records that reveal ARK's lore and grant XP."
+  ],
+  "Tek Cave": [
+    "The answer is a final approach that tests a tribe before it reaches an endgame arena.",
+    "The route itself is dangerous, and its destination is more important than loot along the way.",
+    "It is found on The Island and leads toward the final boss sequence.",
+    "Name the endgame cave leading to the Island's final ascent."
+  ],
+  "Broodmother Lysrix": [
+    "The answer is a boss whose battlefield fills with smaller attackers.",
+    "Its theme is a nest-building arthropod rather than an ape or dragon.",
+    "Look to The Island's boss arenas and the trophy associated with spider-like offspring.",
+    "Name the spider-like Island boss."
+  ],
+  "Megapithecus": [
+    "The answer is an arena boss whose brute force contrasts with a more nimble opponent.",
+    "Its form evokes a primate, and the encounter punishes careless positioning.",
+    "Look among The Island's three principal bosses, excluding the spider and the fire-breathing one.",
+    "Name the giant ape-like boss."
+  ],
+  "Dragon": [
+    "The answer is an arena boss whose threat comes from fire and attacks that bypass ordinary confidence in armor.",
+    "Its silhouette belongs to mythic reptilian flight, not a primate or arachnid.",
+    "Look among The Island's main boss encounters and distinguish the fire-themed one.",
+    "Name the fire-breathing boss of The Island."
+  ],
+  "Tek Replicator": [
+    "The answer is an advanced crafting station rather than a power source or travel structure.",
+    "It produces equipment that ordinary benches cannot handle.",
+    "Look for the high-tier device used to craft Tek technology.",
+    "Name the advanced station that crafts Tek items."
+  ],
+  "Gacha": [
+    "The answer turns selected offerings into an uncertain output.",
+    "Its production depends on what it consumes and on its own unusual behavior.",
+    "Look to Extinction's tame that can generate resources or collectible items from offerings.",
+    "Name the creature known for producing resources from consumed items."
+  ],
+  "Tek Bridge": [
+    "The answer is a build piece that changes the geometry of a base, not a tool for moving the builder.",
+    "Its purpose is to create a walkable connection over a gap.",
+    "Look among advanced structures rather than mounts or traversal gadgets.",
+    "Name the Tek structure piece that spans open space."
+  ],
+  "Water Vein": [
+    "The answer is a natural resource point hidden in an arid map.",
+    "A survivor must place the right structure to draw from it.",
+    "It is neither a river nor a carried container; it is a source beneath the desert surface.",
+    "Name the Scorched Earth feature that can be tapped for water."
+  ],
+  "Phoenix": [
+    "The answer's appearance is governed by an extreme environmental condition.",
+    "It is a rare creature rather than the storm that reveals it.",
+    "Look to Scorched Earth and the heat cycle that can make it appear.",
+    "Name the legendary fire bird tied to extreme heat and firestorms."
+  ],
+  "Charge Lantern": [
+    "The answer is portable and uses stored charge rather than ordinary fuel.",
+    "Its glow affects more than visibility in a dangerous underground environment.",
+    "Look for the handheld tool associated with Aberration's charge-light mechanics.",
+    "Name the portable device that projects charge light."
+  ],
+  "Tek Generator": [
+    "The answer supplies power rather than crafting equipment or transferring survivors.",
+    "It runs advanced structures without relying on ordinary fuel.",
+    "Distinguish the base's power source from a transmitter and a replicator.",
+    "Name the structure that powers nearby Tek devices."
+  ]
+};
+
 function buildHints(seed: RiddleSeed): string[] {
-  // Fail closed if a future edit accidentally puts answer text into a clue.
-  return seed.hints.map((hint, index) => answerLeaksInto(hint, seed.answer)
-    ? [
-        "Reconsider which image describes the subject and which only describes its surroundings.",
-        "Separate the source of the clue from the action or object it produces.",
-        "The setting narrows the search, but does not name the solution.",
-        "Return to the line that describes an unusual relationship rather than a familiar label."
-      ][Math.min(index, 3)]
+  const categoryFallback: Record<RiddleCategory, string> = {
+    creature: "Classify the subject by its behavior, not by its appearance alone.",
+    item: "Separate the thing being described from the result it enables.",
+    ability: "The answer names a capability, not the creature or tool behind it.",
+    lore: "The solution belongs to the realm's own established lore.",
+    map: "The clue points to a world feature rather than a tame or inventory object.",
+    challenge: "Identify the encounter or trial, not a creature you could keep.",
+    mixed: "Separate the central clue from the setting used to disguise it."
+  };
+  const fallbacks = [
+    "Reconsider which image describes the subject and which only describes its surroundings.",
+    "Separate the source of the clue from the action or object it produces.",
+    "The setting narrows the search, but does not name the solution.",
+    categoryFallback[seed.category]
+  ];
+  const hints = (HARDENED_HINTS[seed.answer] ?? seed.hints).slice(0, 4);
+  while (hints.length < 4) hints.push(categoryFallback[seed.category]);
+
+  // Always expose exactly four stages. If a clue accidentally echoes the
+  // answer, replace it with a safe reasoning prompt instead of leaking it.
+  return hints.map((hint, index) => answerLeaksInto(hint, seed.answer)
+    ? fallbacks[index]
     : hint);
 }
 
@@ -1010,7 +1365,8 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
     })).map(row => normalize(row.answer))
   );
 
-  const safeRiddles = RIDDLES.filter(isSafeSeed);
+  const uniqueRiddles = [...new Map<string, RiddleSeed>(RIDDLES.map(seed => [normalize(seed.answer), seed] as const)).values()];
+  const safeRiddles = uniqueRiddles.filter(isSafeSeed);
   if (!safeRiddles.length) {
     throw new Error("The Arcane Scribe has no riddle that passes the answer-leak rules.");
   }
@@ -1022,9 +1378,12 @@ export async function generateArcaneRiddle(): Promise<GeneratedArcaneRiddle> {
   return {
     // Reveal only the opening clues publicly. The remaining two lines become
     // progressive hints, unlocked only after this wizard makes incorrect guesses.
-    question: candidate.lines.slice(0, 3).join("\n") + "\n\nWhat is the Scribe asking you to identify?",
+    question: candidate.lines.slice(0, 2).join("\n") + "\n\nWhat is the Scribe asking you to identify?",
     answer: candidate.answer,
-    hint: JSON.stringify([...candidate.lines.slice(3), ...buildHints(candidate)]),
+    // The public prompt gives only the opening setup. The answer path is
+    // exactly four staged hints; later seed lines are not appended as extra
+    // near-answer reveals.
+    hint: JSON.stringify(buildHints(candidate)),
     reward: candidate.reward,
     notes: "Arcane Scribe • " + candidate.notes
   };
