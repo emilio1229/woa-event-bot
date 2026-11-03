@@ -115,10 +115,10 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
     };
     const going = formatAttendees(goingUsers) || "No one yet";
     const waitlist = formatAttendees(waitlistUsers) || "None";
-    return "**🌿 Community " + (index + 1) + ". " + event.title + "**\\n🗺️ " + event.mapLocation + " • " + event.category +
-      "\\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\\n📖 " + event.description +
-      "\\n👥 Going (" + goingUsers.length + (event.capacity ? "/" + event.capacity : "") + "): " + going +
-      "\\n🕒 Waitlist (" + waitlistUsers.length + "): " + waitlist;
+    return "**🌿 Community " + (index + 1) + ". " + event.title + "**\n🗺️ " + event.mapLocation + " • " + event.category +
+      "\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n📖 " + event.description +
+      "\n👥 Going (" + goingUsers.length + (event.capacity ? "/" + event.capacity : "") + "): " + going +
+      "\n🕒 Waitlist (" + waitlistUsers.length + "): " + waitlist;
   });
   embed.setDescription(["Browse WoA gatherings and player-hosted events. Community submissions are reviewed by the Council before appearing here.", notice, ...standard, ...community].filter(Boolean).join("\n\n").slice(0, 4000));
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
