@@ -107,10 +107,18 @@ async function showEvents(interaction: ButtonInteraction, notice?: string) {
   const standard = events.slice(0, 3).map((event, index) =>
     "**" + (index + 1) + ". " + event.title + "**\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n📖 " + (event.description || "No description provided.") + "\n🟢 Going: **" + getEventRsvpSummary(event).going + "**" + (event.notes ? "\n📝 " + event.notes : ""));
   const community = communityEvents.slice(0, 4).map((event, index) => {
-    const going = Object.values(event.rsvps).filter(state => state === "going").length;
-    const waitlist = Object.values(event.rsvps).filter(state => state === "waitlist").length;
-    return "**🌿 Community " + (index + 1) + ". " + event.title + "**\n🗺️ " + event.mapLocation + " • " + event.category +
-      "\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\n📖 " + event.description + "\n👥 Going: **" + going + (event.capacity ? "/" + event.capacity : "") + "** • Waitlist: " + waitlist;
+    const goingUsers = Object.entries(event.rsvps).filter(([, state]) => state === "going").map(([userId]) => userId);
+    const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([userId]) => userId);
+    const formatAttendees = (userIds: string[]) => {
+      const visible = userIds.slice(0, 12).map(userId => "<@" + userId + ">").join(", ");
+      return visible + (userIds.length > 12 ? " +" + (userIds.length - 12) + " more" : "");
+    };
+    const going = formatAttendees(goingUsers) || "No one yet";
+    const waitlist = formatAttendees(waitlistUsers) || "None";
+    return "**🌿 Community " + (index + 1) + ". " + event.title + "**\\n🗺️ " + event.mapLocation + " • " + event.category +
+      "\\n🗓️ <t:" + event.startAtUnix + ":F> • 🌎 " + event.timezone + "\\n📖 " + event.description +
+      "\\n👥 Going (" + goingUsers.length + (event.capacity ? "/" + event.capacity : "") + "): " + going +
+      "\\n🕒 Waitlist (" + waitlistUsers.length + "): " + waitlist;
   });
   embed.setDescription(["Browse WoA gatherings and player-hosted events. Community submissions are reviewed by the Council before appearing here.", notice, ...standard, ...community].filter(Boolean).join("\n\n").slice(0, 4000));
   const components: ActionRowBuilder<ButtonBuilder>[] = [];
