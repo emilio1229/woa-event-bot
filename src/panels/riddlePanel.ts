@@ -37,10 +37,6 @@ async function sendOrUpdateWrongGuessFeedback(interaction: ModalSubmitInteractio
   const existing = riddleFeedbackSessions.get(key);
   const content = buildWrongGuessFeedback();
 
-  // A guess can take several seconds to save and refresh the public riddle.
-  // Acknowledge the modal immediately so Discord does not expire the interaction.
-  await interaction.deferReply({ ephemeral: true });
-
   if (existing && existing.expiresAt > Date.now()) {
     const webhook = new WebhookClient({ id: existing.applicationId, token: existing.token });
     try {
@@ -532,6 +528,8 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
   const riddle = await riddleStore.getById(id);
   if (!riddle?.active) { await interaction.reply({ content:"🕯️ Another wizard has already claimed this riddle.", ephemeral:true }); return true; }
 
+  // Acknowledge immediately: database writes and refreshing the public embed can exceed Discord's 3-second response window.
+  await interaction.deferReply({ ephemeral: true });
   const result = await riddleStore.submitAnswer(id, interaction.fields.getTextInputValue("answer"), interaction.user.id);
   if (result === "wrong") {
     const updated = await buildLiveRiddleEmbed(id);
@@ -545,7 +543,7 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
     await sendOrUpdateWrongGuessFeedback(interaction, id); return true;
   }
 
-  if (result !== "correct" || !interaction.guildId) { await interaction.reply({ content:"🕯️ Another wizard has already claimed this riddle.", ephemeral:true }); return true; }
+  if (result !== "correct" || !interaction.guildId) { await interaction.editReply({ content:"🕯️ Another wizard has already claimed this riddle." }); return true; }
 
   riddleFeedbackSessions.delete(id + ":" + interaction.user.id);
   const user = await sigilStore.awardSigils(interaction.guildId, interaction.user.id, riddle.reward, "Solved Arcane Riddle: " + riddle.id);
@@ -561,7 +559,7 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
     }
   }
   const awardNotice = "✨ The sigils recognize you, Riddlebreaker! **" + riddle.reward + " Sigils have been awarded** to your account. Your new balance is **" + user.balance + " Sigils**.";
-  await interaction.reply({ content: awardNotice, ephemeral: true });
+  await interaction.editReply({ content: awardNotice });
   // The ephemeral confirmation always reaches the winner; send a DM as a second
   // receipt when their privacy settings allow messages from the bot.
   await interaction.user.send({ content: "🏆 **The Wizards of Ark — Riddle Reward**\nYou solved the Arcane Riddle and have been awarded **" + riddle.reward + " Sigils**.\nYour new balance is **" + user.balance + " Sigils**." }).catch(() => undefined);
