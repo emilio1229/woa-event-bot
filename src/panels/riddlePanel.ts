@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type Interaction, type ModalSubmitInteraction } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, WebhookClient, type Interaction, type ModalSubmitInteraction } from "discord.js";
 import { riddleStore } from "../riddleStore.js";
 import { sigilStore } from "../sigilStore.js";
 import { generateArcaneRiddle } from "../services/riddleAiService.js";
@@ -6,6 +6,61 @@ import { generateArcaneRiddle } from "../services/riddleAiService.js";
 export const RIDDLE_PREFIX = "woa:riddle";
 const drafts = new Map<string, { guildId: string; channelId: string }>();
 const aiDrafts = new Map<string, { guildId: string; channelId: string; question: string; answer: string; hint?: string; reward: number; notes: string }>();
+type RiddleFeedbackSession = { applicationId: string; token: string; messageId: string; expiresAt: number };
+const riddleFeedbackSessions = new Map<string, RiddleFeedbackSession>();
+
+const wrongGuessReactions = [
+  "🐸 The frog squints at your answer… then bursts into an uncontrollable giggle.",
+  "🧙 The Wizard slowly lowers his spectacles. “That was your guess?”",
+  "🔮 The crystal ball has gone cloudy. It refuses to be associated with that theory.",
+  "🐉 A nearby dragon snorts smoke at your answer. Even it expected better.",
+  "📜 The ancient scroll rejects your contribution and requests an apology.",
+  "🧹 The enchanted broom has swept that answer straight into the rubbish.",
+  "🦉 The familiar blinks twice, turns around, and pretends it heard nothing.",
+  "✨ A tiny spark appears, considers your answer, and immediately extinguishes itself.",
+  "🧌 The goblin accountant has filed that guess under “creative losses.”",
+  "🪄 The spell fizzles. The wand would like to speak to your supervisor.",
+  "🧙‍♂️ The Council has reviewed your answer. The Council is trying not to laugh.",
+  "🐈‍⬛ The familiar knocked your answer off the table. It is not sorry."
+];
+
+function buildWrongGuessFeedback() {
+  const reaction = wrongGuessReactions[Math.floor(Math.random() * wrongGuessReactions.length)];
+  return "🔒 **THE RIDDLE REMAINS SEALED**\\n\\n" +
+    "❌ The sigils reject that answer. Your guess has been recorded.\\n" +
+    reaction + "\\n\\n" +
+    "*The Arcane Realm awaits a better theory…*";
+}
+
+async function sendOrUpdateWrongGuessFeedback(interaction: ModalSubmitInteraction, riddleId: string) {
+  const key = riddleId + ":" + interaction.user.id;
+  const existing = riddleFeedbackSessions.get(key);
+  const content = buildWrongGuessFeedback();
+
+  if (existing && existing.expiresAt > Date.now()) {
+    const webhook = new WebhookClient({ id: existing.applicationId, token: existing.token });
+    try {
+      await webhook.editMessage(existing.messageId, { content });
+      webhook.destroy();
+      return;
+    } catch {
+      webhook.destroy();
+      riddleFeedbackSessions.delete(key);
+    }
+  } else if (existing) {
+    riddleFeedbackSessions.delete(key);
+  }
+
+  const reply = await interaction.reply({ content, ephemeral: true, fetchReply: true });
+  riddleFeedbackSessions.set(key, {
+    applicationId: interaction.applicationId,
+    token: interaction.token,
+    messageId: reply.id,
+    // Discord interaction tokens expire after 15 minutes; refresh slightly early.
+    expiresAt: Date.now() + 14 * 60 * 1000
+  });
+}
+
 const button = (label: string, id: string, style = ButtonStyle.Primary) => new ButtonBuilder().setLabel(label).setCustomId(id).setStyle(style);
 const row = (...b: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(b);
 const back = () => button("◀ Council", "woa:council:home", ButtonStyle.Secondary);
@@ -477,11 +532,12 @@ export async function handleRiddleAnswerModal(interaction: ModalSubmitInteractio
         if (message) await message.edit({ embeds:[updated] }).catch(() => undefined);
       }
     }
-    await interaction.reply({ content:"❌ The sigils reject that answer. The riddle remains sealed.", ephemeral:true }); return true;
+    await sendOrUpdateWrongGuessFeedback(interaction, id); return true;
   }
 
   if (result !== "correct" || !interaction.guildId) { await interaction.reply({ content:"🕯️ Another wizard has already claimed this riddle.", ephemeral:true }); return true; }
 
+  riddleFeedbackSessions.delete(id + ":" + interaction.user.id);
   const user = await sigilStore.awardSigils(interaction.guildId, interaction.user.id, riddle.reward, "Solved Arcane Riddle: " + riddle.id);
   const [stats, guesses] = await Promise.all([riddleStore.getStats(id), riddleStore.getRecentGuesses(id, 6)]);
   const solveSeconds = Math.max(0, Math.floor((Date.now() - riddle.createdAt.getTime()) / 1000));
