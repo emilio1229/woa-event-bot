@@ -26,9 +26,9 @@ const wrongGuessReactions = [
 
 function buildWrongGuessFeedback() {
   const reaction = wrongGuessReactions[Math.floor(Math.random() * wrongGuessReactions.length)];
-  return "🔒 **THE RIDDLE REMAINS SEALED**\\n\\n" +
-    "❌ The sigils reject that answer. Your guess has been recorded.\\n" +
-    reaction + "\\n\\n" +
+  return "🔒 **THE RIDDLE REMAINS SEALED**\n\n" +
+    "❌ The sigils reject that answer. Your guess has been recorded.\n" +
+    reaction + "\n\n" +
     "*The Arcane Realm awaits a better theory…*";
 }
 
