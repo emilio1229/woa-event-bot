@@ -37,21 +37,31 @@ async function sendOrUpdateWrongGuessFeedback(interaction: ModalSubmitInteractio
   const existing = riddleFeedbackSessions.get(key);
   const content = buildWrongGuessFeedback();
 
+  // A guess can take several seconds to save and refresh the public riddle.
+  // Acknowledge the modal immediately so Discord does not expire the interaction.
+  await interaction.deferReply({ ephemeral: true });
+
   if (existing && existing.expiresAt > Date.now()) {
     const webhook = new WebhookClient({ id: existing.applicationId, token: existing.token });
     try {
       await webhook.editMessage(existing.messageId, { content });
       webhook.destroy();
+      // This modal's deferred response was only an acknowledgement; keep the
+      // original ephemeral feedback message as the one visible to the player.
+      await interaction.deleteReply().catch(() => undefined);
       return;
     } catch {
       webhook.destroy();
       riddleFeedbackSessions.delete(key);
+      // If the previous interaction token expired, fall back to this fresh
+      // interaction's deferred ephemeral response instead of failing the guess.
     }
   } else if (existing) {
     riddleFeedbackSessions.delete(key);
   }
 
-  const reply = await interaction.reply({ content, ephemeral: true, fetchReply: true });
+  await interaction.editReply({ content });
+  const reply = await interaction.fetchReply();
   riddleFeedbackSessions.set(key, {
     applicationId: interaction.applicationId,
     token: interaction.token,
