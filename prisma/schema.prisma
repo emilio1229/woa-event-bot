@@ -171,6 +171,7 @@ model SigilAccount {
   @@id([guildId, discordUserId])
   @@index([guildId, balance])
 }
+
 model ArcaneCharacter {
   id                String   @id
   guildId           String
@@ -238,7 +239,6 @@ model ArcaneFamiliarCollection {
   @@index([guildId, bond])
 }
 
-
 model RiddleAutoSettings {
   guildId          String   @id
   enabled          Boolean  @default(false)
@@ -249,7 +249,6 @@ model RiddleAutoSettings {
   lastRunAt        DateTime?
   updatedAt        DateTime @updatedAt
 }
-
 
 model CommunityEvent {
   id            String   @id
@@ -271,4 +270,18 @@ model CommunityEvent {
   updatedAt     DateTime @updatedAt
   @@index([guildId, status, startAtUnix])
   @@index([guildId, creatorId, status])
+}
+
+model AstralSelectionNotification {
+  id          String   @id
+  guildId     String
+  userId      String
+  selectionId String
+  amount      Int
+  awardedAt   DateTime
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  @@unique([guildId, userId, selectionId])
+  @@index([guildId, userId, readAt])
+  @@index([guildId, userId, awardedAt])
 }
