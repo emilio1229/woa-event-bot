@@ -4,6 +4,7 @@ import { dispatchEventButton, isEventRsvpButton } from "../interactions/buttons/
 import { handleEventBountyManagement } from "../panels/eventBountyManagement.js";
 import { handleCouncilPanel } from "../panels/councilPanel.js";
 import { handleRealmPanel } from "../panels/realmPanel.js";
+import { handleAstralSelectionPanel } from "../panels/astralSelectionPanel.js";
 import { handleRiddleAnswerModal, handleRiddleInteraction, handleRiddlePanel } from "../panels/riddlePanel.js";
 import { handleRiddleAutoControls } from "../panels/riddleAutoControls.js";
 import { handleInteraction as handleLegacyInteraction } from "../interactionCreate.js";
@@ -45,6 +46,10 @@ export function registerInteractionCreateHandler(client: BotClient) {
       ) {
         await interaction.deferUpdate();
       }
+
+      // Astral notifications belong to the private /realm panel and must be
+      // handled before the general Realm navigation fallback.
+      if (await handleAstralSelectionPanel(interaction)) return;
 
       // New WoA panel navigation is handled before the legacy interaction system.
       if (await handleRealmPanel(interaction)) return;
