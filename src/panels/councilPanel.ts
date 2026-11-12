@@ -32,7 +32,7 @@ import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import { parseTime } from "../utils/timeParser.js";
 import { getAdminTimezone, setAdminTimezone, COMMON_TIMEZONES, isValidIanaTimezone } from "../services/adminTimezoneService.js";
 import { discordDirectoryService } from "../services/discordDirectoryService.js";
-import { attachEventMessageId, createEvent, deleteEvent, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
+import { attachEventMessageId, createEvent, deleteEvent, getEventById, updateEventDetails, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
@@ -126,6 +126,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
     await showEvents(interaction, reviewed ? (decision === "approved" ? "✅ Community event approved and added to Realm Events." : decision === "changes_requested" ? "📝 Changes requested; only the creator can see the review status." : "❌ Community event rejected.") : "That submission was already reviewed or no longer exists.");
   }
   else if (section === "events:start") await startEventModal(interaction);
+  else if (section === "events:edit") await startEventEditPicker(interaction);
   else if (section === "event:no-role") await handleEventNoRole(interaction);
   else if (section === "events:no-role") await handleEventNoRole(interaction);
   else if (section === "bounties") await showBounties(interaction);
@@ -212,6 +213,7 @@ async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
 }
 
 async function handleCouncilStringSelect(interaction: StringSelectMenuInteraction) {
+  if (interaction.customId === `${COUNCIL_PREFIX}:events:edit:select`) { await startEventEditModal(interaction, interaction.values[0]); return; }
   if (interaction.customId === `${COUNCIL_PREFIX}:raffle:end:select`) { await endRaffleForCouncil(interaction, interaction.values[0]); return; }
   if (interaction.customId === `${COUNCIL_PREFIX}:configuration:timezone:select`) {
     const timezone = interaction.values[0];
@@ -254,6 +256,30 @@ async function handleCouncilModal(interaction: ModalSubmitInteraction) {
       const embed = buildBalanceEmbed(target?.user ?? interaction.user, updated.balance, updated.transactions.slice(0, 5), amount > 0 ? "✨ Sigils Awarded" : "🜂 Sigils Removed", `${target ? target.toString() : `<@${userId}>`} has been ${amount > 0 ? "granted" : "charged"} **${Math.abs(amount)}** sigils.`);
       await updateCouncilPanel(interaction, { embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Adjust Another", `${COUNCIL_PREFIX}:economy:assign`), backButton())] });
     } catch (error) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`❌ ${error instanceof Error ? error.message : "Unable to update the sigil ledger."}`)], components: [backButtonRow()] }); }
+    return;
+  }
+  if (id.startsWith(`${COUNCIL_PREFIX}:event:edit:modal:`)) {
+    const eventId = id.slice(`${COUNCIL_PREFIX}:event:edit:modal:`.length);
+    const event = await getEventById(eventId);
+    if (!event || event.guildId !== guild.id || event.startAtUnix <= Math.floor(Date.now() / 1000)) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Events").setDescription("❌ That event is no longer available to edit.")], components: [backButtonRow()] }); return; }
+    const title = interaction.fields.getTextInputValue("title").trim();
+    const time = interaction.fields.getTextInputValue("time").trim();
+    const description = interaction.fields.getTextInputValue("description").trim();
+    const notes = interaction.fields.getTextInputValue("notes").trim() || null;
+    const millis = parseTime(time, event.timezone);
+    if (!title || !description || millis === null || Number.isNaN(millis) || millis <= Date.now()) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Edit Event").setDescription("❌ Enter a title, description, and valid future start time. Nothing was changed.")], components: [backButtonRow()] }); return; }
+    const updated = await updateEventDetails(event.id, { title, description, notes, startAtIso: new Date(millis).toISOString(), startAtUnix: Math.floor(millis / 1000) });
+    if (!updated) { await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Edit Event").setDescription("❌ The event could not be found. Nothing was changed.")], components: [backButtonRow()] }); return; }
+    try {
+      const channel = await interaction.client.channels.fetch(updated.channelId);
+      if (!channel || !channel.isTextBased() || !("messages" in channel) || !updated.messageId) throw new Error("The original event announcement could not be located.");
+      const message = await channel.messages.fetch(updated.messageId);
+      await message.edit({ embeds: [buildEventEmbed(updated)], components: [buildEventRsvpButtons(updated.id)] });
+    } catch (error) {
+      console.error("Council event announcement edit failed:", error);
+      await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🏆 Edit Event").setDescription("⚠️ The event details were saved, but the original Discord announcement could not be updated. Check bot channel access.")], components: [backButtonRow()] }); return;
+    }
+    await showEvents(interaction, "✅ Updated **" + updated.title + "**. Existing RSVPs were preserved.");
     return;
   }
   if (id.startsWith(`${COUNCIL_PREFIX}:event:modal:`)) {
@@ -375,6 +401,26 @@ async function startSigilBalanceLookup(interaction: ButtonInteraction) { const m
 async function openSigilBalance(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const balance = await sigilStore.getUser(interaction.guildId!, userId); const member = await interaction.guild?.members.fetch(userId).catch(() => null); const embed = new EmbedBuilder().setColor(0xD4AF37).setTitle("💠 PLAYER SIGIL BALANCE").setDescription(`${member?.toString() ?? "<@"+userId+">"} currently holds **${balance.balance} Sigils**.`); await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral }); }
 
 async function openSigilAdjustment(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:modal:${userId}`).setTitle("Adjust Player Sigils"); modal.addComponents(inputRow("amount", "Sigil amount", "25 to award, -25 to remove", TextInputStyle.Short), inputRow("reason", "Reason", "Event reward, correction, etc.", TextInputStyle.Paragraph)); await interaction.showModal(modal); }
+async function startEventEditPicker(interaction: ButtonInteraction) {
+  const events = await getUpcomingEvents(interaction.guildId ?? "", 25);
+  if (!events.length) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("✏️ Edit Official Event").setDescription("There are no upcoming official events to edit.")], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary))] }); return; }
+  const menu = new StringSelectMenuBuilder().setCustomId(COUNCIL_PREFIX + ":events:edit:select").setPlaceholder("Choose an official event to edit");
+  menu.addOptions(events.map(event => ({ label: event.title.slice(0, 100), value: event.id, description: new Date(event.startAtUnix * 1000).toLocaleString("en-US", { timeZone: event.timezone, dateStyle: "medium", timeStyle: "short" }).slice(0, 100) })));
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("✏️ Edit Official Event").setDescription("Choose the published event you want to update. The existing announcement and RSVP list will be kept.")], components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary))] });
+}
+async function startEventEditModal(interaction: StringSelectMenuInteraction, eventId: string) {
+  const event = await getEventById(eventId);
+  if (!event || event.guildId !== interaction.guildId || event.startAtUnix <= Math.floor(Date.now() / 1000)) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("✏️ Edit Official Event").setDescription("❌ That event is no longer available to edit.")], components: [backButtonRow()] }); return; }
+  const time = new Intl.DateTimeFormat("en-US", { timeZone: event.timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true }).format(new Date(event.startAtUnix * 1000));
+  const modal = new ModalBuilder().setCustomId(COUNCIL_PREFIX + ":event:edit:modal:" + event.id).setTitle("Edit WoA Event");
+  modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("title").setLabel("Event title").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(100).setValue(event.title)),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("time").setLabel("Start time (" + event.timezone + ")").setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder("e.g. 11/14/2026, 07:00 PM").setValue(time)),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("description").setLabel("Description").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(4000).setValue(event.description)),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("notes").setLabel("Notes (optional)").setStyle(TextInputStyle.Paragraph).setRequired(false).setMaxLength(1000).setValue(event.notes ?? ""))
+  );
+  await interaction.showModal(modal);
+}
 async function startEventModal(interaction: ButtonInteraction) {
   const timezone = await getAdminTimezone(interaction.guildId ?? "", interaction.user.id);
   if (!timezone) {
@@ -431,7 +477,8 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
       button("❌ Reject", COUNCIL_PREFIX + ":community:reject:" + event.id, ButtonStyle.Danger)
     ));
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 Review Community Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Success), button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✏️ Edit Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Secondary), button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 Review Community Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Success)));
   await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
 }
 
