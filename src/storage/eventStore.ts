@@ -82,6 +82,13 @@ class EventStore {
     return event;
   }
 
+  async updateDetails(eventId: string, details: Pick<CreateEventInput, "title" | "description" | "notes" | "startAtIso" | "startAtUnix">): Promise<EventRecord | undefined> {
+    const existing = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!existing || isEndedRsvps(existing.rsvps)) return undefined;
+    const updated = await prisma.event.update({ where: { id: eventId }, data: { title: details.title, description: details.description, notes: details.notes, startAtIso: details.startAtIso, startAtUnix: details.startAtUnix } });
+    return toEventRecord(updated);
+  }
+
   async end(eventId: string): Promise<EventRecord | undefined> {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) return undefined;
