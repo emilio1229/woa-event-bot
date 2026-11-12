@@ -262,6 +262,7 @@ model CommunityEvent {
   startAtUnix   Int
   timezone      String   @default("UTC")
   capacity      Int      @default(0)
+  notificationRoleId String?
   status        String   @default("pending")
   reviewNote    String?
   rsvps         Json     @default("{}")

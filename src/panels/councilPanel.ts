@@ -116,7 +116,17 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "raffles:end") await startRaffleEndPicker(interaction);
   else if (section === "events") await showEvents(interaction);
   else if (section === "community:review") await showCommunityReview(interaction);
-  else if (section.startsWith("community:approve:") || section.startsWith("community:changes:") || section.startsWith("community:reject:")) {
+  else if (section.startsWith("community:approve:")) {
+    const eventId = section.slice("community:approve:".length);
+    const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:community:approve-role:${eventId}`).setPlaceholder("Choose a role to notify").setMinValues(1).setMaxValues(1);
+    await interaction.update({ content: "🔔 **Choose an optional role to tag** when this event is approved. Selecting a role approves the event and sends one announcement.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community:approve-no-tag:${eventId}`, ButtonStyle.Success), button("◀ Back to Events", `${COUNCIL_PREFIX}:community:review`, ButtonStyle.Secondary))] });
+  }
+  else if (section.startsWith("community:approve-no-tag:")) {
+    const eventId = section.slice("community:approve-no-tag:".length);
+    const reviewed = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, "approved", undefined, null);
+    await showEvents(interaction, reviewed ? "✅ Community event approved without a role tag and added to Realm Events." : "That submission was already reviewed or no longer exists.");
+  }
+  else if (section.startsWith("community:changes:") || section.startsWith("community:reject:")) {
     const parts = section.split(":");
     const action = parts[1];
     const eventId = parts.slice(2).join(":");
@@ -201,6 +211,25 @@ async function runCleanup(interaction: ButtonInteraction, channelId: string) {
 
 async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
   const roleId = interaction.values[0] ?? null;
+  if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community:approve-role:`)) {
+    const eventId = interaction.customId.slice(`${COUNCIL_PREFIX}:community:approve-role:`.length);
+    const event = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, "approved", undefined, roleId);
+    if (!event) { await interaction.update({ content: "That submission was already reviewed or no longer exists.", embeds: [], components: [backButtonRow()] }); return; }
+    let announcementSent = false;
+    try {
+      const channel = interaction.channel;
+      if (channel?.isSendable()) {
+        const role = interaction.guild?.roles.cache.get(roleId);
+        const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setTitle(`🌿 ${event.title}`)
+          .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\n\n"));
+        await channel.send({ content: `<@&${roleId}>`, embeds: [eventEmbed], allowedMentions: { roles: [roleId] } });
+        announcementSent = true;
+      }
+      if (!announcementSent) console.warn(`Community event ${eventId} approved with role ${roleId}, but its review channel cannot send messages.`);
+    } catch (error) { console.error(`Could not announce approved community event ${eventId}:`, error); }
+    await interaction.update({ content: announcementSent ? `✅ Event approved and posted with a notification for ${interaction.guild?.roles.cache.get(roleId)?.name ?? "the selected role"}.` : "✅ Event approved and added to Realm Events. The role announcement could not be sent in this channel.", embeds: [], components: [backButtonRow()] });
+    return;
+  }
   if (interaction.customId === `${COUNCIL_PREFIX}:event:role`) {
     const draft = postingDrafts.get(interaction.user.id); if (!draft || draft.kind !== "event") { await interaction.update({ content: "❌ That event setup expired. Start the event again.", embeds: [], components: [backButtonRow()] }); return; } draft.roleId = roleId; await interaction.showModal(buildEventModal(interaction.user.id)); return;
   }

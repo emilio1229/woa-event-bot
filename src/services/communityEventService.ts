@@ -8,14 +8,14 @@ export type CommunityRsvpStatus = "going" | "waitlist";
 export interface CommunityEventRecord {
   id: string; guildId: string; creatorId: string; title: string; category: string;
   mapLocation: string; description: string; startAtIso: string; startAtUnix: number;
-  timezone: string; capacity: number; status: CommunityEventStatus; reviewNote: string | null;
+  timezone: string; capacity: number; notificationRoleId: string | null; status: CommunityEventStatus; reviewNote: string | null;
   rsvps: Record<string, CommunityRsvpStatus>; audit: Array<Record<string, unknown>>;
 }
 
 type RawCommunityEvent = {
   id: string; guildId: string; creatorId: string; title: string; category: string;
   mapLocation: string; description: string; startAtIso: string; startAtUnix: number;
-  timezone: string; capacity: number; status: string; reviewNote: string | null;
+  timezone: string; capacity: number; notificationRoleId: string | null; status: string; reviewNote: string | null;
   rsvps: Prisma.JsonValue; audit: Prisma.JsonValue;
 };
 
@@ -66,12 +66,12 @@ export async function getCommunityEvent(id: string) {
   return row ? normalize(row) : undefined;
 }
 
-export async function reviewCommunityEvent(id: string, guildId: string, actorId: string, decision: "approved" | "rejected" | "changes_requested", note?: string) {
+export async function reviewCommunityEvent(id: string, guildId: string, actorId: string, decision: "approved" | "rejected" | "changes_requested", note?: string, notificationRoleId: string | null = null) {
   const current = await prisma.communityEvent.findUnique({ where: { id } });
   if (!current || current.guildId !== guildId || !["pending", "changes_requested"].includes(current.status)) return undefined;
   const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
   audit.push(auditEntry(decision, actorId, note));
-  const updated = await prisma.communityEvent.update({ where: { id }, data: { status: decision, reviewNote: note ?? null, audit: audit as Prisma.InputJsonValue } });
+  const updated = await prisma.communityEvent.update({ where: { id }, data: { status: decision, reviewNote: note ?? null, ...(decision === "approved" ? { notificationRoleId } : {}), audit: audit as Prisma.InputJsonValue } });
   return normalize(updated);
 }
 
