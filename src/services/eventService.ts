@@ -17,6 +17,10 @@ export async function getUpcomingEvents(guildId: string, limit = 10): Promise<Ev
   return eventStore.getUpcoming(guildId, limit);
 }
 
+export async function updateEventDetails(eventId: string, details: Pick<CreateEventInput, "title" | "description" | "notes" | "startAtIso" | "startAtUnix">): Promise<EventRecord | undefined> {
+  return eventStore.updateDetails(eventId, details);
+}
+
 export async function updateEventRsvp(
   eventId: string,
   userId: string,
