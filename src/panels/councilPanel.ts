@@ -470,6 +470,13 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 Events & Community Review")
     .setDescription(noticeSection + reviewSection + "\n\n" + safeOfficialSection);
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  // Put official-event management first so it is immediately visible, even when
+  // community submissions are waiting for review.
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+    button("✏️ Edit an Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Primary),
+    button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"),
+    backButton()
+  ));
   for (const event of pending) {
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
       button("✅ Approve", COUNCIL_PREFIX + ":community:approve:" + event.id, ButtonStyle.Success),
@@ -477,7 +484,6 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
       button("❌ Reject", COUNCIL_PREFIX + ":community:reject:" + event.id, ButtonStyle.Danger)
     ));
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✏️ Edit Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Secondary), button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"), backButton()));
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 Review Community Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Success)));
   await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
 }
