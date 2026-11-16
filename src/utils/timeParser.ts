@@ -59,30 +59,43 @@ function withTime(date: DateTime, time: ClockTime): number | null {
     : null;
 }
 
+function matchesRequestedClock(input: string, dateTime: DateTime): boolean {
+  const clock = input.match(/(?:^|\s)(\d{1,2})(?::(\d{2})\s*(am|pm)?|\s*(am|pm))\s*$/i);
+  if (!clock) return true;
+  let hour = Number(clock[1]);
+  const minute = clock[2] ? Number(clock[2]) : 0;
+  const suffix = (clock[3] ?? clock[4])?.toLowerCase();
+  if (suffix === "pm" && hour < 12) hour += 12;
+  if (suffix === "am" && hour === 12) hour = 0;
+  return dateTime.hour === hour && dateTime.minute === minute;
+}
+
 function parseExplicitDate(input: string, timezone: string): number | null {
   // ISO timestamps with Z/offset are absolute instants. ISO local date/time
   // strings are interpreted in the selected IANA timezone, not the host timezone.
   const hasExplicitOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(input);
   if (/^\d{4}-\d{2}-\d{2}/.test(input)) {
+    const normalizedIso = input.replace(/^(\d{4}-\d{2}-\d{2}) /, "$1T");
     const iso = hasExplicitOffset
-      ? DateTime.fromISO(input, { setZone: true })
-      : DateTime.fromISO(input, { zone: timezone, setZone: false });
-    if (!iso.isValid) return null;
-    if (!hasExplicitOffset) {
+      ? DateTime.fromISO(normalizedIso, { setZone: true })
+      : DateTime.fromISO(normalizedIso, { zone: timezone, setZone: false });
+    if (iso.isValid && !hasExplicitOffset) {
       const match = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
       if (match && (iso.year !== Number(match[1]) || iso.month !== Number(match[2]) || iso.day !== Number(match[3]) ||
           (match[4] !== undefined && (iso.hour !== Number(match[4]) || iso.minute !== Number(match[5]) || iso.second !== Number(match[6] ?? 0))))) return null;
     }
-    return iso.toMillis();
+    if (iso.isValid) return iso.toMillis();
+    // Meridiem suffixes are valid local clock input but are not part of ISO 8601.
+    if (!/\d{1,2}(?::\d{2})?\s*(?:am|pm)$/i.test(input)) return null;
   }
 
   // Common English month-name dates, e.g. "Oct 20 2026 5pm" or "October 20, 2026 at 17:00".
-  const cleaned = input.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1").replace(/\bat\b/gi, " ").replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  const cleaned = input.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1").replace(/\bat\b/gi, " ").replace(/(\d)(am|pm)\b/gi, "$1 $2").replace(/,/g, " ").replace(/\s+/g, " ").trim();
   const monthDate = DateTime.fromFormat(cleaned, "MMM d yyyy h:mm a", { zone: timezone, setZone: true })
     .isValid
     ? DateTime.fromFormat(cleaned, "MMM d yyyy h:mm a", { zone: timezone })
     : DateTime.fromFormat(cleaned, "MMMM d yyyy h:mm a", { zone: timezone });
-  if (monthDate.isValid) return monthDate.toMillis();
+  if (monthDate.isValid && matchesRequestedClock(cleaned, monthDate)) return monthDate.toMillis();
 
   const formats = [
     "MMM d yyyy h a", "MMMM d yyyy h a", "MMM d yyyy H:mm", "MMMM d yyyy H:mm",
@@ -96,7 +109,7 @@ function parseExplicitDate(input: string, timezone: string): number | null {
   ];
   for (const format of formats) {
     const parsed = DateTime.fromFormat(cleaned, format, { zone: timezone, setZone: true, locale: "en-US" });
-    if (parsed.isValid) return parsed.toMillis();
+    if (parsed.isValid && matchesRequestedClock(cleaned, parsed)) return parsed.toMillis();
   }
   return null;
 }

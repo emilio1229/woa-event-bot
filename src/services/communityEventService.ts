@@ -71,8 +71,15 @@ export async function reviewCommunityEvent(id: string, guildId: string, actorId:
   if (!current || current.guildId !== guildId || !["pending", "changes_requested"].includes(current.status)) return undefined;
   const audit = Array.isArray(current.audit) ? [...current.audit as Array<Record<string, unknown>>] : [];
   audit.push(auditEntry(decision, actorId, note));
-  const updated = await prisma.communityEvent.update({ where: { id }, data: { status: decision, reviewNote: note ?? null, ...(decision === "approved" ? { notificationRoleId } : {}), audit: audit as Prisma.InputJsonValue } });
-  return normalize(updated);
+  // Claim the review only while its status still matches the snapshot above.
+  // In particular, two Council approvals must not both succeed and announce.
+  const result = await prisma.communityEvent.updateMany({
+    where: { id, guildId, status: current.status },
+    data: { status: decision, reviewNote: note ?? null, ...(decision === "approved" ? { notificationRoleId } : {}), audit: audit as Prisma.InputJsonValue }
+  });
+  if (result.count === 0) return undefined;
+  const updated = await prisma.communityEvent.findUnique({ where: { id } });
+  return updated ? normalize(updated) : undefined;
 }
 
 export async function rsvpCommunityEvent(id: string, guildId: string, userId: string) {
