@@ -3,7 +3,7 @@ import type { EventRecord } from "../services/eventTypes.js";
 import { getEventRsvpSummary } from "../services/eventService.js";
 import { formatDiscordTimestamp } from "../utils/time.js";
 
-export function buildEventEmbed(event: EventRecord): EmbedBuilder {
+export function buildEventEmbed(event: EventRecord, notificationRoleId?: string | null): EmbedBuilder {
   const rsvpSummary = getEventRsvpSummary(event);
   const going = Object.keys(event.rsvps).filter(userId => event.rsvps[userId] === "going");
   const goingList = going.length > 0
@@ -18,6 +18,7 @@ export function buildEventEmbed(event: EventRecord): EmbedBuilder {
       { name: "🧙 Host", value: `<@${event.hostId}>`, inline: true },
       { name: "🕰️ Start Time", value: formatDiscordTimestamp(event.startAtUnix, "F"), inline: true },
       { name: "⏳ Countdown", value: formatDiscordTimestamp(event.startAtUnix, "R"), inline: true },
+      ...(notificationRoleId ? [{ name: "🔔 Notification", value: `<@&${notificationRoleId}>`, inline: true }] : []),
       { name: `🟢 Going (${rsvpSummary.going})`, value: goingList, inline: false },
       { name: "📜 Notes", value: (event.notes ?? "").replace(/^\[ENDED\]\s*/, "") || "No additional runes were inscribed for this gathering.", inline: false }
     );
