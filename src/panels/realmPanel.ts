@@ -376,12 +376,12 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     const event = await cancelCommunityEvent(section.slice("community:cancel:".length), interaction.guild!.id, interaction.user.id);
     await showMyCommunityEvents(interaction as ButtonInteraction, event ? "✖ Event cancelled." : "❌ That event could not be cancelled.");
   }
-  else if (section.startsWith("community:announcement-rsvp:") || section.startsWith("community:announcement-rsvp-private:")) {
-    const privateControl = section.startsWith("community:announcement-rsvp-private:");
+  else if (section.startsWith("community:announcement-rsvp:") || section.startsWith("crp:")) {
+    const privateControl = section.startsWith("crp:");
     const parts = section.split(":");
-    const eventId = privateControl ? parts[2] : section.slice("community:announcement-rsvp:".length);
-    const channelId = privateControl ? parts[3] : interaction.channelId;
-    const messageId = privateControl ? parts[4] : interaction.message.id;
+    const eventId = privateControl ? parts[1] : section.slice("community:announcement-rsvp:".length);
+    const channelId = privateControl ? parts[2] : interaction.channelId;
+    const messageId = privateControl ? parts[3] : interaction.message.id;
     if (!eventId || !channelId || !messageId) {
       const invalid = { content: "❌ That RSVP control is no longer valid.", components: [] };
       if (privateControl) await interaction.update(invalid);
@@ -422,7 +422,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
 
     const personalButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
       button(state === "going" ? "✓ You're Going — Leave Event" : state === "waitlist" ? "🕒 On Waitlist — Leave" : "🌿 RSVP Again",
-        REALM_PREFIX + ":community:announcement-rsvp-private:" + eventId + ":" + channelId + ":" + messageId,
+        REALM_PREFIX + ":crp:" + eventId + ":" + channelId + ":" + messageId,
         state ? ButtonStyle.Secondary : ButtonStyle.Success)
     );
     const personalNotice = state === "going"
