@@ -49,6 +49,11 @@ export async function handleBindSoul(interaction: ButtonInteraction, raffleId: s
     raffle.boundUsers ??= [];
     raffle.entries ??= [];
 
+    if (raffle.hostId === userId) {
+      await interaction.reply({ content: "⛔ You cannot enter a giveaway you are hosting.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
     if (raffle.guildId !== interaction.guildId || !interaction.guild) {
       await interaction.reply({ content: "❌ This ritual can only be joined from its server.", flags: MessageFlags.Ephemeral });
       return;
