@@ -29,7 +29,7 @@ export async function cancelCommunityRaffle(id: string, guildId: string, creator
   return result.count === 1;
 }
 export async function reviewCommunityRaffle(id: string, guildId: string, reviewerId: string, decision: "changes_requested" | "rejected", note: string) {
-  const result = await prisma.communityRaffleSubmission.updateMany({ where: { id, guildId, status: "pending", creatorId: { not: reviewerId } }, data: { status: decision, reviewedBy: reviewerId, reviewNote: note } });
+  const result = await prisma.communityRaffleSubmission.updateMany({ where: { id, guildId, status: "pending" }, data: { status: decision, reviewedBy: reviewerId, reviewNote: note } });
   return result.count === 1;
 }
 export async function approveCommunityRaffle(id: string, guildId: string, reviewerId: string, channelId: string, roleId: string | null) {
@@ -39,7 +39,7 @@ export async function approveCommunityRaffle(id: string, guildId: string, review
     if (submission.raffleId) return null;
     const raffleId = randomUUID();
     await tx.raffle.create({ data: { id: raffleId, guildId, channelId, name: submission.name, prize: submission.prize, endsAt: submission.endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", winnerId: null, ended: false, entries: [], boundUsers: [], hostId: submission.creatorId } });
-    const changed = await tx.communityRaffleSubmission.updateMany({ where: { id, guildId, status: "pending", creatorId: { not: reviewerId }, raffleId: null }, data: { status: "approved", reviewedBy: reviewerId, reviewNote: null, raffleId, announcementChannelId: channelId, notificationRoleId: roleId } });
+    const changed = await tx.communityRaffleSubmission.updateMany({ where: { id, guildId, status: "pending", raffleId: null }, data: { status: "approved", reviewedBy: reviewerId, reviewNote: null, raffleId, announcementChannelId: channelId, notificationRoleId: roleId } });
     if (changed.count !== 1) throw new Error("This raffle submission was already reviewed. No second raffle was created.");
     return tx.raffle.findUnique({ where: { id: raffleId } });
   }, { isolationLevel: "Serializable" });
