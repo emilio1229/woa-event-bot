@@ -10,7 +10,7 @@ export const prisma = new PrismaClient();
 export function applyDatabaseSchema() {
   try {
     logInfo("Applying Prisma schema to the database.");
-    execFileSync("npx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"], {
+    execFileSync("npx", ["prisma", "db", "push", "--skip-generate"], {
       stdio: "inherit",
       env: process.env
     });
