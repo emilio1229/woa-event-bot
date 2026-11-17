@@ -83,6 +83,7 @@ async function showEvents(interaction: ButtonInteraction) {
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId("woa:council:events:start").setLabel("✨ Start Event").setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId(`${PREFIX}:events:end`).setLabel("🛑 End Event").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("woa:council:events:repost").setLabel("📣 Repost Active Events").setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId("woa:council:community:review").setLabel("🌿 Review Submissions").setStyle(ButtonStyle.Success),
     backButton()
   ));
