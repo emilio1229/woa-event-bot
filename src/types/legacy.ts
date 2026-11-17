@@ -14,6 +14,11 @@ export interface Raffle {
   entries: string[];
   boundUsers?: string[];
   hostId?: string | null;
+  deliveryStatus?: string | null;
+  hostDeliveryConfirmedAt?: Date | null;
+  winnerReceiptConfirmedAt?: Date | null;
+  deliveryDisputeNote?: string | null;
+  deliveryDisputedAt?: Date | null;
 }
 
 export type CreateRaffleInput = Omit<Raffle, "id" | "ended"> & {
