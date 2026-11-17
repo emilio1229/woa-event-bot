@@ -8,7 +8,11 @@ import { logError, logInfo } from "../utils/logger.js";
 let started = false;
 
 function normalizeRiddleText(value: string): string {
-  return value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  return value.toLocaleLowerCase().normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 function answerLeaksInto(text: string, answer: string): boolean {
