@@ -101,6 +101,11 @@ model Raffle {
   entries        String[] @default([])
   boundUsers     String[] @default([])
   hostId         String?
+  deliveryStatus String?
+  hostDeliveryConfirmedAt DateTime?
+  winnerReceiptConfirmedAt DateTime?
+  deliveryDisputeNote String?
+  deliveryDisputedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   @@index([guildId, endsAt, ended])
