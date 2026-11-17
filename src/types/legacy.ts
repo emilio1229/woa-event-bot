@@ -13,6 +13,7 @@ export interface Raffle {
   ended: boolean;
   entries: string[];
   boundUsers?: string[];
+  hostId?: string | null;
 }
 
 export type CreateRaffleInput = Omit<Raffle, "id" | "ended"> & {
