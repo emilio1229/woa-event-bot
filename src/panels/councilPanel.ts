@@ -715,7 +715,7 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
         // The mention is removed immediately after dispatch so it is only
         // visibly displayed in the embed.
         content: roleId ? `<@&${roleId}>` : undefined,
-        embeds: [buildEventEmbed(officialEvent, roleId)],
+        embeds: [roleId ? buildEventEmbed(officialEvent).addFields({ name: "🔔 Notification", value: `<@&${roleId}>`, inline: true }) : buildEventEmbed(officialEvent)],
         components: [buildEventRsvpButtons(officialEvent.id)],
         allowedMentions: { parse: [], roles: roleId ? [roleId] : [] }
       });
