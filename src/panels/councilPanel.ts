@@ -246,10 +246,20 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
   try {
     const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
     if (channel && channel.isSendable() && "guildId" in channel && channel.guildId === interaction.guildId) {
-      const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setTitle(`🌿 ${event.title}`)
-        .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\n\n"))
-        .setFooter({ text: "The Wizards of Ark • Community Event" });
-      await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], allowedMentions: { parse: [], roles: roleId ? [roleId] : [] } });
+      const goingUsers = Object.entries(event.rsvps).filter(([, state]) => state === "going").map(([userId]) => userId);
+      const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([userId]) => userId);
+      const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
+      const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
+        .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\n\n"))
+        .addFields(
+          { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
+          { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
+          { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
+          { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
+        )
+        .setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
+      const rsvpButton = new ButtonBuilder().setCustomId(`woa:realm:community:announcement-rsvp:${event.id}`).setLabel("🌿 RSVP / Leave Event").setStyle(ButtonStyle.Success);
+      await channel.send({ content: [roleId ? `<@&${roleId}>` : null, `🌿 **A community member is hosting a WoA gathering!** Hosted by <@${event.creatorId}>.`].filter(Boolean).join("\n"), embeds: [eventEmbed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(rsvpButton)], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [event.creatorId] } });
       announcementSent = true;
     }
   } catch (error) {
