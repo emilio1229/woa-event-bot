@@ -89,7 +89,7 @@ async function showRaffles(interaction: ButtonInteraction) {
   if (!raffles.length) embed.setDescription("There are no active community giveaways available to you right now. Check back when the Council opens the next one.");
   else {
     embed.setDescription(raffles.slice(0, 10).map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Giveaway"}**\n🎁 ${raffle.prize}\n👥 ${raffle.entries.length} entries • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n"));
-    for (const raffle of raffles.slice(0, 5)) if (raffle.messageId) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setLabel(`🎟️ Open ${raffle.name || "Giveaway"}`.slice(0, 80)).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${raffle.guildId}/${raffle.channelId}/${raffle.messageId}`)));
+    for (const raffle of raffles.slice(0, 4)) if (raffle.messageId) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setLabel(`🎟️ Open ${raffle.name || "Giveaway"}`.slice(0, 80)).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${raffle.guildId}/${raffle.channelId}/${raffle.messageId}`)));
   }
   components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Host a Giveaway", `${REALM_PREFIX}:community-raffle:create`), button("📋 My Giveaways", `${REALM_PREFIX}:community-raffle:mine`, ButtonStyle.Secondary), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
   await interaction.update({ embeds: [embed], components });
