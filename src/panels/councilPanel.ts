@@ -38,7 +38,7 @@ import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
 import { buildRiddlePanel } from "./riddlePanel.js";
 import { handleArcaneCouncilPanel } from "../arcane/council.js";
-import { listPendingCommunityEvents, reviewCommunityEvent } from "../services/communityEventService.js";
+import { listPendingCommunityEvents, listApprovedCommunityEvents, reviewCommunityEvent } from "../services/communityEventService.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
@@ -117,6 +117,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "raffles:start") await startRaffleModal(interaction);
   else if (section === "raffles:end") await startRaffleEndPicker(interaction);
   else if (section === "events") await showEvents(interaction);
+  else if (section === "events:repost") await showRepostActiveEvents(interaction);
   else if (section === "community:review") await showCommunityReview(interaction);
   else if (section.startsWith("community:approve:")) {
     const eventId = section.slice("community:approve:".length);
@@ -178,6 +179,54 @@ function postingChannelMenu(kind: PostingDraft["kind"]) {
 }
 
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
+  if (interaction.customId === `${COUNCIL_PREFIX}:events:repost-channel`) {
+    const channelId = interaction.values[0];
+    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+    if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) {
+      await interaction.update({ content: "❌ That channel cannot receive event announcements. Choose a text or announcement channel where the bot can send messages.", embeds: [], components: [backButtonRow()] });
+      return;
+    }
+    await interaction.deferUpdate();
+    try {
+      const guildId = interaction.guildId ?? "";
+      const [official, community] = await Promise.all([getUpcomingEvents(guildId, 100), listApprovedCommunityEvents(guildId, 100)]);
+      const now = Math.floor(Date.now() / 1000);
+      const activeOfficial = official.filter(event => event.startAtUnix > now);
+      const activeCommunity = community.filter(event => event.startAtUnix > now);
+      let posted = 0;
+      for (const event of activeOfficial) {
+        await channel.send({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)], allowedMentions: { parse: [] } });
+        posted += 1;
+      }
+      for (const event of activeCommunity) {
+        const goingUsers = Object.entries(event.rsvps).filter(([, state]) => state === "going").map(([id]) => id);
+        const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
+        const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
+        const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
+          .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\\n\\n"))
+          .addFields(
+            { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
+            { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
+            { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
+            { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
+          ).setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
+        await channel.send({
+          content: `🌿 **Community gathering reminder!** Hosted by <@${event.creatorId}>.`,
+          embeds: [embed],
+          components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", "woa:realm:community:announcement-rsvp:" + event.id, ButtonStyle.Success))],
+          allowedMentions: { parse: [], users: [event.creatorId] }
+        });
+        posted += 1;
+      }
+      await interaction.editReply({ embeds: [new EmbedBuilder().setColor(0x7B2CBF).setTitle("📣 ACTIVE EVENTS REPOSTED")
+        .setDescription(`Successfully reposted **${posted}** active event announcement(s) in <#${channelId}>.\\n\\nOfficial and approved community event posts were refreshed. Original posts, event records, and RSVP lists were not changed.`)], components: [backButtonRow()] });
+    } catch (error) {
+      console.error("Active event repost failed:", error);
+      await interaction.editReply({ embeds: [new EmbedBuilder().setColor(0xB22222).setTitle("📣 Repost incomplete")
+        .setDescription("Some announcements may have been posted before the error. Please check the selected channel before retrying. " + (error instanceof Error ? error.message : ""))], components: [backButtonRow()] });
+    }
+    return;
+  }
   if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community:approve-channel:`)) {
     const eventId = interaction.customId.slice(`${COUNCIL_PREFIX}:community:approve-channel:`.length);
     const channelId = interaction.values[0];
@@ -534,6 +583,19 @@ async function startBountyModal(interaction: ButtonInteraction) { const menu = p
 function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) { return new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required)); }
 async function showEconomy(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const active = users.filter(user => user.joinedAt).length; await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`), button("👁️ View Player Balance", `${COUNCIL_PREFIX}:economy:balance`)), backButtonRow()] }); }
 async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()); const description = raffles.length ? raffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}\nEnds <t:${Math.floor(raffle.endsAt / 1000)}:R> • **${raffle.entries.length} entries**`).join("\n\n") : "No active community giveaways."; await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🛑 End Giveaway", `${COUNCIL_PREFIX}:raffles:end`, ButtonStyle.Danger)), backButtonRow()] }); }
+async function showRepostActiveEvents(interaction: ButtonInteraction) {
+  const channelMenu = new ChannelSelectMenuBuilder()
+    .setCustomId(`${COUNCIL_PREFIX}:events:repost-channel`)
+    .setPlaceholder("Choose where to repost active events")
+    .setMinValues(1).setMaxValues(1)
+    .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
+  await interaction.update({
+    embeds: [new EmbedBuilder().setColor(0x7B2CBF).setTitle("📣 REPOST ACTIVE EVENTS")
+      .setDescription("Choose a channel and WoA-Event-BOT will publish fresh announcements for every upcoming official event and approved community event. Existing announcements and RSVPs will remain untouched.")],
+    components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channelMenu), backButtonRow()]
+  });
+}
+
 async function showEvents(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
   const pending = await listPendingCommunityEvents(interaction.guildId ?? "", 3);
@@ -555,6 +617,7 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("✏️ Edit an Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Primary),
     button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"),
+    button("📣 Repost Active Events", COUNCIL_PREFIX + ":events:repost", ButtonStyle.Success),
     backButton()
   ));
   for (const event of pending) {
