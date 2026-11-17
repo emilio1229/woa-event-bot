@@ -57,12 +57,53 @@ class SigilStore {
     return prisma.sigilAccount.findUnique({ where: { guildId_discordUserId: { guildId, discordUserId: userId } } });
   }
 
-  private async writeUser(guildId: string, user: SigilUserRecord): Promise<void> {
-    await prisma.sigilAccount.upsert({
-      where: { guildId_discordUserId: { guildId, discordUserId: user.userId } },
-      create: { guildId, discordUserId: user.userId, balance: user.balance, transactions: user.transactions as unknown as Prisma.InputJsonValue, lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily) },
-      update: { balance: user.balance, transactions: user.transactions as unknown as Prisma.InputJsonValue, lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily) }
-    });
+  /**
+   * Serialize ledger mutations in a serializable database transaction. This
+   * prevents simultaneous awards/redemptions from overwriting one another's
+   * balance or JSON transaction history.
+   */
+  private async mutateAccount<T>(
+    guildId: string,
+    userId: string,
+    mutate: (user: SigilUserRecord) => T
+  ): Promise<{ user: SigilUserRecord; result: T }> {
+    const where = { guildId_discordUserId: { guildId, discordUserId: userId } };
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await prisma.$transaction(async tx => {
+          const account = await tx.sigilAccount.findUnique({ where });
+          const user = account ? toSigilUserRecord(account) : buildDefaultSigilUserRecord(userId);
+          const result = mutate(user);
+
+          await tx.sigilAccount.upsert({
+            where,
+            create: {
+              guildId,
+              discordUserId: userId,
+              balance: user.balance,
+              transactions: user.transactions as unknown as Prisma.InputJsonValue,
+              lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily)
+            },
+            update: {
+              balance: user.balance,
+              transactions: user.transactions as unknown as Prisma.InputJsonValue,
+              lastDaily: user.lastDaily === undefined ? null : BigInt(user.lastDaily)
+            }
+          });
+
+          return { user, result };
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error
+          ? String((error as { code?: unknown }).code)
+          : "";
+        if ((code === "P2034" || code === "P2002") && attempt < 4) continue;
+        throw error;
+      }
+    }
+
+    throw new Error("Could not safely update this Sigil account after concurrent changes.");
   }
 
   async load(): Promise<SigilStoreData> {
@@ -99,24 +140,25 @@ class SigilStore {
 
   async addTransaction(guildId: string, userId: string, amount: number, reason: string, metadata: SigilTransactionMetadata = {}): Promise<{ user: SigilUserRecord; transaction: SigilTransaction }> {
     if (!Number.isInteger(amount) || amount === 0) throw new Error("Sigil amount must be a non-zero integer.");
-    const user = await this.getUser(guildId, userId);
-    const nextBalance = user.balance + amount;
-    if (nextBalance < 0) throw new Error("This user does not have enough sigils for that adjustment.");
-    const transaction: SigilTransaction = { id: randomUUID(), timestamp: new Date().toISOString(), amount, reason, balanceAfter: nextBalance, ...metadata };
-    user.balance = nextBalance;
-    user.transactions.unshift(transaction);
-    await this.writeUser(guildId, user);
-    return { user, transaction };
+    return this.mutateAccount(guildId, userId, user => {
+      const nextBalance = user.balance + amount;
+      if (nextBalance < 0) throw new Error("This user does not have enough sigils for that adjustment.");
+      const transaction: SigilTransaction = { id: randomUUID(), timestamp: new Date().toISOString(), amount, reason, balanceAfter: nextBalance, ...metadata };
+      user.balance = nextBalance;
+      user.transactions.unshift(transaction);
+      return transaction;
+    }).then(({ user, result: transaction }) => ({ user, transaction }));
   }
 
   async rollbackTransaction(guildId: string, userId: string, transactionId: string): Promise<boolean> {
-    const user = await this.getUser(guildId, userId);
-    const index = user.transactions.findIndex(transaction => transaction.id === transactionId);
-    if (index === -1) return false;
-    user.transactions.splice(index, 1);
-    this.recalculateUser(user);
-    await this.writeUser(guildId, user);
-    return true;
+    const { result } = await this.mutateAccount(guildId, userId, user => {
+      const index = user.transactions.findIndex(transaction => transaction.id === transactionId);
+      if (index === -1) return false;
+      user.transactions.splice(index, 1);
+      this.recalculateUser(user);
+      return true;
+    });
+    return result;
   }
 
   async award(guildId: string, userId: string, amount: number, reason: string, actorId?: string): Promise<SigilUserRecord> {
@@ -138,9 +180,9 @@ class SigilStore {
   async confirmRedemption(_redemption: SigilRedemptionResult): Promise<void> {}
 
   async setLastDaily(guildId: string, userId: string, lastDaily: number): Promise<void> {
-    const user = await this.getUser(guildId, userId);
-    user.lastDaily = lastDaily;
-    await this.writeUser(guildId, user);
+    await this.mutateAccount(guildId, userId, user => {
+      user.lastDaily = lastDaily;
+    });
   }
 
   async getTransactions(guildId: string, userId: string, limit = 10): Promise<SigilTransaction[]> {
