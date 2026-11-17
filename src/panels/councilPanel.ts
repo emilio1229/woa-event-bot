@@ -203,7 +203,7 @@ async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteract
         const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
         const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
         const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
-          .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\\n\\n"))
+          .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\n\n"))
           .addFields(
             { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
             { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
@@ -219,7 +219,7 @@ async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteract
         posted += 1;
       }
       await interaction.editReply({ embeds: [new EmbedBuilder().setColor(0x7B2CBF).setTitle("📣 ACTIVE EVENTS REPOSTED")
-        .setDescription(`Successfully reposted **${posted}** active event announcement(s) in <#${channelId}>.\\n\\nOfficial and approved community event posts were refreshed. Original posts, event records, and RSVP lists were not changed.`)], components: [backButtonRow()] });
+        .setDescription(`Successfully reposted **${posted}** active event announcement(s) in <#${channelId}>.\n\nOfficial and approved community event posts were refreshed. Original posts, event records, and RSVP lists were not changed.`)], components: [backButtonRow()] });
     } catch (error) {
       console.error("Active event repost failed:", error);
       await interaction.editReply({ embeds: [new EmbedBuilder().setColor(0xB22222).setTitle("📣 Repost incomplete")
