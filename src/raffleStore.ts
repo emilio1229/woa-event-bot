@@ -18,6 +18,11 @@ function toRaffleRecord(raffle: {
   entries: string[];
   boundUsers: string[];
   hostId: string | null;
+  deliveryStatus: string | null;
+  hostDeliveryConfirmedAt: Date | null;
+  winnerReceiptConfirmedAt: Date | null;
+  deliveryDisputeNote: string | null;
+  deliveryDisputedAt: Date | null;
 }): Raffle {
   return {
     ...raffle,
@@ -28,7 +33,12 @@ function toRaffleRecord(raffle: {
     winnerId: raffle.winnerId ?? undefined,
     messageId: raffle.messageId ?? undefined,
     boundUsers: raffle.boundUsers.length > 0 ? raffle.boundUsers : [],
-    hostId: raffle.hostId ?? null
+    hostId: raffle.hostId ?? null,
+    deliveryStatus: raffle.deliveryStatus ?? null,
+    hostDeliveryConfirmedAt: raffle.hostDeliveryConfirmedAt ?? null,
+    winnerReceiptConfirmedAt: raffle.winnerReceiptConfirmedAt ?? null,
+    deliveryDisputeNote: raffle.deliveryDisputeNote ?? null,
+    deliveryDisputedAt: raffle.deliveryDisputedAt ?? null
   };
 }
 
