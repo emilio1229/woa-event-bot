@@ -733,7 +733,7 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
         .addFields(
           { name: "⏳ Countdown", value: `<t:${communityEvent.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${communityEvent.creatorId}>`, inline: true },
-          { name: "🔔 Notification", value: roleId ? `<@&${roleId}>` : "No role ping", inline: true },
+          { name: "🔔 Notification", value: roleId ? (interaction.guild?.roles.cache.get(roleId)?.name ?? "Selected role") : "No role ping", inline: true },
           { name: "👥 Player Limit", value: communityEvent.capacity ? String(communityEvent.capacity) : "Unlimited", inline: true },
           { name: `🟢 Going (${goingUsers.length}${communityEvent.capacity ? `/${communityEvent.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
           { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
