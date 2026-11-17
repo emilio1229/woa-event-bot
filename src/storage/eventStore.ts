@@ -109,19 +109,49 @@ class EventStore {
   }
 
   async updateRsvp(eventId: string, userId: string, state: RsvpState = "going"): Promise<EventRecord | undefined> {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!event || isEndedRsvps(event.rsvps)) return undefined;
-    const record = toEventRecord(event);
-    record.rsvps[userId] = state;
-    return this.save(record);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await prisma.$transaction(async tx => {
+          const event = await tx.event.findUnique({ where: { id: eventId } });
+          if (!event || isEndedRsvps(event.rsvps)) return undefined;
+          const record = toEventRecord(event);
+          record.rsvps[userId] = state;
+          const updated = await tx.event.update({
+            where: { id: eventId },
+            data: { rsvps: record.rsvps as Prisma.InputJsonValue }
+          });
+          return toEventRecord(updated);
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "";
+        if (code === "P2034" && attempt < 4) continue;
+        throw error;
+      }
+    }
+    throw new Error("Could not safely update the event RSVP after concurrent changes.");
   }
 
   async removeRsvp(eventId: string, userId: string): Promise<EventRecord | undefined> {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
-    if (!event || isEndedRsvps(event.rsvps)) return undefined;
-    const record = toEventRecord(event);
-    delete record.rsvps[userId];
-    return this.save(record);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await prisma.$transaction(async tx => {
+          const event = await tx.event.findUnique({ where: { id: eventId } });
+          if (!event || isEndedRsvps(event.rsvps)) return undefined;
+          const record = toEventRecord(event);
+          delete record.rsvps[userId];
+          const updated = await tx.event.update({
+            where: { id: eventId },
+            data: { rsvps: record.rsvps as Prisma.InputJsonValue }
+          });
+          return toEventRecord(updated);
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "";
+        if (code === "P2034" && attempt < 4) continue;
+        throw error;
+      }
+    }
+    throw new Error("Could not safely remove the event RSVP after concurrent changes.");
   }
 }
 
