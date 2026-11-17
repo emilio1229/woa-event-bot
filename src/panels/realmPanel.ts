@@ -32,8 +32,6 @@ import { createCommunityRaffle, listMyCommunityRaffles, getCommunityRaffle, upda
 export const REALM_PREFIX = "woa:realm";
 
 type CommunityEventDraft = { timezone: string; editId?: string };
-type CommunityRaffleDraft = { editId?: string };
-const communityRaffleDrafts = new Map<string, CommunityRaffleDraft>();
 const communityEventDrafts = new Map<string, CommunityEventDraft>();
 const COMMUNITY_TIMEZONES = [
   ["Arizona / Phoenix", "America/Phoenix"], ["Pacific Time", "America/Los_Angeles"],
