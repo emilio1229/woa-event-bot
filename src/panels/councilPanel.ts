@@ -32,7 +32,7 @@ import { bountyStore, bountyWeeklyImage } from "../utils/bountyStore.js";
 import { parseTime } from "../utils/timeParser.js";
 import { getAdminTimezone, setAdminTimezone, COMMON_TIMEZONES, isValidIanaTimezone } from "../services/adminTimezoneService.js";
 import { discordDirectoryService } from "../services/discordDirectoryService.js";
-import { attachEventMessageId, createEvent, deleteEvent, getEventById, updateEventDetails, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
+import { attachEventMessageId, createEvent, deleteEvent, endEvent, getEventById, updateEventDetails, getEventRsvpSummary, getUpcomingEvents } from "../services/eventService.js";
 import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { cleanBotMessages } from "../services/channelCleanupService.js";
@@ -348,6 +348,7 @@ async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
 
 async function handleCouncilStringSelect(interaction: StringSelectMenuInteraction) {
   if (interaction.customId === `${COUNCIL_PREFIX}:events:edit:select`) { await startEventEditModal(interaction, interaction.values[0]); return; }
+  if (interaction.customId === `${COUNCIL_PREFIX}:events:end:select`) { await endOfficialEvent(interaction, interaction.values[0]); return; }
   if (interaction.customId === `${COUNCIL_PREFIX}:raffle:end:select`) { await endRaffleForCouncil(interaction, interaction.values[0]); return; }
   if (interaction.customId === `${COUNCIL_PREFIX}:configuration:timezone:select`) {
     const timezone = interaction.values[0];
@@ -535,6 +536,38 @@ async function startSigilBalanceLookup(interaction: ButtonInteraction) { const m
 async function openSigilBalance(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const balance = await sigilStore.getUser(interaction.guildId!, userId); const member = await interaction.guild?.members.fetch(userId).catch(() => null); const embed = new EmbedBuilder().setColor(0xD4AF37).setTitle("💠 PLAYER SIGIL BALANCE").setDescription(`${member?.toString() ?? "<@"+userId+">"} currently holds **${balance.balance} Sigils**.`); await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral }); }
 
 async function openSigilAdjustment(interaction: UserSelectMenuInteraction) { const userId = interaction.values[0]; const modal = new ModalBuilder().setCustomId(`${COUNCIL_PREFIX}:sigil:modal:${userId}`).setTitle("Adjust Player Sigils"); modal.addComponents(inputRow("amount", "Sigil amount", "25 to award, -25 to remove", TextInputStyle.Short), inputRow("reason", "Reason", "Event reward, correction, etc.", TextInputStyle.Paragraph)); await interaction.showModal(modal); }
+async function startEventEndPicker(interaction: ButtonInteraction) {
+  const events = await getUpcomingEvents(interaction.guildId ?? "", 25);
+  if (!events.length) {
+    await interaction.update({ embeds: [new EmbedBuilder().setTitle("🛑 End Official Event").setDescription("There are no active upcoming official events to end.")], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary))] });
+    return;
+  }
+  const menu = new StringSelectMenuBuilder().setCustomId(COUNCIL_PREFIX + ":events:end:select").setPlaceholder("Choose the official event to end");
+  menu.addOptions(events.map(event => ({ label: event.title.slice(0, 100), value: event.id, description: new Date(event.startAtUnix * 1000).toLocaleString("en-US", { timeZone: event.timezone, dateStyle: "medium", timeStyle: "short" }).slice(0, 100) })));
+  await interaction.update({ embeds: [new EmbedBuilder().setTitle("🛑 End Official Event").setDescription("Choose the active event to end. Its announcement will be marked ENDED and its RSVP controls removed.")], components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary))] });
+}
+
+async function endOfficialEvent(interaction: StringSelectMenuInteraction, eventId: string) {
+  const current = await getEventById(eventId);
+  if (!current || current.guildId !== interaction.guildId) {
+    await showEvents(interaction, "❌ That event could not be found.");
+    return;
+  }
+  const ended = await endEvent(eventId);
+  if (!ended) {
+    await showEvents(interaction, "❌ That event could not be ended.");
+    return;
+  }
+  if (ended.messageId) {
+    const channel = await interaction.client.channels.fetch(ended.channelId).catch(() => null);
+    if (channel && channel.isTextBased() && "messages" in channel) {
+      const message = await channel.messages.fetch(ended.messageId).catch(() => null);
+      if (message) await message.edit({ embeds: [buildEventEmbed(ended).setTitle(`🛑 ${ended.title} — ENDED`)], components: [] }).catch(error => console.error("Could not update ended event announcement:", error));
+    }
+  }
+  await showEvents(interaction, `🛑 **${ended.title}** has been ended. Its original announcement was updated and RSVP controls removed.`);
+}
+
 async function startEventEditPicker(interaction: ButtonInteraction) {
   const events = await getUpcomingEvents(interaction.guildId ?? "", 25);
   if (!events.length) { await interaction.update({ embeds: [new EmbedBuilder().setTitle("✏️ Edit Official Event").setDescription("There are no upcoming official events to edit.")], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary))] }); return; }
