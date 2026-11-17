@@ -855,7 +855,7 @@ async function showCommunityReview(interaction: ButtonInteraction) {
 }
 
 async function showCommunityRaffleReview(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) {
-  const pending = await listPendingCommunityRaffles(interaction.guildId ?? "", 5);
+  const pending = await listPendingCommunityRaffles(interaction.guildId ?? "", 4);
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🎁 PLAYER GIVEAWAY REVIEW").setDescription([notice, pending.length ? "Review player-hosted giveaways. Approval creates a standard WoA raffle with the existing entry buttons and one winner." : "No player giveaway submissions are waiting for review."].filter(Boolean).join("\n\n"));
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (const item of pending) {
