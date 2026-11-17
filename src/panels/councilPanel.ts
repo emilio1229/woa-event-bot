@@ -370,17 +370,7 @@ async function handleCouncilStringSelect(interaction: StringSelectMenuInteractio
     await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Admin Directory", "woa:council:admin-access", ButtonStyle.Secondary), backButton())] });
     return;
   }
-  if (interaction.customId.startsWith("woa:council:community-raffles:channel:")) {
-    const raffleId = interaction.customId.slice("woa:council:community-raffles:channel:".length); const channelId = interaction.values[0];
-    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
-    if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) { await interaction.update({ content: "❌ That channel cannot receive the giveaway announcement.", embeds: [], components: [backButtonRow()] }); return; }
-    const submission = await getCommunityRaffle(raffleId);
-    if (!submission || submission.guildId !== interaction.guildId || submission.status !== "pending" || submission.creatorId === interaction.user.id) { await interaction.update({ content: "❌ That submission is no longer awaiting your review, or you cannot approve your own.", embeds: [], components: [backButtonRow()] }); return; }
-    communityRaffleApprovalDrafts.set(interaction.user.id, { raffleId, channelId });
-    const roleMenu = new RoleSelectMenuBuilder().setCustomId("woa:council:community-raffles:role:" + raffleId).setPlaceholder("Choose an optional notification role").setMinValues(1).setMaxValues(1);
-    await interaction.update({ content: "📍 **Announcement channel:** <#" + channelId + ">\n\n🔔 Select the role to tag, or approve without a role ping.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", "woa:council:community-raffles:no-role:" + raffleId, ButtonStyle.Success), button("◀ Back to review", "woa:council:community-raffles:review", ButtonStyle.Secondary))] });
-    return;
-  }
+
   if (interaction.customId === `${COUNCIL_PREFIX}:events:repost:select`) {
     const [kind, eventId] = interaction.values[0].split(":");
     if ((kind !== "official" && kind !== "community") || !eventId || !await validateRepostEvent(interaction.guildId ?? "", kind, eventId)) {
