@@ -273,6 +273,26 @@ model CommunityEvent {
   @@index([guildId, creatorId, status])
 }
 
+
+model CommunityRaffleSubmission {
+  id                    String   @id
+  guildId               String
+  creatorId             String
+  name                  String
+  prize                 String
+  endsAt                BigInt
+  status                String   @default("pending")
+  reviewNote            String?
+  reviewedBy            String?
+  raffleId              String?  @unique
+  announcementChannelId String?
+  notificationRoleId    String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  @@index([guildId, status, createdAt])
+  @@index([guildId, creatorId, status])
+}
+
 model AstralSelectionNotification {
   id          String   @id
   guildId     String
