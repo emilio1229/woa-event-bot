@@ -203,11 +203,6 @@ async function submitCommunityEvent(interaction: ModalSubmitInteraction) {
     await interaction.reply({ content: "❌ Check your event details. Choose your timezone first, then enter a future start time in a format you find natural—for example: Nov 1, 2026 at 7 PM; 11/1/26 7:00pm; 2026-11-01 19:00; tomorrow at 7pm; next Friday 5pm; or in 2 hours. Times use your selected timezone. Player limit must be 0 or higher.", flags: MessageFlags.Ephemeral });
     return;
   }
-  const mine = await listMyCommunityEvents(interaction.guildId, interaction.user.id, 20);
-  if (!editId && (mine.filter(event => event.status === "pending" || event.status === "changes_requested").length >= 3 || mine.filter(event => event.status === "approved").length >= 3)) {
-    await interaction.reply({ content: "⛔ You may have up to 3 pending submissions and 3 approved upcoming events at a time.", flags: MessageFlags.Ephemeral });
-    return;
-  }
   const input = { title: title.slice(0, 100), category, mapLocation, description: description.slice(0, 1000), startAtIso: startDate.toISOString(), startAtUnix: Math.floor(startDate.getTime() / 1000), timezone, capacity };
   if (editId) {
     const updated = await updateCommunityEventSubmission(editId, interaction.guildId, interaction.user.id, input);
