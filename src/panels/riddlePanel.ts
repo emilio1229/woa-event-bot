@@ -449,7 +449,7 @@ export async function handleRiddlePanel(interaction: Interaction): Promise<boole
     const hint = hintLines.length > 1 ? JSON.stringify(hintLines) : (hintLines[0] || undefined);
     const updated = { ...draft, question, answer, reward, hint };
     aiDrafts.set(interaction.user.id, updated);
-    await interaction.reply(buildAiReview(updated));
+    await interaction.reply({ ...buildAiReview(updated), ephemeral: true });
     return true;
   }
   if (interaction.isButton() && interaction.customId === RIDDLE_PREFIX + ":ai:cancel") {
