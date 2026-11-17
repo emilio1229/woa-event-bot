@@ -29,6 +29,8 @@ import { parseTime } from "../utils/timeParser.js";
 import { cancelCommunityEvent, createCommunityEvent, getCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent, updateCommunityEventSubmission } from "../services/communityEventService.js";
 import { createCommunityRaffle, listMyCommunityRaffles, getCommunityRaffle, updateCommunityRaffle, cancelCommunityRaffle } from "../services/communityRaffleService.js";
 
+import { confirmHostDelivery, confirmWinnerReceipt, disputeDelivery } from "../services/giveawayDeliveryService.js";
+
 export const REALM_PREFIX = "woa:realm";
 
 type CommunityEventDraft = { timezone: string; editId?: string };
@@ -176,9 +178,27 @@ async function showMyCommunityRaffles(interaction: ButtonInteraction, notice?: s
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("📋 MY GIVEAWAY SUBMISSIONS").setDescription([notice, lines.length ? lines.join("\n\n") : "You have not submitted a giveaway yet."].filter(Boolean).join("\n\n").slice(0,4000));
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (const item of submissions.slice(0, 4)) if (item.status === "pending" || item.status === "changes_requested") rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✏️ Edit", REALM_PREFIX + ":community-raffle:edit:" + item.id, ButtonStyle.Secondary), button("✖ Cancel", REALM_PREFIX + ":community-raffle:cancel:" + item.id, ButtonStyle.Danger)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("📦 Prize Delivery", REALM_PREFIX+":delivery:hosted", ButtonStyle.Secondary), button("🏆 My Winnings", REALM_PREFIX+":delivery:winnings", ButtonStyle.Secondary)));
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Submit Giveaway", REALM_PREFIX + ":community-raffle:create"), button("◀ Raffles", REALM_PREFIX + ":raffles", ButtonStyle.Secondary)));
   await interaction.update({ embeds:[embed], components:rows });
 }
+
+
+async function showHostedDelivery(interaction: ButtonInteraction, notice?: string) {
+  const rows: ActionRowBuilder<ButtonBuilder>[]=[]; const raffles=(await raffleStore.all()).filter(r=>r.guildId===interaction.guild!.id && r.hostId===interaction.user.id && !!r.winnerId);
+  const lines=raffles.slice(0,8).map(r=>`**${r.name}** — ${r.prize}\nWinner: <@${r.winnerId}> • Status: **${deliveryLabel(r.deliveryStatus)}**${r.hostDeliveryConfirmedAt?"\nHost confirmed: <t:"+Math.floor(r.hostDeliveryConfirmedAt.getTime()/1000)+":f>":""}${r.winnerReceiptConfirmedAt?"\nReceived: <t:"+Math.floor(r.winnerReceiptConfirmedAt.getTime()/1000)+":f>":""}${r.deliveryDisputeNote?"\n⚠️ "+r.deliveryDisputeNote:""}`);
+  for(const r of raffles.filter(r=>r.deliveryStatus==="awaiting_host").slice(0,4)) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("📦 Confirm Sent",REALM_PREFIX+":delivery:host:"+r.id,ButtonStyle.Success)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🏆 My Winnings",REALM_PREFIX+":delivery:winnings",ButtonStyle.Secondary),button("◀ My Giveaways",REALM_PREFIX+":community-raffle:mine",ButtonStyle.Secondary)));
+  await interaction.update({embeds:[new EmbedBuilder().setTitle("📦 HOSTED PRIZE DELIVERY").setDescription([notice,lines.join("\n\n")||"No player-hosted giveaway winners yet."].filter(Boolean).join("\n\n").slice(0,4000))],components:rows});
+}
+async function showWonDelivery(interaction: ButtonInteraction, notice?: string) {
+  const rows: ActionRowBuilder<ButtonBuilder>[]=[]; const raffles=(await raffleStore.all()).filter(r=>r.guildId===interaction.guild!.id && r.winnerId===interaction.user.id && !!r.hostId);
+  const lines=raffles.slice(0,8).map(r=>`**${r.name}** — ${r.prize}\nHost: <@${r.hostId}> • Status: **${deliveryLabel(r.deliveryStatus)}**${r.hostDeliveryConfirmedAt?"\nHost marked sent: <t:"+Math.floor(r.hostDeliveryConfirmedAt.getTime()/1000)+":f>":""}${r.deliveryDisputeNote?"\n⚠️ "+r.deliveryDisputeNote:""}`);
+  for(const r of raffles.filter(r=>r.deliveryStatus==="awaiting_winner").slice(0,2)) rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Confirm Received",REALM_PREFIX+":delivery:winner:"+r.id,ButtonStyle.Success),button("⚠️ Report Problem",REALM_PREFIX+":delivery:dispute:"+r.id,ButtonStyle.Danger)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("📦 Host Delivery",REALM_PREFIX+":delivery:hosted",ButtonStyle.Secondary),button("◀ Raffles",REALM_PREFIX+":raffles",ButtonStyle.Secondary)));
+  await interaction.update({embeds:[new EmbedBuilder().setTitle("🏆 MY GIVEAWAY WINNINGS").setDescription([notice,lines.join("\n\n")||"You have no player-hosted giveaway wins yet."].filter(Boolean).join("\n\n").slice(0,4000))],components:rows});
+}
+function deliveryLabel(status?: string|null){return status==="awaiting_host"?"Awaiting host delivery":status==="awaiting_winner"?"Awaiting winner confirmation":status==="completed"?"Completed":status==="disputed"?"Council review required":"Not started";}
 
 function buildCommunityEventModal(timezone: string, existing?: Awaited<ReturnType<typeof getCommunityEvent>>) {
   const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community:submit" + (existing ? ":" + existing.id : "")).setTitle(existing ? "Edit Community Event" : "Create Community Event");
@@ -347,6 +367,11 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     await interaction.reply({ content: "🌎 Timezone selected: **" + timezone + "**. Continue to enter the event details.", flags: MessageFlags.Ephemeral, components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("Continue to event details", REALM_PREFIX + ":community:continue"))] });
     return true;
   }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":delivery:dispute-submit:")) {
+    const id=interaction.customId.slice((REALM_PREFIX+":delivery:dispute-submit:").length); const reason=interaction.fields.getTextInputValue("reason").trim();
+    const ok=reason.length>0 && await disputeDelivery(id, interaction.guildId??"", interaction.user.id, reason);
+    await interaction.reply({content:ok?"⚠️ Your delivery concern has been sent to the Council for review.":"❌ That delivery could not be disputed.",flags:MessageFlags.Ephemeral}); return true;
+  }
   if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community-raffle:submit")) {
     if (!interaction.guildId) { await interaction.reply({ content: "❌ Submit giveaways inside the WoA server.", flags: MessageFlags.Ephemeral }); return true; }
     const editId = interaction.customId.startsWith(REALM_PREFIX + ":community-raffle:submit:") ? interaction.customId.slice((REALM_PREFIX + ":community-raffle:submit:").length) : null;
@@ -366,6 +391,11 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   if (section === "home") await showHome(interaction as ButtonInteraction);
   else if (section === "community-raffle:create") await interaction.showModal(buildCommunityRaffleModal());
   else if (section === "community-raffle:mine") await showMyCommunityRaffles(interaction as ButtonInteraction);
+  else if (section === "delivery:hosted") await showHostedDelivery(interaction as ButtonInteraction);
+  else if (section === "delivery:winnings") await showWonDelivery(interaction as ButtonInteraction);
+  else if (section.startsWith("delivery:host:")) { const id=section.slice("delivery:host:".length); const ok=await confirmHostDelivery(id, interaction.guild!.id, interaction.user.id); await showHostedDelivery(interaction as ButtonInteraction, ok ? "✅ Delivery marked as sent. The winner can now confirm receipt." : "❌ That delivery cannot be confirmed by this account or is no longer awaiting confirmation."); }
+  else if (section.startsWith("delivery:winner:")) { const id=section.slice("delivery:winner:".length); const ok=await confirmWinnerReceipt(id, interaction.guild!.id, interaction.user.id); await showWonDelivery(interaction as ButtonInteraction, ok ? "✅ Receipt confirmed. This giveaway is complete." : "❌ That receipt cannot be confirmed by this account or is no longer awaiting confirmation."); }
+  else if (section.startsWith("delivery:dispute:")) { const id=section.slice("delivery:dispute:".length); const modal=new ModalBuilder().setCustomId(REALM_PREFIX+":delivery:dispute-submit:"+id).setTitle("Report a Prize Delivery Problem"); modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("reason").setLabel("What went wrong?").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(1000))); await interaction.showModal(modal); }
   else if (section.startsWith("community-raffle:edit:")) { const item = await getCommunityRaffle(section.slice("community-raffle:edit:".length)); if (!item || item.guildId !== interaction.guild!.id || item.creatorId !== interaction.user.id || !["pending","changes_requested"].includes(item.status)) await showMyCommunityRaffles(interaction as ButtonInteraction, "❌ That submission cannot be edited."); else await interaction.showModal(buildCommunityRaffleModal(item)); }
   else if (section.startsWith("community-raffle:cancel:")) { const ok = await cancelCommunityRaffle(section.slice("community-raffle:cancel:".length), interaction.guild!.id, interaction.user.id); await showMyCommunityRaffles(interaction as ButtonInteraction, ok ? "✖ Submission cancelled." : "❌ That submission could not be cancelled."); }
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
