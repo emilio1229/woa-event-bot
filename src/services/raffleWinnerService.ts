@@ -47,8 +47,13 @@ export async function chooseRaffleWinner(raffle: Raffle): Promise<string | null>
     // Keep duplicate entries to preserve the existing weighted-entry system.
     let eligibleEntries = entries.filter(userId => !coolingDown.has(userId));
 
-    // If every entrant is on cooldown, no winner is selected. This preserves
-    // the cooldown promise instead of allowing an immediate repeat winner.
+    // Player-hosted giveaways must not close without a winner merely because
+    // every entrant is temporarily on cooldown. Prefer entrants outside the
+    // cooldown; if all are cooling down, fall back to the full weighted entry
+    // list. Official/admin raffles retain the existing no-repeat behavior.
+    if (eligibleEntries.length === 0 && storedRaffle.hostId && entries.length > 0) {
+      eligibleEntries = entries;
+    }
     const winnerId = eligibleEntries.length > 0
       ? eligibleEntries[Math.floor(Math.random() * eligibleEntries.length)]
       : null;
