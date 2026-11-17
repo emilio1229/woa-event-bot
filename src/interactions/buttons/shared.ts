@@ -87,7 +87,7 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
   const content = isGoing
     ? `🜂 You're marked **Going** for **${updatedEvent.title}**. Only you can see the control below.`
     : `You have left **${updatedEvent.title}**. You can rejoin whenever you're ready.`;
-  const components = [personalRsvpButton(updatedEvent.id, event.channelId, event.messageId ?? messageId, isGoing)];
+  const components = [personalRsvpButton(updatedEvent.id, channelId, messageId, isGoing)];
   await interaction.editReply({ content, components });
 }
 
