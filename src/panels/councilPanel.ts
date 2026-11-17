@@ -39,6 +39,7 @@ import { cleanBotMessages } from "../services/channelCleanupService.js";
 import { buildRiddlePanel } from "./riddlePanel.js";
 import { handleArcaneCouncilPanel } from "../arcane/council.js";
 import { listPendingCommunityEvents, listApprovedCommunityEvents, getCommunityEvent, reviewCommunityEvent } from "../services/communityEventService.js";
+import { listPendingCommunityRaffles, getCommunityRaffle, reviewCommunityRaffle, approveCommunityRaffle } from "../services/communityRaffleService.js";
 
 export const COUNCIL_PREFIX = "woa:council";
 const BOUNTY_STATS = ["Health", "Stamina", "Oxygen", "Food", "Weight", "Melee"] as const;
@@ -48,6 +49,7 @@ const bountyDrafts = new Map<string, BountyDraft>();
 const postingDrafts = new Map<string, PostingDraft>();
 // Per-admin, per-submission destination chosen before a community event is approved.
 const communityApprovalDrafts = new Map<string, { eventId: string; channelId: string }>();
+const communityRaffleApprovalDrafts = new Map<string, { raffleId: string; channelId: string }>();
 type RepostDraft = { kind: "official" | "community"; eventId: string; channelId: string };
 const repostDrafts = new Map<string, RepostDraft>();
 
@@ -96,7 +98,7 @@ export function buildCouncilPanel() {
   return { embeds: [embed], components: [
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Economy", `${COUNCIL_PREFIX}:economy`), button("🎟️ Raffles", `${COUNCIL_PREFIX}:raffles`), button("🏆 Events", `${COUNCIL_PREFIX}:events`), button("📜 Bounties", `${COUNCIL_PREFIX}:bounties`)),
     new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Rewards", `${COUNCIL_PREFIX}:rewards`), button("📊 Statistics", `${COUNCIL_PREFIX}:statistics`), button("⚙️ Configuration", `${COUNCIL_PREFIX}:configuration`), button("🧩 Riddles", `${COUNCIL_PREFIX}:riddles`)),
-    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${COUNCIL_PREFIX}:arcane:home`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Arcane Realm", `${COUNCIL_PREFIX}:arcane:home`), button("🛡️ Admin Access", `${COUNCIL_PREFIX}:admin-access`), button("🧹 Channel Cleanup", `${COUNCIL_PREFIX}:cleanup`))
   ] };
 }
 
@@ -116,6 +118,11 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "economy:assign") await startSigilAssignment(interaction);
   else if (section === "economy:balance") await startSigilBalanceLookup(interaction);
   else if (section === "raffles") await showRaffles(interaction);
+  else if (section === "community-raffles:review") await showCommunityRaffleReview(interaction);
+  else if (section.startsWith("community-raffles:approve:")) { const raffleId=section.slice("community-raffles:approve:".length); const menu=new ChannelSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:community-raffles:channel:${raffleId}`).setPlaceholder("Choose the giveaway announcement channel").setMinValues(1).setMaxValues(1).setChannelTypes(ChannelType.GuildText,ChannelType.GuildAnnouncement); await interaction.update({content:"📣 Choose where the approved player giveaway should be posted.",embeds:[],components:[new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu),new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to review",`${COUNCIL_PREFIX}:community-raffles:review`,ButtonStyle.Secondary))]}); }
+  else if (section.startsWith("community-raffles:no-role:")) await completeCommunityRaffleApproval(interaction,section.slice("community-raffles:no-role:".length),null);
+  else if (section.startsWith("community-raffles:changes:") || section.startsWith("community-raffles:reject:")) { const parts=section.split(":"); const decision=parts[1]==="changes"?"changes_requested":"rejected"; const id=parts.slice(2).join(":"); const ok=await reviewCommunityRaffle(id,interaction.guildId??"",interaction.user.id,decision,decision==="changes_requested"?"Please update the giveaway details and resubmit.":"The Council declined this giveaway submission."); await showCommunityRaffleReview(interaction,ok?(decision==="changes_requested"?"📝 Changes requested.":"❌ Giveaway submission rejected."):"That submission was already reviewed or you cannot review your own submission."); }
+  else if (section === "admin-access") await showAdminAccess(interaction);
   else if (section === "raffles:start") await startRaffleModal(interaction);
   else if (section === "raffles:end") await startRaffleEndPicker(interaction);
   else if (section === "events") await showEvents(interaction);
@@ -154,6 +161,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "rewards") await showRewards(interaction);
   else if (section === "riddles") await interaction.update(buildRiddlePanel());
   else if (section === "statistics") await showStatistics(interaction);
+  else if (section === "admin-access") await showAdminAccess(interaction);
   else if (section === "configuration") await showConfiguration(interaction);
   else if (section === "configuration:timezone") await startTimezonePicker(interaction);
   else if (section === "configuration:timezone:custom") await startCustomTimezoneModal(interaction);
@@ -317,6 +325,7 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
 
 async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
   const roleId = interaction.values[0] ?? null;
+  if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community-raffles:role:`)) { const raffleId = interaction.customId.slice(`${COUNCIL_PREFIX}:community-raffles:role:`.length); await completeCommunityRaffleApproval(interaction, raffleId, roleId); return; }
   if (interaction.customId === `${COUNCIL_PREFIX}:events:repost:role`) {
     await completeSingleEventRepost(interaction, roleId);
     return;
@@ -340,6 +349,26 @@ async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
 }
 
 async function handleCouncilStringSelect(interaction: StringSelectMenuInteraction) {
+  if (interaction.customId === "woa:council:admin-access:member") {
+    const member = await interaction.guild?.members.fetch(interaction.values[0]).catch(() => null);
+    if (!member || member.user.bot || !(member.permissions.has(PermissionFlagsBits.Administrator) || member.roles.cache.some(role => env.councilRoleIds.includes(role.id)))) { await showAdminAccess(interaction); return; }
+    const councilRoles = member.roles.cache.filter(role => env.councilRoleIds.includes(role.id)).map(role => role.name);
+    const allRoles = member.roles.cache.filter(role => role.id !== interaction.guildId).map(role => role.name);
+    const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🛡️ ADMIN ACCESS DETAILS").setDescription(member.toString() + "\n\n**Discord Administrator:** " + (member.permissions.has(PermissionFlagsBits.Administrator) ? "Yes" : "No") + "\n**Configured Council roles:** " + (councilRoles.join(", ") || "None") + "\n**All assigned roles:** " + (allRoles.join(", ") || "None") + "\n\nThis directory is read-only and reflects current Discord permissions.");
+    await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Admin Directory", "woa:council:admin-access", ButtonStyle.Secondary), backButton())] });
+    return;
+  }
+  if (interaction.customId.startsWith("woa:council:community-raffles:channel:")) {
+    const raffleId = interaction.customId.slice("woa:council:community-raffles:channel:".length); const channelId = interaction.values[0];
+    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+    if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) { await interaction.update({ content: "❌ That channel cannot receive the giveaway announcement.", embeds: [], components: [backButtonRow()] }); return; }
+    const submission = await getCommunityRaffle(raffleId);
+    if (!submission || submission.guildId !== interaction.guildId || submission.status !== "pending" || submission.creatorId === interaction.user.id) { await interaction.update({ content: "❌ That submission is no longer awaiting your review, or you cannot approve your own.", embeds: [], components: [backButtonRow()] }); return; }
+    communityRaffleApprovalDrafts.set(interaction.user.id, { raffleId, channelId });
+    const roleMenu = new RoleSelectMenuBuilder().setCustomId("woa:council:community-raffles:role:" + raffleId).setPlaceholder("Choose an optional notification role").setMinValues(1).setMaxValues(1);
+    await interaction.update({ content: "📍 **Announcement channel:** <#" + channelId + ">\n\n🔔 Select the role to tag, or approve without a role ping.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", "woa:council:community-raffles:no-role:" + raffleId, ButtonStyle.Success), button("◀ Back to review", "woa:council:community-raffles:review", ButtonStyle.Secondary))] });
+    return;
+  }
   if (interaction.customId === `${COUNCIL_PREFIX}:events:repost:select`) {
     const [kind, eventId] = interaction.values[0].split(":");
     if ((kind !== "official" && kind !== "community") || !eventId || !await validateRepostEvent(interaction.guildId ?? "", kind, eventId)) {
@@ -631,7 +660,7 @@ async function endRaffleForCouncil(interaction: StringSelectMenuInteraction, raf
 async function startBountyModal(interaction: ButtonInteraction) { const menu = postingChannelMenu("bounty"); await interaction.update({ content: "📍 Choose the channel where the Weekly Hunt should be posted.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(menu), new ActionRowBuilder<ButtonBuilder>().addComponents(backButton())] }); }
 function inputRow(id: string, label: string, placeholder: string, style: TextInputStyle, required = true) { return new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required)); }
 async function showEconomy(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const active = users.filter(user => user.joinedAt).length; await interaction.update({ embeds: [new EmbedBuilder().setTitle("💎 Economy").setDescription(`Active member records: **${active}**\n\nUse the control below to assign or remove Sigils.`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("💎 Assign / Remove Sigils", `${COUNCIL_PREFIX}:economy:assign`), button("👁️ View Player Balance", `${COUNCIL_PREFIX}:economy:balance`)), backButtonRow()] }); }
-async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()); const description = raffles.length ? raffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}\nEnds <t:${Math.floor(raffle.endsAt / 1000)}:R> • **${raffle.entries.length} entries**`).join("\n\n") : "No active community giveaways."; await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🛑 End Giveaway", `${COUNCIL_PREFIX}:raffles:end`, ButtonStyle.Danger)), backButtonRow()] }); }
+async function showRaffles(interaction: ButtonInteraction | ModalSubmitInteraction) { const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()); const description = raffles.length ? raffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize}\nEnds <t:${Math.floor(raffle.endsAt / 1000)}:R> • **${raffle.entries.length} entries**`).join("\n\n") : "No active community giveaways."; await updateCouncilPanel(interaction, { embeds: [new EmbedBuilder().setTitle("🎟️ Raffles").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Giveaway", `${COUNCIL_PREFIX}:raffles:start`), button("🛑 End Giveaway", `${COUNCIL_PREFIX}:raffles:end`, ButtonStyle.Danger)), new ActionRowBuilder<ButtonBuilder>().addComponents(button("🕒 Review Player Giveaways", `${COUNCIL_PREFIX}:community-raffles:review`, ButtonStyle.Secondary)), backButtonRow()] }); }
 async function showRepostActiveEvents(interaction: ButtonInteraction) {
   const guildId = interaction.guildId ?? "";
   const [official, community] = await Promise.all([
@@ -823,6 +852,61 @@ async function showCommunityReview(interaction: ButtonInteraction) {
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh Review", COUNCIL_PREFIX + ":community:review", ButtonStyle.Secondary), button("◀ Back to Events", COUNCIL_PREFIX + ":events", ButtonStyle.Secondary), backButton()));
   await interaction.update({ embeds: [embed], components: rows });
 }
+
+async function showCommunityRaffleReview(interaction: ButtonInteraction | ModalSubmitInteraction, notice?: string) {
+  const pending = await listPendingCommunityRaffles(interaction.guildId ?? "", 5);
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🎁 PLAYER GIVEAWAY REVIEW").setDescription([notice, pending.length ? "Review player-hosted giveaways. Approval creates a standard WoA raffle with the existing entry buttons and one winner." : "No player giveaway submissions are waiting for review."].filter(Boolean).join("\n\n"));
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (const item of pending) {
+    embed.addFields({ name: "🕒 " + item.name, value: "Hosted by <@" + item.creatorId + ">\n🎁 " + item.prize + "\n⏳ Ends <t:" + Math.floor(Number(item.endsAt) / 1000) + ":F>", inline: false });
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve", COUNCIL_PREFIX + ":community-raffles:approve:" + item.id, ButtonStyle.Success), button("📝 Request Changes", COUNCIL_PREFIX + ":community-raffles:changes:" + item.id, ButtonStyle.Secondary), button("❌ Reject", COUNCIL_PREFIX + ":community-raffles:reject:" + item.id, ButtonStyle.Danger)));
+  }
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh", COUNCIL_PREFIX + ":community-raffles:review", ButtonStyle.Secondary), button("◀ Raffles", COUNCIL_PREFIX + ":raffles", ButtonStyle.Secondary), backButton()));
+  await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
+}
+async function completeCommunityRaffleApproval(interaction: ButtonInteraction | RoleSelectMenuInteraction, raffleId: string, roleId: string | null) {
+  const draft = communityRaffleApprovalDrafts.get(interaction.user.id);
+  if (!draft || draft.raffleId !== raffleId) { await interaction.update({ content: "❌ That approval setup expired. Reopen the submission and choose a channel.", embeds: [], components: [backButtonRow()] }); return; }
+  const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+  if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) { await interaction.update({ content: "❌ The selected channel is unavailable or the bot cannot post there.", embeds: [], components: [backButtonRow()] }); return; }
+  const approved = await approveCommunityRaffle(raffleId, interaction.guildId ?? "", interaction.user.id, draft.channelId, roleId);
+  communityRaffleApprovalDrafts.delete(interaction.user.id);
+  if (!approved) { await interaction.update({ content: "❌ That submission was already reviewed, or hosts cannot approve their own giveaways.", embeds: [], components: [backButtonRow()] }); return; }
+  const raffle = await raffleStore.getById(approved.id);
+  if (!raffle) { await interaction.update({ content: "❌ The approved raffle record could not be loaded.", embeds: [], components: [backButtonRow()] }); return; }
+  try {
+    const notification = new EmbedBuilder().setTitle("🔮 THE RITUAL BEGINS").setDescription("A WoA community giveaway has begun.\n\n⟐ **Name:** " + raffle.name + "\n⟐ **Hosted by:** <@" + raffle.hostId + ">\n⟐ **Notification:** " + (roleId ? "<@&" + roleId + ">" : "No role selected") + "\n🎁 **Offering:** " + raffle.prize).setColor(0x4B0082);
+    const announcement = await channel.send({ content: roleId ? "<@&" + roleId + ">" : undefined, embeds: [notification], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [] } });
+    if (roleId) await announcement.edit({ content: null, allowedMentions: { parse: [], roles: [] } });
+    const message = await channel.send({ embeds: [buildActiveRaffleEmbed(raffle)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔮 Join Giveaway", "bindSoul"), button("⚫ Leave Giveaway", "unbindSoul", ButtonStyle.Secondary))], files: ["./assets/woa_ritual_bg.png"] });
+    await raffleStore.setMessageId(raffle.id, message.id);
+    await interaction.update({ content: "✅ **" + raffle.name + "** approved and published in <#" + draft.channelId + ">." + (roleId ? " The selected role <@&" + roleId + "> was notified." : " No role was tagged.") + " The host cannot enter their own giveaway.", embeds: [], components: [backButtonRow()], allowedMentions: { parse: [], roles: [] } });
+  } catch (error) {
+    console.error("Could not publish approved player giveaway:", error);
+    await interaction.update({ content: "⚠️ The giveaway was approved and its raffle record was created, but Discord could not publish the announcement. Check the bot's channel permissions.", embeds: [], components: [backButtonRow()] });
+  }
+}
+async function showAdminAccess(interaction: ButtonInteraction | StringSelectMenuInteraction) {
+  const guild = interaction.guild;
+  if (!guild) { await interaction.reply({ content: "This panel is only available inside the server.", flags: MessageFlags.Ephemeral }); return; }
+  const members = await guild.members.fetch();
+  const admins = members.filter(member => !member.user.bot && (member.permissions.has(PermissionFlagsBits.Administrator) || member.roles.cache.some(role => env.councilRoleIds.includes(role.id))));
+  const list = [...admins.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const lines = list.slice(0, 25).map(member => {
+    const isAdmin = member.permissions.has(PermissionFlagsBits.Administrator);
+    const council = member.roles.cache.filter(role => env.councilRoleIds.includes(role.id)).map(role => role.name);
+    return "• " + member.toString() + " — " + (isAdmin ? "Administrator" : "") + (isAdmin && council.length ? " + " : "") + council.join(", ");
+  });
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🛡️ COUNCIL ACCESS DIRECTORY").setDescription("**" + list.length + " active members** currently have Administrator permissions or a configured Council role.\n\n" + (lines.join("\n") || "No administrators or Council members were found.") + (list.length > 25 ? "\n\nShowing the first 25 members." : "") + "\n\nSelect a member below to inspect their current Discord access.");
+  const rows: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [];
+  if (list.length) {
+    const menu = new StringSelectMenuBuilder().setCustomId(COUNCIL_PREFIX + ":admin-access:member").setPlaceholder("Select an admin or Council member").setMinValues(1).setMaxValues(1).addOptions(list.slice(0, 25).map(member => ({ label: member.displayName.slice(0, 100), value: member.id, description: member.permissions.has(PermissionFlagsBits.Administrator) ? "Discord Administrator" : "Configured Council role" })));
+    rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
+  }
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🔄 Refresh", COUNCIL_PREFIX + ":admin-access", ButtonStyle.Secondary), backButton()));
+  await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
+}
+
 async function showBounties(interaction: ButtonInteraction) { const bounties = await bountyStore.getActive(interaction.guildId ?? ""); const description = bounties.length ? bounties.map(bounty => `📜 **${bounty.dinos.join(", ")}** — ${bounty.stats.join(", ")} ▸ 40–50`).join("\n") : "No active bounties."; await interaction.update({ embeds: [new EmbedBuilder().setTitle("📜 Bounties").setDescription(description)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("✨ Start Bounty", `${COUNCIL_PREFIX}:bounties:start`)), backButtonRow()] }); }
 async function showRewards(interaction: ButtonInteraction) { const activeRaffles = (await raffleStore.all()).filter(raffle => interaction.guildId === raffle.guildId && Date.now() < raffle.endsAt && !raffle.ended); const user = await sigilStore.getUser(interaction.guildId ?? "", interaction.user.id); const components = buildShopComponents(activeRaffles); components.push(backButtonRow() as never); const activeText = activeRaffles.length ? activeRaffles.slice(0, 10).map(raffle => `🎟️ **${raffle.name}** — ${raffle.prize} • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n") : "No active community giveaway is available for redemption right now."; const embed = new EmbedBuilder().setTitle("🛍️ Sigil Shop").setDescription(["Trade your Sigils for community giveaway entries.", `Exchange rate: **${SIGILS_PER_RAFFLE_ENTRY} sigils = 1 raffle entry**.`, `Current balance: **${user.balance} sigils**.`].join("\n")).addFields({ name: "🎟️ Active Giveaways", value: activeText, inline: false }).setTimestamp(); await interaction.update({ embeds: [embed], components }); }
 async function showStatistics(interaction: ButtonInteraction) { const users = await discordDirectoryService.listMembers(interaction.guildId ?? ""); const activeRaffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guildId && !raffle.ended && raffle.endsAt > Date.now()).length; const activeBounties = (await bountyStore.getActive(interaction.guildId ?? "")).length; const events = await getUpcomingEvents(interaction.guildId ?? "", 1000); await interaction.update({ embeds: [new EmbedBuilder().setTitle("📊 Statistics").addFields({ name: "Members", value: `${users.length}`, inline: true }, { name: "Active giveaways", value: `${activeRaffles}`, inline: true }, { name: "Active bounties", value: `${activeBounties}`, inline: true }, { name: "Upcoming events", value: `${events.length}`, inline: true })], components: [backButtonRow()] }); }
