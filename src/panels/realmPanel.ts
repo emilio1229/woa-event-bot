@@ -382,6 +382,12 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     const eventId = privateControl ? parts[2] : section.slice("community:announcement-rsvp:".length);
     const channelId = privateControl ? parts[3] : interaction.channelId;
     const messageId = privateControl ? parts[4] : interaction.message.id;
+    if (!eventId || !channelId || !messageId) {
+      const invalid = { content: "❌ That RSVP control is no longer valid.", components: [] };
+      if (privateControl) await interaction.update(invalid);
+      else await interaction.reply({ ...invalid, flags: MessageFlags.Ephemeral });
+      return true;
+    }
     const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
     if (!updated) {
       const notice = { content: "❌ This community event is no longer open for RSVP.", components: [] };
