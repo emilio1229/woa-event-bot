@@ -376,27 +376,57 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     const event = await cancelCommunityEvent(section.slice("community:cancel:".length), interaction.guild!.id, interaction.user.id);
     await showMyCommunityEvents(interaction as ButtonInteraction, event ? "✖ Event cancelled." : "❌ That event could not be cancelled.");
   }
-  else if (section.startsWith("community:announcement-rsvp:")) {
-    const eventId = section.slice("community:announcement-rsvp:".length);
+  else if (section.startsWith("community:announcement-rsvp:") || section.startsWith("community:announcement-rsvp-private:")) {
+    const privateControl = section.startsWith("community:announcement-rsvp-private:");
+    const parts = section.split(":");
+    const eventId = privateControl ? parts[2] : section.slice("community:announcement-rsvp:".length);
+    const channelId = privateControl ? parts[3] : interaction.channelId;
+    const messageId = privateControl ? parts[4] : interaction.message.id;
     const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
     if (!updated) {
-      await interaction.reply({ content: "❌ This community event is no longer open for RSVP.", flags: MessageFlags.Ephemeral });
-    } else {
-      const goingUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "going").map(([id]) => id);
-      const waitlistUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
-      const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
-      const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${updated.title}`)
-        .setDescription([`🗺️ **Map / Location:** ${updated.mapLocation}`, `🏷️ **Category:** ${updated.category}`, `🗓️ **Start:** <t:${updated.startAtUnix}:F> • <t:${updated.startAtUnix}:R>`, updated.description].join("\n\n"))
-        .addFields(
-          { name: "🧙 Hosted By", value: `<@${updated.creatorId}>`, inline: true },
-          { name: "👥 Player Limit", value: updated.capacity ? String(updated.capacity) : "Unlimited", inline: true },
-          { name: `🟢 Going (${goingUsers.length}${updated.capacity ? `/${updated.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
-          { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
-        ).setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
-      const state = updated.rsvps[interaction.user.id];
-      await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", REALM_PREFIX + ":community:announcement-rsvp:" + eventId, state ? ButtonStyle.Secondary : ButtonStyle.Success))] });
+      const notice = { content: "❌ This community event is no longer open for RSVP.", components: [] };
+      if (privateControl) await interaction.update(notice);
+      else await interaction.reply({ ...notice, flags: MessageFlags.Ephemeral });
       return true;
     }
+
+    const goingUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "going").map(([id]) => id);
+    const waitlistUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
+    const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
+    const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${updated.title}`)
+      .setDescription([`🗺️ **Map / Location:** ${updated.mapLocation}`, `🏷️ **Category:** ${updated.category}`, `🗓️ **Start:** <t:${updated.startAtUnix}:F> • <t:${updated.startAtUnix}:R>`, updated.description].join("\n\n"))
+      .addFields(
+        { name: "🧙 Hosted By", value: `<@${updated.creatorId}>`, inline: true },
+        { name: "👥 Player Limit", value: updated.capacity ? String(updated.capacity) : "Unlimited", inline: true },
+        { name: `🟢 Going (${goingUsers.length}${updated.capacity ? `/${updated.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
+        { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
+      ).setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
+
+    const state = updated.rsvps[interaction.user.id];
+    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+    const publicMessage = !privateControl && interaction.message.id === messageId
+      ? interaction.message
+      : channel && "messages" in channel ? await channel.messages.fetch(messageId).catch(() => null) : null;
+    if (publicMessage) {
+      await publicMessage.edit({
+        embeds: [embed],
+        components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", REALM_PREFIX + ":community:announcement-rsvp:" + eventId, ButtonStyle.Success))]
+      }).catch(() => null);
+    }
+
+    const personalButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      button(state === "going" ? "✓ You're Going — Leave Event" : state === "waitlist" ? "🕒 On Waitlist — Leave" : "🌿 RSVP Again",
+        REALM_PREFIX + ":community:announcement-rsvp-private:" + eventId + ":" + channelId + ":" + messageId,
+        state ? ButtonStyle.Secondary : ButtonStyle.Success)
+    );
+    const personalNotice = state === "going"
+      ? `✅ You're registered for **${updated.title}**. This RSVP control is private to you.`
+      : state === "waitlist"
+        ? `🕒 You're on the waitlist for **${updated.title}**. This RSVP control is private to you.`
+        : `You left **${updated.title}**. You can RSVP again whenever you're ready.`;
+    if (privateControl) await interaction.update({ content: personalNotice, components: [personalButton] });
+    else await interaction.reply({ content: personalNotice, components: [personalButton], flags: MessageFlags.Ephemeral });
+    return true;
   }
   else if (section.startsWith("community:rsvp:")) {
     const eventId = section.slice("community:rsvp:".length);
