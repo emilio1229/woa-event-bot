@@ -403,6 +403,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
       .setDescription([`🗺️ **Map / Location:** ${updated.mapLocation}`, `🏷️ **Category:** ${updated.category}`, `🗓️ **Start:** <t:${updated.startAtUnix}:F> • <t:${updated.startAtUnix}:R>`, updated.description].join("\n\n"))
       .addFields(
         { name: "🧙 Hosted By", value: `<@${updated.creatorId}>`, inline: true },
+        { name: "🔔 Notification", value: updated.notificationRoleId ? `<@&${updated.notificationRoleId}>` : "No role ping", inline: true },
         { name: "👥 Player Limit", value: updated.capacity ? String(updated.capacity) : "Unlimited", inline: true },
         { name: `🟢 Going (${goingUsers.length}${updated.capacity ? `/${updated.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
         { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
