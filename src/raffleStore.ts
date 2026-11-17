@@ -31,16 +31,12 @@ function toRaffleRecord(raffle: {
 }
 
 class RaffleStore {
-  /** Removes raffles that were fully announced and explicitly completed. */
+  /** Historical raffles are retained permanently; cleanup must never erase entries or winners. */
   async cleanup(): Promise<void> {
-    await prisma.raffle.deleteMany({
-      where: { ended: true }
-    });
+    // Intentionally non-destructive. Retained for compatibility with older callers.
   }
 
   async create(data: CreateRaffleInput): Promise<Raffle> {
-    await this.cleanup();
-
     const raffle: Raffle = {
       ...data,
       id: randomUUID(),
@@ -103,9 +99,10 @@ class RaffleStore {
     await this.cleanup();
   }
 
-  async end(raffleId: string): Promise<void> {
-    await prisma.raffle.deleteMany({
-      where: { id: raffleId }
+  async end(raffleId: string, winnerId?: string | null): Promise<void> {
+    await prisma.raffle.updateMany({
+      where: { id: raffleId },
+      data: { ended: true, ...(winnerId !== undefined ? { winnerId } : {}) }
     });
   }
 
