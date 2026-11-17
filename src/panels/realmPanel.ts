@@ -376,6 +376,28 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     const event = await cancelCommunityEvent(section.slice("community:cancel:".length), interaction.guild!.id, interaction.user.id);
     await showMyCommunityEvents(interaction as ButtonInteraction, event ? "✖ Event cancelled." : "❌ That event could not be cancelled.");
   }
+  else if (section.startsWith("community:announcement-rsvp:")) {
+    const eventId = section.slice("community:announcement-rsvp:".length);
+    const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
+    if (!updated) {
+      await interaction.reply({ content: "❌ This community event is no longer open for RSVP.", flags: MessageFlags.Ephemeral });
+    } else {
+      const goingUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "going").map(([id]) => id);
+      const waitlistUsers = Object.entries(updated.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
+      const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
+      const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${updated.title}`)
+        .setDescription([`🗺️ **Map / Location:** ${updated.mapLocation}`, `🏷️ **Category:** ${updated.category}`, `🗓️ **Start:** <t:${updated.startAtUnix}:F> • <t:${updated.startAtUnix}:R>`, updated.description].join("\n\n"))
+        .addFields(
+          { name: "🧙 Hosted By", value: `<@${updated.creatorId}>`, inline: true },
+          { name: "👥 Player Limit", value: updated.capacity ? String(updated.capacity) : "Unlimited", inline: true },
+          { name: `🟢 Going (${goingUsers.length}${updated.capacity ? `/${updated.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
+          { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
+        ).setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
+      const state = updated.rsvps[interaction.user.id];
+      await interaction.update({ embeds: [embed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", REALM_PREFIX + ":community:announcement-rsvp:" + eventId, state ? ButtonStyle.Secondary : ButtonStyle.Success))] });
+      return true;
+    }
+  }
   else if (section.startsWith("community:rsvp:")) {
     const eventId = section.slice("community:rsvp:".length);
     const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
