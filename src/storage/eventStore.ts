@@ -115,6 +115,14 @@ class EventStore {
     record.rsvps[userId] = state;
     return this.save(record);
   }
+
+  async removeRsvp(eventId: string, userId: string): Promise<EventRecord | undefined> {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event || isEndedRsvps(event.rsvps)) return undefined;
+    const record = toEventRecord(event);
+    delete record.rsvps[userId];
+    return this.save(record);
+  }
 }
 
 export const eventStore = new EventStore();
