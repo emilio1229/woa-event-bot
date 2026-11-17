@@ -27,7 +27,7 @@ export function startAutoEndLoop(client: BotClient): void {
       const raffles = await raffleStore.all();
 
       for (const raffle of raffles) {
-        if (Date.now() < raffle.endsAt) {
+        if (raffle.ended || Date.now() < raffle.endsAt) {
           continue;
         }
 
@@ -130,8 +130,8 @@ export function startAutoEndLoop(client: BotClient): void {
 
         if (announcementSent) {
           try {
-            await raffleStore.end(raffle.id);
-            console.log(`[autoEndManager] raffle ${raffle.id} removed from store`);
+            await raffleStore.end(raffle.id, winnerId);
+            console.log(`[autoEndManager] raffle ${raffle.id} archived with entries and winner preserved`);
           } catch (err) {
             console.error("[autoEndManager] failed to remove raffle from store:", err);
           }
