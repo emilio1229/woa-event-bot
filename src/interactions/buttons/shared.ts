@@ -61,12 +61,15 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
     return;
   }
 
+  if (parsed.privateControl) await interaction.deferUpdate();
+  else await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
   const event = await getEventById(parsed.eventId);
   const parts = interaction.customId.split(":");
   const channelId = parsed.privateControl ? parts[4] : interaction.channelId;
   const messageId = parsed.privateControl ? parts[5] : interaction.message.id;
   if (!event || interaction.guildId !== event.guildId || !channelId || !messageId) {
-    await interaction.reply({ content: "❌ This gathering is no longer inscribed in the ledger.", flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: "❌ This gathering is no longer inscribed in the ledger.", components: [] });
     return;
   }
 
@@ -75,7 +78,7 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
     ? await removeEventRsvp(parsed.eventId, interaction.user.id)
     : await updateEventRsvp(parsed.eventId, interaction.user.id, "going");
   if (!updatedEvent) {
-    await interaction.reply({ content: "❌ This gathering is no longer open for RSVP.", flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: "❌ This gathering is no longer open for RSVP.", components: [] });
     return;
   }
 
@@ -85,8 +88,7 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
     ? `🜂 You're marked **Going** for **${updatedEvent.title}**. Only you can see the control below.`
     : `You have left **${updatedEvent.title}**. You can rejoin whenever you're ready.`;
   const components = [personalRsvpButton(updatedEvent.id, event.channelId, event.messageId ?? messageId, isGoing)];
-  if (parsed.privateControl) await interaction.update({ content, components });
-  else await interaction.reply({ content, components, flags: MessageFlags.Ephemeral });
+  await interaction.editReply({ content, components });
 }
 
 export function getEventFromButtonMessage(customId: string) {
