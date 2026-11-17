@@ -6,7 +6,7 @@ import {
   type ButtonInteraction
 } from "discord.js";
 import { getEventById, updateEventRsvp, removeEventRsvp } from "../../services/eventService.js";
-import { buildEventEmbed, buildEventRsvpConfirmation } from "../../ui/eventEmbed.js";
+import { buildEventEmbed } from "../../ui/eventEmbed.js";
 
 const RSVP_BUTTON_PREFIX = "event:rsvp";
 
@@ -58,7 +58,7 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
   const parts = interaction.customId.split(":");
   const channelId = parsed.privateControl ? parts[4] : interaction.channelId;
   const messageId = parsed.privateControl ? parts[5] : interaction.message.id;
-  if (!event || interaction.guildId !== event.guildId || !channelId || !messageId || (!parsed.privateControl && interaction.message.id !== event.messageId)) {
+  if (!event || interaction.guildId !== event.guildId || !channelId || !messageId) {
     await interaction.reply({ content: "❌ This gathering is no longer inscribed in the ledger.", flags: MessageFlags.Ephemeral });
     return;
   }
@@ -73,7 +73,7 @@ export async function handleEventRsvpButton(interaction: ButtonInteraction): Pro
   }
 
   const isGoing = updatedEvent.rsvps[interaction.user.id] === "going";
-  await refreshPublicEventMessage(interaction, updatedEvent, event.channelId, event.messageId ?? messageId);
+  await refreshPublicEventMessage(interaction, updatedEvent, channelId, messageId);
   const content = isGoing
     ? `🜂 You're marked **Going** for **${updatedEvent.title}**. Only you can see the control below.`
     : `You have left **${updatedEvent.title}**. You can rejoin whenever you're ready.`;
