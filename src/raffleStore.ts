@@ -17,6 +17,7 @@ function toRaffleRecord(raffle: {
   ended: boolean;
   entries: string[];
   boundUsers: string[];
+  hostId: string | null;
 }): Raffle {
   return {
     ...raffle,
@@ -26,7 +27,8 @@ function toRaffleRecord(raffle: {
     ritualType: raffle.ritualType ?? undefined,
     winnerId: raffle.winnerId ?? undefined,
     messageId: raffle.messageId ?? undefined,
-    boundUsers: raffle.boundUsers.length > 0 ? raffle.boundUsers : []
+    boundUsers: raffle.boundUsers.length > 0 ? raffle.boundUsers : [],
+    hostId: raffle.hostId ?? null
   };
 }
 
@@ -53,7 +55,8 @@ class RaffleStore {
         invocationText: raffle.invocationText ?? null,
         ritualType: raffle.ritualType ?? null,
         winnerId: raffle.winnerId ?? null,
-        boundUsers: raffle.boundUsers ?? []
+        boundUsers: raffle.boundUsers ?? [],
+        hostId: raffle.hostId ?? null
       }
     });
 
@@ -71,7 +74,8 @@ class RaffleStore {
         invocationText: updated.invocationText ?? null,
         ritualType: updated.ritualType ?? null,
         winnerId: updated.winnerId ?? null,
-        boundUsers: updated.boundUsers ?? []
+        boundUsers: updated.boundUsers ?? [],
+        hostId: updated.hostId ?? null
       },
       update: {
         guildId: updated.guildId,
@@ -86,7 +90,8 @@ class RaffleStore {
         winnerId: updated.winnerId ?? null,
         ended: updated.ended,
         entries: updated.entries,
-        boundUsers: updated.boundUsers ?? []
+        boundUsers: updated.boundUsers ?? [],
+        hostId: updated.hostId ?? null
       }
     });
   }
