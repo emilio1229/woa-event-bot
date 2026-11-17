@@ -203,18 +203,22 @@ async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteract
         const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
         const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
         const embed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
-          .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\n\n"))
+          .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F>`, event.description].join("\n\n"))
           .addFields(
+            { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
+            { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
             { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
+            { name: "🔔 Notification", value: event.notificationRoleId ? `<@&${event.notificationRoleId}>` : "No role ping", inline: true },
+            { name: "🔔 Notification", value: event.notificationRoleId ? `<@&${event.notificationRoleId}>` : "No role ping", inline: true },
             { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
             { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
             { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
           ).setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
         await channel.send({
-          content: `🌿 **Community gathering reminder!** Hosted by <@${event.creatorId}>.`,
+          content: event.notificationRoleId ? `<@&${event.notificationRoleId}>` : undefined,
           embeds: [embed],
           components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", "woa:realm:community:announcement-rsvp:" + event.id, ButtonStyle.Success))],
-          allowedMentions: { parse: [], users: [event.creatorId] }
+          allowedMentions: { parse: [], roles: event.notificationRoleId ? [event.notificationRoleId] : [], users: [event.creatorId] }
         });
         posted += 1;
       }
@@ -299,7 +303,7 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
       const waitlistUsers = Object.entries(event.rsvps).filter(([, state]) => state === "waitlist").map(([userId]) => userId);
       const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
       const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
-        .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F> • <t:${event.startAtUnix}:R>`, event.description].join("\n\n"))
+        .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F>`, event.description].join("\n\n"))
         .addFields(
           { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
           { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
@@ -308,7 +312,7 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
         )
         .setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
       const rsvpButton = new ButtonBuilder().setCustomId(`woa:realm:community:announcement-rsvp:${event.id}`).setLabel("🌿 RSVP / Leave Event").setStyle(ButtonStyle.Success);
-      await channel.send({ content: [roleId ? `<@&${roleId}>` : null, `🌿 **A community member is hosting a WoA gathering!** Hosted by <@${event.creatorId}>.`].filter(Boolean).join("\n"), embeds: [eventEmbed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(rsvpButton)], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [event.creatorId] } });
+      await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(rsvpButton)], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [event.creatorId] } });
       announcementSent = true;
     }
   } catch (error) {
