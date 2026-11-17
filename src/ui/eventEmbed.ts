@@ -19,7 +19,7 @@ export function buildEventEmbed(event: EventRecord): EmbedBuilder {
       { name: "🕰️ Start Time", value: formatDiscordTimestamp(event.startAtUnix, "F"), inline: true },
       { name: "⏳ Countdown", value: formatDiscordTimestamp(event.startAtUnix, "R"), inline: true },
       { name: `🟢 Going (${rsvpSummary.going})`, value: goingList, inline: false },
-      { name: "📜 Notes", value: event.notes ?? "No additional runes were inscribed for this gathering.", inline: false }
+      { name: "📜 Notes", value: (event.notes ?? "").replace(/^\[ENDED\]\s*/, "") || "No additional runes were inscribed for this gathering.", inline: false }
     );
 }
 
