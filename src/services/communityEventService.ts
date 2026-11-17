@@ -76,25 +76,39 @@ export async function reviewCommunityEvent(id: string, guildId: string, actorId:
 }
 
 export async function rsvpCommunityEvent(id: string, guildId: string, userId: string) {
-  const current = await prisma.communityEvent.findUnique({ where: { id } });
-  if (!current || current.guildId !== guildId || current.status !== "approved" || current.startAtUnix <= Math.floor(Date.now() / 1000)) return undefined;
-  const event = normalize(current);
-  const rsvps = { ...event.rsvps };
-  const audit = [...event.audit];
-  if (rsvps[userId]) {
-    delete rsvps[userId];
-    if (event.capacity > 0 && Object.values(rsvps).filter(v => v === "going").length < event.capacity) {
-      const next = Object.keys(rsvps).find(user => rsvps[user] === "waitlist");
-      if (next) rsvps[next] = "going";
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await prisma.$transaction(async tx => {
+        const current = await tx.communityEvent.findUnique({ where: { id } });
+        if (!current || current.guildId !== guildId || current.status !== "approved" || current.startAtUnix <= Math.floor(Date.now() / 1000)) return undefined;
+        const event = normalize(current);
+        const rsvps = { ...event.rsvps };
+        const audit = [...event.audit];
+        if (rsvps[userId]) {
+          delete rsvps[userId];
+          if (event.capacity > 0 && Object.values(rsvps).filter(v => v === "going").length < event.capacity) {
+            const next = Object.keys(rsvps).find(user => rsvps[user] === "waitlist");
+            if (next) rsvps[next] = "going";
+          }
+          audit.push(auditEntry("rsvp_left", userId));
+        } else {
+          const going = Object.values(rsvps).filter(v => v === "going").length;
+          rsvps[userId] = event.capacity > 0 && going >= event.capacity ? "waitlist" : "going";
+          audit.push(auditEntry(rsvps[userId] === "going" ? "rsvp_going" : "rsvp_waitlist", userId));
+        }
+        const updated = await tx.communityEvent.update({
+          where: { id },
+          data: { rsvps: rsvps as Prisma.InputJsonValue, audit: audit as Prisma.InputJsonValue }
+        });
+        return normalize(updated);
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "";
+      if (code === "P2034" && attempt < 4) continue;
+      throw error;
     }
-    audit.push(auditEntry("rsvp_left", userId));
-  } else {
-    const going = Object.values(rsvps).filter(v => v === "going").length;
-    rsvps[userId] = event.capacity > 0 && going >= event.capacity ? "waitlist" : "going";
-    audit.push(auditEntry(rsvps[userId] === "going" ? "rsvp_going" : "rsvp_waitlist", userId));
   }
-  const updated = await prisma.communityEvent.update({ where: { id }, data: { rsvps: rsvps as Prisma.InputJsonValue, audit: audit as Prisma.InputJsonValue } });
-  return normalize(updated);
+  throw new Error("Could not safely update community RSVPs after concurrent changes.");
 }
 
 
