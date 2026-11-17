@@ -191,6 +191,18 @@ function postingChannelMenu(kind: PostingDraft["kind"]) {
 }
 
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
+  if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community-raffles:channel:`)) {
+    const raffleId = interaction.customId.slice(`${COUNCIL_PREFIX}:community-raffles:channel:`.length);
+    const channelId = interaction.values[0];
+    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+    if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) { await interaction.update({ content: "❌ That channel cannot receive the giveaway announcement.", embeds: [], components: [backButtonRow()] }); return; }
+    const submission = await getCommunityRaffle(raffleId);
+    if (!submission || submission.guildId !== interaction.guildId || submission.status !== "pending" || submission.creatorId === interaction.user.id) { await interaction.update({ content: "❌ That submission is no longer awaiting your review, or you cannot approve your own.", embeds: [], components: [backButtonRow()] }); return; }
+    communityRaffleApprovalDrafts.set(interaction.user.id, { raffleId, channelId });
+    const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:community-raffles:role:${raffleId}`).setPlaceholder("Choose an optional notification role").setMinValues(1).setMaxValues(1);
+    await interaction.update({ content: "📍 **Announcement channel:** <#" + channelId + ">\\n\\n🔔 Select the role to tag, or approve without a role ping.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community-raffles:no-role:${raffleId}`, ButtonStyle.Success), button("◀ Back to review", `${COUNCIL_PREFIX}:community-raffles:review`, ButtonStyle.Secondary))] });
+    return;
+  }
   if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:events:repost-channel:`)) {
     const [, , , , kind, eventId] = interaction.customId.split(":");
     if ((kind !== "official" && kind !== "community") || !eventId) {
