@@ -116,6 +116,7 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
       const entryCount = Number.parseInt(entryCountRaw, 10);
       const raffle = await raffleStore.getById(raffleId);
       if (!raffle || raffle.guildId !== guild.id || raffle.ended || Date.now() >= raffle.endsAt) { await interaction.editReply({ content: "❌ That giveaway is not active right now." }); return; }
+      if (raffle.hostId === interaction.user.id) { await interaction.editReply({ content: "⛔ You cannot redeem Sigils for a giveaway you are hosting." }); return; }
       if (!(await isUserEligibleForRaffle(guild, raffle, interaction.user.id))) {
         await interaction.editReply({ content: `⛔ You cannot redeem Sigils for **${raffle.name}**. Only members with <@&${raffle.tagRole}> may enter.`, allowedMentions: { parse: [] } });
         return;
