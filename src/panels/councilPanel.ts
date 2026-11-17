@@ -46,6 +46,8 @@ type BountyDraft = { guildId: string; channelId: string; roleId: string; dinos: 
 type PostingDraft = { kind: "event" | "raffle" | "bounty"; channelId: string; roleId: string | null };
 const bountyDrafts = new Map<string, BountyDraft>();
 const postingDrafts = new Map<string, PostingDraft>();
+// Per-admin, per-submission destination chosen before a community event is approved.
+const communityApprovalDrafts = new Map<string, { eventId: string; channelId: string }>();
 
 type CouncilUpdate = Exclude<NonNullable<Parameters<ButtonInteraction["update"]>[0]>, string>;
 
@@ -118,13 +120,16 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "community:review") await showCommunityReview(interaction);
   else if (section.startsWith("community:approve:")) {
     const eventId = section.slice("community:approve:".length);
-    const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:community:approve-role:${eventId}`).setPlaceholder("Choose a role to notify").setMinValues(1).setMaxValues(1);
-    await interaction.update({ content: "🔔 **Choose an optional role to tag** when this event is approved. Selecting a role approves the event and sends one announcement.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community:approve-no-tag:${eventId}`, ButtonStyle.Success), button("◀ Back to Events", `${COUNCIL_PREFIX}:community:review`, ButtonStyle.Secondary))] });
+    const channelMenu = new ChannelSelectMenuBuilder()
+      .setCustomId(`${COUNCIL_PREFIX}:community:approve-channel:${eventId}`)
+      .setPlaceholder("Choose the announcement channel")
+      .setMinValues(1).setMaxValues(1)
+      .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement);
+    await interaction.update({ content: "📣 **Choose where this approved community event should be announced.**\n\nThe event will still appear in the public Realm Events panel. You can choose an additional channel so more members see it.", embeds: [], components: [new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channelMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Back to Events", `${COUNCIL_PREFIX}:community:review`, ButtonStyle.Secondary))] });
   }
   else if (section.startsWith("community:approve-no-tag:")) {
     const eventId = section.slice("community:approve-no-tag:".length);
-    const reviewed = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, "approved", undefined, null);
-    await showEvents(interaction, reviewed ? "✅ Community event approved without a role tag and added to Realm Events." : "That submission was already reviewed or no longer exists.");
+    await completeCommunityApproval(interaction, eventId, null);
   }
   else if (section.startsWith("community:changes:") || section.startsWith("community:reject:")) {
     const parts = section.split(":");
@@ -173,6 +178,22 @@ function postingChannelMenu(kind: PostingDraft["kind"]) {
 }
 
 async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteraction) {
+  if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community:approve-channel:`)) {
+    const eventId = interaction.customId.slice(`${COUNCIL_PREFIX}:community:approve-channel:`.length);
+    const channelId = interaction.values[0];
+    const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+    if (!channel || !channel.isSendable() || !("guildId" in channel) || channel.guildId !== interaction.guildId) {
+      await interaction.update({ content: "❌ That channel cannot receive announcements from the bot. Choose a text or announcement channel where the bot has permission to send messages.", embeds: [], components: [backButtonRow()] });
+      return;
+    }
+    communityApprovalDrafts.set(interaction.user.id, { eventId, channelId });
+    const roleMenu = new RoleSelectMenuBuilder()
+      .setCustomId(`${COUNCIL_PREFIX}:community:approve-role:${eventId}`)
+      .setPlaceholder("Choose an optional role to notify")
+      .setMinValues(1).setMaxValues(1);
+    await interaction.update({ content: `📍 **Announcement channel:** <#${channelId}>\n\n🔔 Choose a Discord role to tag, or approve without a role mention.`, embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community:approve-no-tag:${eventId}`, ButtonStyle.Success), button("◀ Back to Events", `${COUNCIL_PREFIX}:community:review`, ButtonStyle.Secondary))] });
+    return;
+  }
   if (interaction.customId === `${COUNCIL_PREFIX}:cleanup:channel`) {
     const channelId = interaction.values[0];
     await interaction.update({ embeds: [new EmbedBuilder().setColor(0x4B0082).setTitle("🧹 CHANNEL CLEANUP").setDescription(`Selected channel: <#${channelId}>\n\nThis cleanup can **only delete messages authored by WoA-Event-BOT**.\n\n🔒 **Nothing in the database is deleted or changed.**`)], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🧹 Clean Bot Messages", `${COUNCIL_PREFIX}:cleanup:bot:${channelId}`, ButtonStyle.Danger), button("◀ Choose Another", `${COUNCIL_PREFIX}:cleanup`, ButtonStyle.Secondary), button("✖ Cancel", `${COUNCIL_PREFIX}:home`, ButtonStyle.Secondary))] });
@@ -209,25 +230,45 @@ async function runCleanup(interaction: ButtonInteraction, channelId: string) {
   }
 }
 
+async function completeCommunityApproval(interaction: ButtonInteraction | RoleSelectMenuInteraction, eventId: string, roleId: string | null) {
+  const draft = communityApprovalDrafts.get(interaction.user.id);
+  if (!draft || draft.eventId !== eventId) {
+    await interaction.update({ content: "❌ That approval setup expired. Please reopen the submission and choose an announcement channel.", embeds: [], components: [backButtonRow()] });
+    return;
+  }
+  const event = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, "approved", undefined, roleId);
+  communityApprovalDrafts.delete(interaction.user.id);
+  if (!event) {
+    await interaction.update({ content: "That submission was already reviewed or no longer exists.", embeds: [], components: [backButtonRow()] });
+    return;
+  }
+  let announcementSent = false;
+  try {
+    const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
+    if (channel && channel.isSendable() && "guildId" in channel && channel.guildId === interaction.guildId) {
+      const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setTitle(`🌿 ${event.title}`)
+        .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\\n\\n"))
+        .setFooter({ text: "The Wizards of Ark • Community Event" });
+      await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], allowedMentions: { parse: [], roles: roleId ? [roleId] : [] } });
+      announcementSent = true;
+    }
+  } catch (error) {
+    console.error(`Could not announce approved community event ${eventId}:`, error);
+  }
+  const destination = `<#${draft.channelId}>`;
+  const notice = announcementSent
+    ? `✅ **${event.title}** approved and announced in ${destination}${roleId ? ` with a ping for <@&${roleId}>` : " without a role ping"}. It is also available in Realm Events.`
+    : `✅ **${event.title}** approved and added to Realm Events, but the announcement could not be sent to ${destination}. Check the bot's channel permissions.`;
+  await interaction.update({ content: notice, embeds: [], components: [backButtonRow()], allowedMentions: { parse: [], roles: [] } });
+}
+
 async function handleCouncilRoleSelect(interaction: RoleSelectMenuInteraction) {
   const roleId = interaction.values[0] ?? null;
   if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:community:approve-role:`)) {
     const eventId = interaction.customId.slice(`${COUNCIL_PREFIX}:community:approve-role:`.length);
-    const event = await reviewCommunityEvent(eventId, interaction.guildId ?? "", interaction.user.id, "approved", undefined, roleId);
-    if (!event) { await interaction.update({ content: "That submission was already reviewed or no longer exists.", embeds: [], components: [backButtonRow()] }); return; }
-    let announcementSent = false;
-    try {
-      const channel = interaction.channel;
-      if (channel?.isSendable()) {
-        const role = interaction.guild?.roles.cache.get(roleId);
-        const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setTitle(`🌿 ${event.title}`)
-          .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\n\n"));
-        await channel.send({ content: `<@&${roleId}>`, embeds: [eventEmbed], allowedMentions: { roles: [roleId] } });
-        announcementSent = true;
-      }
-      if (!announcementSent) console.warn(`Community event ${eventId} approved with role ${roleId}, but its review channel cannot send messages.`);
-    } catch (error) { console.error(`Could not announce approved community event ${eventId}:`, error); }
-    await interaction.update({ content: announcementSent ? `✅ Event approved and posted with a notification for ${interaction.guild?.roles.cache.get(roleId)?.name ?? "the selected role"}.` : "✅ Event approved and added to Realm Events. The role announcement could not be sent in this channel.", embeds: [], components: [backButtonRow()] });
+    const draft = communityApprovalDrafts.get(interaction.user.id);
+    if (!draft || draft.eventId !== eventId) { await interaction.update({ content: "❌ That approval setup expired. Please reopen the submission and choose an announcement channel.", embeds: [], components: [backButtonRow()] }); return; }
+    await completeCommunityApproval(interaction, eventId, roleId);
     return;
   }
   if (interaction.customId === `${COUNCIL_PREFIX}:event:role`) {
