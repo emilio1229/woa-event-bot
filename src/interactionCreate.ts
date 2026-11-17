@@ -71,7 +71,7 @@ async function handleEndSelection(interaction: StringSelectMenuInteraction): Pro
         await channel.send({ embeds: [grandEmbed], files: [attachment], allowedMentions: { users: [winnerId] } });
       }
     }
-    await raffleStore.end(raffle.id);
+    await raffleStore.end(raffle.id, winnerId);
     try { await interaction.editReply({ content: "🔮 The ritual has been ended.", components: [] }); } catch {}
   } catch (error) { console.error("select_end_raffle error:", error); try { await interaction.editReply({ content: "An error occurred while ending the ritual.", components: [] }); } catch {} }
 }
