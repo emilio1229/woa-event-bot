@@ -689,8 +689,8 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
     await interaction.update({ content: "❌ That repost setup expired. Choose the event again.", embeds: [], components: [backButtonRow()] });
     return;
   }
-  const event = await validateRepostEvent(interaction.guildId ?? "", draft.kind, draft.eventId);
-  if (!event) {
+  const active = await validateRepostEvent(interaction.guildId ?? "", draft.kind, draft.eventId);
+  if (!active) {
     repostDrafts.delete(interaction.user.id);
     await interaction.update({ content: "❌ That event is no longer active or available to repost. Nothing was posted.", embeds: [], components: [backButtonRow()] });
     return;
@@ -702,22 +702,32 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
     return;
   }
   try {
+    let postedTitle = active.title;
     if (draft.kind === "official") {
+      const officialEvent = await getEventById(draft.eventId);
+      if (!officialEvent || officialEvent.guildId !== interaction.guildId || officialEvent.startAtUnix <= Math.floor(Date.now() / 1000) || officialEvent.notes?.startsWith("[ENDED]")) {
+        throw new Error("The official event is no longer active.");
+      }
+      postedTitle = officialEvent.title;
       await channel.send({
         content: roleId ? `<@&${roleId}>` : undefined,
-        embeds: [buildEventEmbed(event as Awaited<ReturnType<typeof getEventById>> & {})],
-        components: [buildEventRsvpButtons(event.id)],
+        embeds: [buildEventEmbed(officialEvent)],
+        components: [buildEventRsvpButtons(officialEvent.id)],
         allowedMentions: { parse: [], roles: roleId ? [roleId] : [] }
       });
     } else {
-      const communityEvent = event as NonNullable<Awaited<ReturnType<typeof getCommunityEvent>>>;
+      const communityEvent = await getCommunityEvent(draft.eventId);
+      if (!communityEvent || communityEvent.guildId !== interaction.guildId || communityEvent.status !== "approved" || communityEvent.startAtUnix <= Math.floor(Date.now() / 1000)) {
+        throw new Error("The community event is no longer active.");
+      }
+      postedTitle = communityEvent.title;
       const goingUsers = Object.entries(communityEvent.rsvps).filter(([, state]) => state === "going").map(([id]) => id);
       const waitlistUsers = Object.entries(communityEvent.rsvps).filter(([, state]) => state === "waitlist").map(([id]) => id);
       const attendeeList = (ids: string[]) => ids.length ? ids.slice(0, 15).map(id => `<@${id}>`).join(", ") + (ids.length > 15 ? ` +${ids.length - 15} more` : "") : "No one yet";
       const embed = new EmbedBuilder().setColor(0x7B2CBF)
         .setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" })
         .setTitle(`🌿 ${communityEvent.title}`)
-        .setDescription([`🗺️ **Map / Location:** ${communityEvent.mapLocation}`, `🏷️ **Category:** ${communityEvent.category}`, `🗓️ **Start:** <t:${communityEvent.startAtUnix}:F>`, communityEvent.description].join("\\n\\n"))
+        .setDescription([`🗺️ **Map / Location:** ${communityEvent.mapLocation}`, `🏷️ **Category:** ${communityEvent.category}`, `🗓️ **Start:** <t:${communityEvent.startAtUnix}:F>`, communityEvent.description].join("\n\n"))
         .addFields(
           { name: "⏳ Countdown", value: `<t:${communityEvent.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${communityEvent.creatorId}>`, inline: true },
@@ -737,21 +747,21 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
     repostDrafts.delete(interaction.user.id);
     await interaction.update({
       embeds: [new EmbedBuilder().setColor(0x7B2CBF).setTitle("📣 EVENT REPOSTED")
-        .setDescription(`Successfully reposted **${event.title}** in <#${draft.channelId}>.${roleId ? `\n\n🔔 Notification sent to <@&${roleId}>.` : "\\n\\nNo role was pinged."}\n\nThe original event, announcement, and RSVP records were not changed.`)],
+        .setDescription(`Successfully reposted **${postedTitle}** in <#${draft.channelId}>.${roleId ? `\n\n🔔 Notification sent to <@&${roleId}>.` : "\n\nNo role was pinged."}\n\nThe original event, announcement, and RSVP records were not changed.`)],
       components: [backButtonRow()],
       content: null,
       allowedMentions: { parse: [], roles: [] }
     });
   } catch (error) {
     console.error("Single event repost failed:", error);
+    repostDrafts.delete(interaction.user.id);
     await interaction.update({
-      content: `❌ **${event.title}** could not be reposted. No original event data was changed. ${error instanceof Error ? error.message : ""}`,
+      content: `❌ **${active.title}** could not be reposted. No original event data was changed. ${error instanceof Error ? error.message : ""}`,
       embeds: [],
       components: [backButtonRow()]
     });
   }
 }
-
 async function showEvents(interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction, notice?: string) {
   const events = await getUpcomingEvents(interaction.guildId ?? "", 10);
   const pending = await listPendingCommunityEvents(interaction.guildId ?? "", 3);
