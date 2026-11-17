@@ -294,14 +294,15 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
         .addFields(
           { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
-          { name: "🔔 Notification", value: roleId ? (interaction.guild?.roles.cache.get(roleId)?.name ?? "Selected role") : "No role ping", inline: true },
+          { name: "🔔 Notification", value: roleId ? `<@&${roleId}>` : "No role ping", inline: true },
           { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
           { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
           { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
         )
         .setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
       const rsvpButton = new ButtonBuilder().setCustomId(`woa:realm:community:announcement-rsvp:${event.id}`).setLabel("🌿 RSVP / Leave Event").setStyle(ButtonStyle.Success);
-      await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(rsvpButton)], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [event.creatorId] } });
+      const announcement = await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(rsvpButton)], allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [event.creatorId] } });
+      if (roleId) await announcement.edit({ content: null, allowedMentions: { parse: [], roles: [] } });
       announcementSent = true;
     }
   } catch (error) {
@@ -709,14 +710,16 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
         throw new Error("The official event is no longer active.");
       }
       postedTitle = officialEvent.title;
-      await channel.send({
-        // Discord only triggers role notifications from message content, not
-        // from embed fields. Keep the single actual ping here.
+      const announcement = await channel.send({
+        // Discord only triggers role notifications from message content.
+        // The mention is removed immediately after dispatch so it is only
+        // visibly displayed in the embed.
         content: roleId ? `<@&${roleId}>` : undefined,
-        embeds: [buildEventEmbed(officialEvent)],
+        embeds: [buildEventEmbed(officialEvent, roleId)],
         components: [buildEventRsvpButtons(officialEvent.id)],
         allowedMentions: { parse: [], roles: roleId ? [roleId] : [] }
       });
+      if (roleId) await announcement.edit({ content: null, allowedMentions: { parse: [], roles: [] } });
     } else {
       const communityEvent = await getCommunityEvent(draft.eventId);
       if (!communityEvent || communityEvent.guildId !== interaction.guildId || communityEvent.status !== "approved" || communityEvent.startAtUnix <= Math.floor(Date.now() / 1000)) {
@@ -733,18 +736,19 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
         .addFields(
           { name: "⏳ Countdown", value: `<t:${communityEvent.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${communityEvent.creatorId}>`, inline: true },
-          { name: "🔔 Notification", value: roleId ? (interaction.guild?.roles.cache.get(roleId)?.name ?? "Selected role") : "No role ping", inline: true },
+          { name: "🔔 Notification", value: roleId ? `<@&${roleId}>` : "No role ping", inline: true },
           { name: "👥 Player Limit", value: communityEvent.capacity ? String(communityEvent.capacity) : "Unlimited", inline: true },
           { name: `🟢 Going (${goingUsers.length}${communityEvent.capacity ? `/${communityEvent.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
           { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
         )
         .setFooter({ text: "The Wizards of Ark • Community Event • RSVP below" });
-      await channel.send({
+      const announcement = await channel.send({
         content: roleId ? `<@&${roleId}>` : undefined,
         embeds: [embed],
         components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 RSVP / Leave Event", `woa:realm:community:announcement-rsvp:${communityEvent.id}`, ButtonStyle.Success))],
         allowedMentions: { parse: [], roles: roleId ? [roleId] : [], users: [communityEvent.creatorId] }
       });
+      if (roleId) await announcement.edit({ content: null, allowedMentions: { parse: [], roles: [] } });
     }
     repostDrafts.delete(interaction.user.id);
     await interaction.update({
