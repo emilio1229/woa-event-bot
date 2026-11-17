@@ -35,7 +35,7 @@ export async function reviewCommunityRaffle(id: string, guildId: string, reviewe
 export async function approveCommunityRaffle(id: string, guildId: string, reviewerId: string, channelId: string, roleId: string | null) {
   return prisma.$transaction(async tx => {
     const submission = await tx.communityRaffleSubmission.findUnique({ where: { id } });
-    if (!submission || submission.guildId !== guildId || submission.status !== "pending" || submission.creatorId === reviewerId) return null;
+    if (!submission || submission.guildId !== guildId || submission.status !== "pending") return null;
     if (submission.raffleId) return null;
     const raffleId = randomUUID();
     await tx.raffle.create({ data: { id: raffleId, guildId, channelId, name: submission.name, prize: submission.prize, endsAt: submission.endsAt, tagRole: roleId, invocationText: "Ancient sigils awaken, humming softly in the astral dark.", ritualType: "soul-binding", winnerId: null, ended: false, entries: [], boundUsers: [], hostId: submission.creatorId } });
