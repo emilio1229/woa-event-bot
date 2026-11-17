@@ -29,6 +29,10 @@ export async function updateEventRsvp(
   return eventStore.updateRsvp(eventId, userId, state);
 }
 
+export async function removeEventRsvp(eventId: string, userId: string): Promise<EventRecord | undefined> {
+  return eventStore.removeRsvp(eventId, userId);
+}
+
 export async function endEvent(eventId: string): Promise<EventRecord | undefined> {
   return eventStore.end(eventId);
 }
