@@ -27,10 +27,13 @@ import { buildEventEmbed } from "../ui/eventEmbed.js";
 import { buildEventRsvpButtons } from "../interactions/buttons/shared.js";
 import { parseTime } from "../utils/timeParser.js";
 import { cancelCommunityEvent, createCommunityEvent, getCommunityEvent, listApprovedCommunityEvents, listMyCommunityEvents, rsvpCommunityEvent, updateCommunityEventSubmission } from "../services/communityEventService.js";
+import { createCommunityRaffle, listMyCommunityRaffles, getCommunityRaffle, updateCommunityRaffle, cancelCommunityRaffle } from "../services/communityRaffleService.js";
 
 export const REALM_PREFIX = "woa:realm";
 
 type CommunityEventDraft = { timezone: string; editId?: string };
+type CommunityRaffleDraft = { editId?: string };
+const communityRaffleDrafts = new Map<string, CommunityRaffleDraft>();
 const communityEventDrafts = new Map<string, CommunityEventDraft>();
 const COMMUNITY_TIMEZONES = [
   ["Arizona / Phoenix", "America/Phoenix"], ["Pacific Time", "America/Los_Angeles"],
@@ -88,7 +91,7 @@ async function showRaffles(interaction: ButtonInteraction) {
     embed.setDescription(raffles.slice(0, 10).map((raffle, index) => `**${index + 1}. ${raffle.name || "Unnamed Giveaway"}**\n🎁 ${raffle.prize}\n👥 ${raffle.entries.length} entries • Ends <t:${Math.floor(raffle.endsAt / 1000)}:R>`).join("\n\n"));
     for (const raffle of raffles.slice(0, 5)) if (raffle.messageId) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setLabel(`🎟️ Open ${raffle.name || "Giveaway"}`.slice(0, 80)).setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${raffle.guildId}/${raffle.channelId}/${raffle.messageId}`)));
   }
-  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Host a Giveaway", `${REALM_PREFIX}:community-raffle:create`), button("📋 My Giveaways", `${REALM_PREFIX}:community-raffle:mine`, ButtonStyle.Secondary), button("◀ Realm", `${REALM_PREFIX}:home`, ButtonStyle.Secondary)));
   await interaction.update({ embeds: [embed], components });
 }
 
@@ -160,6 +163,23 @@ async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: st
   }
   components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("➕ Create Event", REALM_PREFIX + ":community:create"), button("◀ Events", REALM_PREFIX + ":events", ButtonStyle.Secondary)));
   await interaction.update({ embeds: [embed], components });
+}
+
+function buildCommunityRaffleModal(existing?: Awaited<ReturnType<typeof getCommunityRaffle>>) {
+  const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community-raffle:submit" + (existing ? ":" + existing.id : "")).setTitle(existing ? "Edit Giveaway Submission" : "Host a WoA Giveaway");
+  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true, value?: string) => { const input = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(100); if (value) input.setValue(value.slice(0, 100)); return new ActionRowBuilder<TextInputBuilder>().addComponents(input); };
+  modal.addComponents(field("name", "Giveaway name", "WoA Community Giveaway", TextInputStyle.Short, true, existing?.name), field("prize", "Prize", "Describe the prize clearly", TextInputStyle.Paragraph, true, existing?.prize), field("ends", "End time (UTC)", "e.g. in 2 hours or 2026-11-18 19:00", TextInputStyle.Short, true, existing ? new Date(Number(existing.endsAt)).toISOString().slice(0,16).replace("T"," ") : undefined));
+  return modal;
+}
+async function showMyCommunityRaffles(interaction: ButtonInteraction, notice?: string) {
+  const submissions = await listMyCommunityRaffles(interaction.guild!.id, interaction.user.id);
+  const status = (item: {status:string;reviewNote:string|null}) => item.status === "pending" ? "🕒 Awaiting Council approval" : item.status === "changes_requested" ? "📝 Changes requested" + (item.reviewNote ? ": " + item.reviewNote : "") : item.status === "approved" ? "✅ Approved and published" : item.status === "rejected" ? "❌ Rejected" + (item.reviewNote ? ": " + item.reviewNote : "") : "✖ Cancelled";
+  const lines = submissions.map(item => "**" + item.name + "** — " + status(item) + "\n🎁 " + item.prize + "\n⏳ Ends <t:" + Math.floor(Number(item.endsAt)/1000) + ":F>");
+  const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("📋 MY GIVEAWAY SUBMISSIONS").setDescription([notice, lines.length ? lines.join("\n\n") : "You have not submitted a giveaway yet."].filter(Boolean).join("\n\n").slice(0,4000));
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  for (const item of submissions.slice(0, 4)) if (item.status === "pending" || item.status === "changes_requested") rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("✏️ Edit", REALM_PREFIX + ":community-raffle:edit:" + item.id, ButtonStyle.Secondary), button("✖ Cancel", REALM_PREFIX + ":community-raffle:cancel:" + item.id, ButtonStyle.Danger)));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🎁 Submit Giveaway", REALM_PREFIX + ":community-raffle:create"), button("◀ Raffles", REALM_PREFIX + ":raffles", ButtonStyle.Secondary)));
+  await interaction.update({ embeds:[embed], components:rows });
 }
 
 function buildCommunityEventModal(timezone: string, existing?: Awaited<ReturnType<typeof getCommunityEvent>>) {
@@ -335,6 +355,10 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
   if (!customId.startsWith(REALM_PREFIX)) return false;
   const section = customId.slice(`${REALM_PREFIX}:`.length);
   if (section === "home") await showHome(interaction as ButtonInteraction);
+  else if (section === "community-raffle:create") await interaction.showModal(buildCommunityRaffleModal());
+  else if (section === "community-raffle:mine") await showMyCommunityRaffles(interaction as ButtonInteraction);
+  else if (section.startsWith("community-raffle:edit:")) { const item = await getCommunityRaffle(section.slice("community-raffle:edit:".length)); if (!item || item.guildId !== interaction.guild!.id || item.creatorId !== interaction.user.id || !["pending","changes_requested"].includes(item.status)) await showMyCommunityRaffles(interaction as ButtonInteraction, "❌ That submission cannot be edited."); else await interaction.showModal(buildCommunityRaffleModal(item)); }
+  else if (section.startsWith("community-raffle:cancel:")) { const ok = await cancelCommunityRaffle(section.slice("community-raffle:cancel:".length), interaction.guild!.id, interaction.user.id); await showMyCommunityRaffles(interaction as ButtonInteraction, ok ? "✖ Submission cancelled." : "❌ That submission could not be cancelled."); }
   else if (section === "raffles") await showRaffles(interaction as ButtonInteraction);
   else if (section === "bounties") await showBounties(interaction as ButtonInteraction);
   else if (section === "events") await showEvents(interaction as ButtonInteraction);
