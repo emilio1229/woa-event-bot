@@ -206,9 +206,7 @@ async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteract
           .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F>`, event.description].join("\n\n"))
           .addFields(
             { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
-            { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
             { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
-            { name: "🔔 Notification", value: event.notificationRoleId ? `<@&${event.notificationRoleId}>` : "No role ping", inline: true },
             { name: "🔔 Notification", value: event.notificationRoleId ? `<@&${event.notificationRoleId}>` : "No role ping", inline: true },
             { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
             { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
@@ -305,7 +303,9 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
       const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setAuthor({ name: "✦ THE WIZARDS OF ARK • COMMUNITY GATHERING" }).setTitle(`🌿 ${event.title}`)
         .setDescription([`🗺️ **Map / Location:** ${event.mapLocation}`, `🏷️ **Category:** ${event.category}`, `🗓️ **Start:** <t:${event.startAtUnix}:F>`, event.description].join("\n\n"))
         .addFields(
+          { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
+          { name: "🔔 Notification", value: roleId ? `<@&${roleId}>` : "No role ping", inline: true },
           { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
           { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
           { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
