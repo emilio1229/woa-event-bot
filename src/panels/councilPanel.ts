@@ -294,7 +294,7 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
         .addFields(
           { name: "⏳ Countdown", value: `<t:${event.startAtUnix}:R>`, inline: true },
           { name: "🧙 Hosted By", value: `<@${event.creatorId}>`, inline: true },
-          { name: "🔔 Notification", value: roleId ? `<@&${roleId}>` : "No role ping", inline: true },
+          { name: "🔔 Notification", value: roleId ? (interaction.guild?.roles.cache.get(roleId)?.name ?? "Selected role") : "No role ping", inline: true },
           { name: "👥 Player Limit", value: event.capacity ? String(event.capacity) : "Unlimited", inline: true },
           { name: `🟢 Going (${goingUsers.length}${event.capacity ? `/${event.capacity}` : ""})`, value: attendeeList(goingUsers), inline: false },
           { name: `🕒 Waitlist (${waitlistUsers.length})`, value: attendeeList(waitlistUsers), inline: false }
@@ -710,6 +710,8 @@ async function completeSingleEventRepost(interaction: ButtonInteraction | RoleSe
       }
       postedTitle = officialEvent.title;
       await channel.send({
+        // Discord only triggers role notifications from message content, not
+        // from embed fields. Keep the single actual ping here.
         content: roleId ? `<@&${roleId}>` : undefined,
         embeds: [buildEventEmbed(officialEvent)],
         components: [buildEventRsvpButtons(officialEvent.id)],
@@ -778,16 +780,16 @@ async function showEvents(interaction: ButtonInteraction | StringSelectMenuInter
   const embed = new EmbedBuilder().setColor(0x7B2CBF).setTitle("🏆 Events & Community Review")
     .setDescription(noticeSection + reviewSection + "\n\n" + safeOfficialSection);
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
-  // Put official-event management first so it is immediately visible, even when
-  // community submissions are waiting for review.
+  // Keep the primary event controls together, and give repost its own clearly
+  // visible row so it is never squeezed out of the main Events menu.
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
     button("✨ Start Event", COUNCIL_PREFIX + ":events:start", ButtonStyle.Success),
     button("🛑 End Event", COUNCIL_PREFIX + ":events:end", ButtonStyle.Danger),
-    button("📣 Repost Active Events", COUNCIL_PREFIX + ":events:repost", ButtonStyle.Primary),
     button("🌿 Review Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Secondary),
     button("◀ Back to Council", COUNCIL_PREFIX + ":home", ButtonStyle.Secondary)
   ));
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+    button("📣 Repost Active Events", COUNCIL_PREFIX + ":events:repost", ButtonStyle.Primary),
     button("✏️ Edit an Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Secondary)
   ));
   for (const event of pending) {
