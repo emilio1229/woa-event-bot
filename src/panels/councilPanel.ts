@@ -247,7 +247,7 @@ async function completeCommunityApproval(interaction: ButtonInteraction | RoleSe
     const channel = await interaction.client.channels.fetch(draft.channelId).catch(() => null);
     if (channel && channel.isSendable() && "guildId" in channel && channel.guildId === interaction.guildId) {
       const eventEmbed = new EmbedBuilder().setColor(0x7B2CBF).setTitle(`🌿 ${event.title}`)
-        .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\\n\\n"))
+        .setDescription([`🗺️ **${event.mapLocation}** • ${event.category}`, `🗓️ <t:${event.startAtUnix}:F> • 🌎 ${event.timezone}`, event.description, event.capacity ? `👥 Capacity: ${event.capacity}` : "No RSVP capacity limit."].join("\n\n"))
         .setFooter({ text: "The Wizards of Ark • Community Event" });
       await channel.send({ content: roleId ? `<@&${roleId}>` : undefined, embeds: [eventEmbed], allowedMentions: { parse: [], roles: roleId ? [roleId] : [] } });
       announcementSent = true;
