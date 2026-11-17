@@ -105,9 +105,10 @@ class RaffleStore {
   }
 
   async end(raffleId: string, winnerId?: string | null): Promise<void> {
+    const raffle = await prisma.raffle.findUnique({ where: { id: raffleId }, select: { hostId: true } });
     await prisma.raffle.updateMany({
       where: { id: raffleId },
-      data: { ended: true, ...(winnerId !== undefined ? { winnerId } : {}) }
+      data: { ended: true, ...(winnerId !== undefined ? { winnerId } : {}), ...(raffle?.hostId && winnerId ? { deliveryStatus: "awaiting_host" } : {}) }
     });
   }
 
