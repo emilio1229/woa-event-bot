@@ -143,6 +143,7 @@ export async function handleCouncilPanel(interaction: Interaction) {
   }
   else if (section === "events:start") await startEventModal(interaction);
   else if (section === "events:edit") await startEventEditPicker(interaction);
+  else if (section === "events:end") await startEventEndPicker(interaction);
   else if (section === "event:no-role") await handleEventNoRole(interaction);
   else if (section === "events:no-role") await handleEventNoRole(interaction);
   else if (section === "bounties") await showBounties(interaction);
@@ -619,10 +620,14 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
   // Put official-event management first so it is immediately visible, even when
   // community submissions are waiting for review.
   rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
-    button("✏️ Edit an Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Primary),
-    button("✨ Start Official Event", COUNCIL_PREFIX + ":events:start"),
-    button("📣 Repost Active Events", COUNCIL_PREFIX + ":events:repost", ButtonStyle.Success),
-    backButton()
+    button("✨ Start Event", COUNCIL_PREFIX + ":events:start", ButtonStyle.Success),
+    button("🛑 End Event", COUNCIL_PREFIX + ":events:end", ButtonStyle.Danger),
+    button("📣 Repost Active Events", COUNCIL_PREFIX + ":events:repost", ButtonStyle.Primary),
+    button("🌿 Review Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Secondary),
+    button("◀ Back to Council", COUNCIL_PREFIX + ":home", ButtonStyle.Secondary)
+  ));
+  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+    button("✏️ Edit an Official Event", COUNCIL_PREFIX + ":events:edit", ButtonStyle.Secondary)
   ));
   for (const event of pending) {
     rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -631,7 +636,7 @@ async function showEvents(interaction: ButtonInteraction | ModalSubmitInteractio
       button("❌ Reject", COUNCIL_PREFIX + ":community:reject:" + event.id, ButtonStyle.Danger)
     ));
   }
-  rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button("🌿 Review Community Submissions", COUNCIL_PREFIX + ":community:review", ButtonStyle.Success)));
+
   await updateCouncilPanel(interaction, { embeds: [embed], components: rows });
 }
 
