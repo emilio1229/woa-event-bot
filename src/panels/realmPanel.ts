@@ -77,7 +77,7 @@ function buildCustomCommunityTimezoneModal() {
 async function getVisibleRaffles(interaction: ButtonInteraction) {
   const raffles = (await raffleStore.all()).filter(raffle => raffle.guildId === interaction.guild!.id && !raffle.ended && raffle.endsAt > Date.now());
   const member = await interaction.guild!.members.fetch(interaction.user.id).catch(() => null);
-  return raffles.filter(raffle => !raffle.tagRole || member?.roles.cache.has(raffle.tagRole));
+  return raffles.filter(raffle => raffle.hostId === interaction.user.id || !raffle.tagRole || member?.roles.cache.has(raffle.tagRole));
 }
 
 async function showRaffles(interaction: ButtonInteraction) {
