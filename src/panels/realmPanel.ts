@@ -167,7 +167,7 @@ async function showMyCommunityEvents(interaction: ButtonInteraction, notice?: st
 
 function buildCommunityRaffleModal(existing?: Awaited<ReturnType<typeof getCommunityRaffle>>) {
   const modal = new ModalBuilder().setCustomId(REALM_PREFIX + ":community-raffle:submit" + (existing ? ":" + existing.id : "")).setTitle(existing ? "Edit Giveaway Submission" : "Host a WoA Giveaway");
-  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true, value?: string) => { const input = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(100); if (value) input.setValue(value.slice(0, 100)); return new ActionRowBuilder<TextInputBuilder>().addComponents(input); };
+  const field = (id: string, label: string, placeholder: string, style = TextInputStyle.Short, required = true, value?: string) => { const input = new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(required).setMaxLength(100); if (value) input.setValue(value.slice(0, style === TextInputStyle.Paragraph ? 1000 : 100)); return new ActionRowBuilder<TextInputBuilder>().addComponents(input); };
   modal.addComponents(field("name", "Giveaway name", "WoA Community Giveaway", TextInputStyle.Short, true, existing?.name), field("prize", "Prize", "Describe the prize clearly", TextInputStyle.Paragraph, true, existing?.prize), field("ends", "End time (UTC)", "e.g. in 2 hours or 2026-11-18 19:00", TextInputStyle.Short, true, existing ? new Date(Number(existing.endsAt)).toISOString().slice(0,16).replace("T"," ") : undefined));
   return modal;
 }
@@ -348,6 +348,17 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
     draft.timezone = timezone;
     await interaction.reply({ content: "🌎 Timezone selected: **" + timezone + "**. Continue to enter the event details.", flags: MessageFlags.Ephemeral, components: [new ActionRowBuilder<ButtonBuilder>().addComponents(button("Continue to event details", REALM_PREFIX + ":community:continue"))] });
     return true;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community-raffle:submit")) {
+    if (!interaction.guildId) { await interaction.reply({ content: "❌ Submit giveaways inside the WoA server.", flags: MessageFlags.Ephemeral }); return true; }
+    const editId = interaction.customId.startsWith(REALM_PREFIX + ":community-raffle:submit:") ? interaction.customId.slice((REALM_PREFIX + ":community-raffle:submit:").length) : null;
+    const name = interaction.fields.getTextInputValue("name").trim(); const prize = interaction.fields.getTextInputValue("prize").trim(); const raw = interaction.fields.getTextInputValue("ends").trim();
+    const endsAt = parseTime(raw, "UTC");
+    if (!name || !prize || name.length > 100 || prize.length > 1000 || endsAt === null || !Number.isFinite(endsAt) || endsAt <= Date.now()) { await interaction.reply({ content: "❌ Check the giveaway name, prize and future end time. Times are interpreted as UTC; relative times such as ‘in 2 hours’ also work.", flags: MessageFlags.Ephemeral }); return true; }
+    const input = { name, prize, endsAt };
+    if (editId) { const updated = await updateCommunityRaffle(editId, interaction.guildId, interaction.user.id, input); if (!updated) { await interaction.reply({ content: "❌ That submission is no longer editable.", flags: MessageFlags.Ephemeral }); return true; } }
+    else await createCommunityRaffle({ guildId: interaction.guildId, creatorId: interaction.user.id, ...input });
+    await interaction.reply({ content: "🕒 **Your giveaway has been submitted to the High Council.** It will only be published after approval. Hosts cannot enter their own giveaway.", flags: MessageFlags.Ephemeral }); return true;
   }
   if (interaction.isModalSubmit() && interaction.customId.startsWith(REALM_PREFIX + ":community:submit")) { await submitCommunityEvent(interaction); return true; }
   if (!interaction.isButton() && !interaction.isStringSelectMenu()) return false;
