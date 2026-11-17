@@ -161,7 +161,6 @@ export async function handleCouncilPanel(interaction: Interaction) {
   else if (section === "rewards") await showRewards(interaction);
   else if (section === "riddles") await interaction.update(buildRiddlePanel());
   else if (section === "statistics") await showStatistics(interaction);
-  else if (section === "admin-access") await showAdminAccess(interaction);
   else if (section === "configuration") await showConfiguration(interaction);
   else if (section === "configuration:timezone") await startTimezonePicker(interaction);
   else if (section === "configuration:timezone:custom") await startCustomTimezoneModal(interaction);
@@ -200,7 +199,7 @@ async function handleCouncilChannelSelect(interaction: ChannelSelectMenuInteract
     if (!submission || submission.guildId !== interaction.guildId || submission.status !== "pending" || submission.creatorId === interaction.user.id) { await interaction.update({ content: "❌ That submission is no longer awaiting your review, or you cannot approve your own.", embeds: [], components: [backButtonRow()] }); return; }
     communityRaffleApprovalDrafts.set(interaction.user.id, { raffleId, channelId });
     const roleMenu = new RoleSelectMenuBuilder().setCustomId(`${COUNCIL_PREFIX}:community-raffles:role:${raffleId}`).setPlaceholder("Choose an optional notification role").setMinValues(1).setMaxValues(1);
-    await interaction.update({ content: "📍 **Announcement channel:** <#" + channelId + ">\\n\\n🔔 Select the role to tag, or approve without a role ping.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community-raffles:no-role:${raffleId}`, ButtonStyle.Success), button("◀ Back to review", `${COUNCIL_PREFIX}:community-raffles:review`, ButtonStyle.Secondary))] });
+    await interaction.update({ content: "📍 **Announcement channel:** <#" + channelId + ">\n\n🔔 Select the role to tag, or approve without a role ping.", embeds: [], components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleMenu), new ActionRowBuilder<ButtonBuilder>().addComponents(button("✅ Approve without tagging", `${COUNCIL_PREFIX}:community-raffles:no-role:${raffleId}`, ButtonStyle.Success), button("◀ Back to review", `${COUNCIL_PREFIX}:community-raffles:review`, ButtonStyle.Secondary))] });
     return;
   }
   if (interaction.customId.startsWith(`${COUNCIL_PREFIX}:events:repost-channel:`)) {
