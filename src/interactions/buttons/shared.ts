@@ -44,7 +44,14 @@ async function refreshPublicEventMessage(interaction: ButtonInteraction, event: 
   const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
   if (!channel || !("messages" in channel)) return;
   const message = await channel.messages.fetch(messageId).catch(() => null);
-  if (message) await message.edit({ embeds: [buildEventEmbed(event)], components: [buildEventRsvpButtons(event.id)] }).catch(() => null);
+  if (message) {
+    const notificationValue = message.embeds[0]?.fields.find(field => field.name === "🔔 Notification")?.value;
+    const notificationRoleId = notificationValue?.match(/^<@&(\d+)>$/)?.[1] ?? null;
+    await message.edit({
+      embeds: [buildEventEmbed(event, notificationRoleId)],
+      components: [buildEventRsvpButtons(event.id)]
+    }).catch(() => null);
+  }
 }
 
 export async function handleEventRsvpButton(interaction: ButtonInteraction): Promise<void> {
