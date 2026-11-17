@@ -388,11 +388,11 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
       else await interaction.reply({ ...invalid, flags: MessageFlags.Ephemeral });
       return true;
     }
+    if (privateControl) await interaction.deferUpdate();
+    else await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const updated = await rsvpCommunityEvent(eventId, interaction.guild!.id, interaction.user.id);
     if (!updated) {
-      const notice = { content: "❌ This community event is no longer open for RSVP.", components: [] };
-      if (privateControl) await interaction.update(notice);
-      else await interaction.reply({ ...notice, flags: MessageFlags.Ephemeral });
+      await interaction.editReply({ content: "❌ This community event is no longer open for RSVP.", components: [] });
       return true;
     }
 
@@ -430,8 +430,7 @@ export async function handleRealmPanel(interaction: Interaction): Promise<boolea
       : state === "waitlist"
         ? `🕒 You're on the waitlist for **${updated.title}**. This RSVP control is private to you.`
         : `You left **${updated.title}**. You can RSVP again whenever you're ready.`;
-    if (privateControl) await interaction.update({ content: personalNotice, components: [personalButton] });
-    else await interaction.reply({ content: personalNotice, components: [personalButton], flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ content: personalNotice, components: [personalButton] });
     return true;
   }
   else if (section.startsWith("community:rsvp:")) {
